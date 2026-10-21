@@ -3,8 +3,16 @@
 @tailwind components;
 @tailwind utilities;
 
+font-face {
+  font-family: 'scripter';
+  src: url('./assets/brand/font/Scripter-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'scripter', sans-serif;
   color: #292621;
   background: #FFF8E9;
   font-synthesis: none;

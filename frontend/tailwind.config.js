@@ -13,7 +13,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['DM Sans', 'sans-serif'],
+        sans: ['Poppins', 'sans-serif'],
         display: ['Space Grotesk', 'sans-serif'],
       },
     },
