@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Leaf, Menu, X } from 'lucide-react'
-import logoPng from '../assets/brand/IDENTIDAD DE MARCA/logo_olla_vegana.png'
+import logoVaca from '../assets/brand/svgMagui/logo_olla_vegana.png'
 
 const navigationLinks = [
   { label: 'Inicio', href: '#inicio' },
@@ -24,8 +24,7 @@ function Navbar() {
           onClick={closeMenu}
         >
           <object
-            data={logoPng}
-            type="application/pdf"
+            data={logoVaca}
             aria-label="Logo de Olla Vegana"
             className="h-20 w-24"
           >
