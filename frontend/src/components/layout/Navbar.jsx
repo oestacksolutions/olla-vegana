@@ -17,7 +17,7 @@ function Navbar() {
 
   return (
     <header className="relative z-50 bg-brand-cream" aria-label="Navegación principal">
-      <div className="mx-auto flex min-h-[8.5rem] max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
+      <div className="mx-auto flex h-[96px] min-h-0 max-w-7xl items-center justify-between px-5 py-0 sm:h-[112px] sm:px-6 lg:h-[155px] lg:px-10">
         <a
           href="#inicio"
           className="flex shrink-0 items-center text-brand-ink"
@@ -27,11 +27,11 @@ function Navbar() {
           <img
             src={logoVaca}
             aria-label="Logo de Olla Vegana"
-            className="h-[179px] w-[179px] shrink-0 object-contain"
+            className="h-[88px] w-[88px] shrink-0 object-contain sm:h-[104px] sm:w-[104px] lg:h-[179px] lg:w-[179px]"
           />
         </a>
 
-        <nav className="absolute left-1/2 hidden w-max -translate-x-1/2 items-center justify-center gap-12 lg:flex" aria-label="Secciones del sitio">
+        <nav className="absolute left-1/2 top-[calc(50%-4px)] hidden w-max -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-12 lg:flex" aria-label="Secciones del sitio">
           {navigationLinks.map((link) => (
             <a
               key={link.href}

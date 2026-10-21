@@ -1,7 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Poppins:wght@500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.font-poppins {
+  font-family: 'Poppins', sans-serif;
+}
 
 :root {
   font-family: 'DM Sans', sans-serif;
@@ -18,4 +23,44 @@ html {
 body {
   min-width: 320px;
   margin: 0;
+}
+
+@keyframes hero-appear {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-appearance {
+  animation: hero-appear 700ms ease-out both;
+}
+
+@keyframes hero-lilac-float {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(-8px);
+  }
+}
+
+.hero-lilac-responsive {
+  animation: hero-lilac-float 5s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-appearance {
+    animation: none;
+  }
+
+  .hero-lilac-responsive {
+    animation: none;
+  }
 }
