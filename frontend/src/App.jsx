@@ -1,29 +1,26 @@
-import { CartProvider } from './context/CartContext'
-import Navbar from './components/Navbar'
-import Hero from './components/Hero'
-import Timeline from './components/Timeline'
-import MissionVision from './components/MissionVision'
-import Store from './components/Store'
-import CartModal from './components/CartModal'
-import MapSection from './components/MapSection'
-import Campaigns from './components/Campaigns'
-import Footer from './components/Footer'
+import Navbar from './components/layout/Navbar'
+import Hero from './components/home/Hero'
+import Timeline from './components/home/Timeline'
+import MissionVision from './components/home/MissionVision'
+import Store from './components/home/Store'
+import MapSection from './components/home/MapSection'
+import Campaigns from './components/home/Campaigns'
+import Footer from './components/layout/Footer'
 
 function App() {
   return (
-    <CartProvider>
+    <>
       <Navbar />
       <main>
         <Hero />
         <Timeline />
         <MissionVision />
         <Store />
-        <CartModal />
         <MapSection />
         <Campaigns />
       </main>
       <Footer />
-    </CartProvider>
+    </>
   )
 }
 

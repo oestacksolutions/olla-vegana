@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Leaf, Menu, X } from 'lucide-react'
-import logoVaca from '../assets/brand/svgMagui/logo_olla_vegana.png'
+import { Menu, X } from 'lucide-react'
+import logoVaca from '../../assets/brand/svgMagui/logo_olla_vegana.png'
+import BtnAction from '../disenio/btn-action'
 
 const navigationLinks = [
   { label: 'Inicio', href: '#inicio' },
@@ -16,42 +17,38 @@ function Navbar() {
 
   return (
     <header className="relative z-50 bg-brand-cream" aria-label="Navegación principal">
-      <div className="mx-auto flex min-h-[7.5rem] max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
+      <div className="mx-auto flex min-h-[8.5rem] max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
         <a
           href="#inicio"
-          className="flex items-center gap-2 text-brand-ink"
+          className="flex shrink-0 items-center text-brand-ink"
           aria-label="Olla Vegana, ir al inicio"
           onClick={closeMenu}
         >
-          <object
-            data={logoVaca}
+          <img
+            src={logoVaca}
             aria-label="Logo de Olla Vegana"
-            className="h-20 w-24"
-          >
-            <span className="font-display text-xs font-bold text-brand-ink">
-              OLLA VEGANA
-            </span>
-          </object>
+            className="h-[179px] w-[179px] shrink-0 object-contain"
+          />
         </a>
 
-        <nav className="hidden items-center gap-10 lg:flex" aria-label="Secciones del sitio">
+        <nav className="absolute left-1/2 hidden w-max -translate-x-1/2 items-center justify-center gap-12 lg:flex" aria-label="Secciones del sitio">
           {navigationLinks.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className="text-sm font-semibold text-brand-ink/75 transition-colors hover:text-brand-orange"
+              className="text-base font-semibold text-brand-ink/75 transition-colors hover:text-brand-orange"
             >
               {link.label}
             </a>
           ))}
         </nav>
 
-        <a
+        <BtnAction
           href="#dona"
-          className="hidden rounded-full bg-[#ad63dc] px-7 py-3.5 text-sm font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-[#9b4ecc] sm:inline-flex"
+          className="hidden sm:inline-flex lg:mr-6"
         >
           Quiero Ayudar!
-        </a>
+        </BtnAction>
 
         <button
           type="button"
@@ -80,14 +77,13 @@ function Navbar() {
                 {link.label}
               </a>
             ))}
-            <a
+            <BtnAction
               href="#dona"
-              className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-[#ad63dc] px-4 py-3 text-sm font-bold text-white"
+              className="mt-3 self-center"
               onClick={closeMenu}
             >
-              <Leaf size={16} />
               Quiero Ayudar!
-            </a>
+            </BtnAction>
           </div>
         </nav>
       )}
