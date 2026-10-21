@@ -15,6 +15,7 @@ export default {
       fontFamily: {
         sans: ['Poppins', 'sans-serif'],
         display: ['Space Grotesk', 'sans-serif'],
+        scripter: ['scripter', 'sans-serif'],
       },
     },
   },

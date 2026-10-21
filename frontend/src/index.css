@@ -3,7 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-font-face {
+@font-face {
   font-family: 'scripter';
   src: url('./assets/brand/font/Scripter-Regular.woff2') format('woff2');
   font-weight: normal;
