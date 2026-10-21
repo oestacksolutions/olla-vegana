@@ -5,7 +5,7 @@ import BtnAction from '../disenio/btn-action'
 
 function Hero() {
   return (
-    <div id="inicio" className="hero-appearance w-full bg-[#FFF8E9] lg:h-[1275px]">
+    <div id="inicio" className="hero-appearance w-full overflow-x-clip bg-[#FFF8E9] lg:h-[1275px]">
       <section
         id="hero-section-1"
         aria-label="Presentación"

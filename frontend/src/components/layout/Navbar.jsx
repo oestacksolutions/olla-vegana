@@ -36,7 +36,7 @@ function Navbar() {
             <a
               key={link.href}
               href={link.href}
-              className="text-base font-semibold text-brand-ink/75 transition-colors hover:text-brand-orange"
+              className="font-poppins text-base font-semibold text-brand-ink/75 transition-colors hover:text-brand-orange"
             >
               {link.label}
             </a>
@@ -71,7 +71,7 @@ function Navbar() {
               <a
                 key={link.href}
                 href={link.href}
-                className="rounded-xl px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                className="font-poppins rounded-xl px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
                 onClick={closeMenu}
               >
                 {link.label}
