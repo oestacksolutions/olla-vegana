@@ -1,9 +1,8 @@
-﻿import { divIcon } from 'leaflet'
-import { MapContainer, Marker, TileLayer, Tooltip } from 'react-leaflet'
+﻿import { useEffect } from 'react'
+import { divIcon } from 'leaflet'
+import { MapContainer, Marker, Popup, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import mapPinIcon from '../../assets/brand/herosvg/map-icon.png'
-import boomerangIcon from '../../assets/brand/svgMagui/boomerang.svg'
-import floresIcon from '../../assets/brand/svgMagui/flores.png'
 import ollaFlorIcon from '../../assets/brand/svgMagui/olla-flor-titulo.png'
 import mapsIcon from '../../assets/brand/herosvg/maps.svg'
 import mapsTwoIcon from '../../assets/brand/herosvg/maps2.svg'
@@ -11,24 +10,37 @@ import { distributionPoints } from '../../data/distributionPoints'
 
 const markerImages = {
   moreno: ollaFlorIcon,
-  moron: floresIcon,
-  'ramos-mejia': boomerangIcon,
+  moron: ollaFlorIcon,
+  'ramos-mejia': ollaFlorIcon,
 }
 
+const markerImageSize = 120
 const mapCenter = [-34.645, -58.68]
 
 function createMarkerIcon(image) {
   return divIcon({
     className: 'custom-map-marker',
     html: `
-      <span class="map-location-pin">
-        <img src="${mapPinIcon}" alt="" />
-        <img class="map-location-art" src="${image}" alt="" />
+      <span class="map-location-pin" style="width: ${markerImageSize}px; height: ${markerImageSize}px;">
+        <img class="map-location-art" src="${image}" alt="" style="left: 0; top: 0; width: ${markerImageSize}px; height: ${markerImageSize}px;" />
       </span>
     `,
-    iconSize: [58, 74],
-    iconAnchor: [29, 70],
+    iconSize: [markerImageSize, markerImageSize],
+    iconAnchor: [markerImageSize / 2, markerImageSize / 2],
   })
+}
+
+function FitDistributionPoints() {
+  const map = useMap()
+
+  useEffect(() => {
+    map.fitBounds(
+      distributionPoints.map((point) => point.coordinates),
+      { padding: [64, 64], maxZoom: 11 },
+    )
+  }, [map])
+
+  return null
 }
 
 function MapSection() {
@@ -84,21 +96,16 @@ function MapSection() {
           <MapContainer
             center={mapCenter}
             zoom={12}
-            scrollWheelZoom={false}
+            scrollWheelZoom={true}
             className="h-full w-full"
           >
+            <FitDistributionPoints />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             {distributionPoints.map((point) => (
-              <Marker
-                key={point.id}
-                position={point.coordinates}
-                icon={createMarkerIcon(markerImages[point.id])}
-              >
-                <Tooltip direction="top" offset={[0, -34]}>{point.city}</Tooltip>
-              </Marker>
+              <DistributionMarker key={point.id} point={point} />
             ))}
           </MapContainer>
         </div>
@@ -107,7 +114,31 @@ function MapSection() {
   )
 }
 
+function DistributionMarker({ point }) {
+  const map = useMap()
+  const focusMarker = () => map.flyTo(point.coordinates, 16, { duration: 0.8 })
+
+  return (
+    <Marker
+      position={point.coordinates}
+      icon={createMarkerIcon(markerImages[point.id])}
+      eventHandlers={{ click: focusMarker }}
+    >
+      <Tooltip direction="top" offset={[0, -34]}>{point.city}</Tooltip>
+      <Popup>
+        <strong>{point.address}</strong>
+        <br />
+        {point.city}
+        <br />
+        {point.schedule}
+      </Popup>
+    </Marker>
+  )
+}
+
 export default MapSection
+
+
 
 
 
