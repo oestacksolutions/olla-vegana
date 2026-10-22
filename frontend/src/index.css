@@ -53,6 +53,42 @@ body {
   animation: hero-appear 900ms ease-out both;
 }
 
+@keyframes store-appear {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateY(48px) scale(0.975);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+.store-appearance {
+  opacity: 0;
+}
+
+.store-appearance.is-visible {
+  animation: store-appear 1100ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes store-card-zoom {
+  from {
+    transform: scale(0.99);
+  }
+
+  to {
+    transform: scale(1.04);
+  }
+}
+
+.store-card-zoom {
+  animation: store-card-zoom 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @keyframes hero-title-slide-in {
   from {
     opacity: 0;
@@ -168,6 +204,18 @@ body {
   .hero-appearance {
     animation: none;
     opacity: 1;
+  }
+
+  .store-appearance {
+    animation: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+
+  .store-card-zoom {
+    animation: none;
+    transform: scale(1.04);
   }
 
   .hero-title-slide-in {
