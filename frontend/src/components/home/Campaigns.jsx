@@ -12,9 +12,9 @@ function Campaigns() {
   return (
     <section
       id="campanas"
-      className="relative overflow-hidden bg-[#FFF8E9] px-6 py-20 sm:px-10 lg:min-h-[1060px] lg:px-0 lg:py-0"
+      className="relative overflow-hidden bg-[#FFF8E9] px-6 py-20 sm:px-10 lg:min-h-[760px] lg:px-0 lg:py-0"
     >
-      <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col items-center text-center lg:min-h-[1060px]">
+      <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col items-center text-center lg:min-h-[760px]">
         <div className="pt-0 lg:absolute lg:left-1/2 lg:top-[32px] lg:w-[760px] lg:-translate-x-1/2">
           <p className="font-scripter text-[28px] leading-[36px] text-[#F13107]">
             Una comunidad que se mueve
@@ -44,8 +44,7 @@ function Campaigns() {
           src={flores}
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute right-[-92px] top-[235px] z-0 hidden h-[393.22px] w-[393.22px] object-contain lg:block"
-        />
+          className="absolute inset-0 w-50% h-50% object-cover -z-10 pointer-events-none" />
 
         <a
           href="https://www.instagram.com/olla.vegana/"
