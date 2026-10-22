@@ -6,6 +6,39 @@ import cara from '../../assets/brand/svgMagui/cara.png'
 import BtnAction from '../disenio/btn-action'
 import TimelineMilestone from './TimelineMilestone'
 
+const timelineEvents = [
+  {
+    date: 'Julio 2019-',
+    title: 'Creación',
+    description: 'Nos separamos de “Healt\nSave” y nos unimos\ncomo “Olla Vegana” en\nMorón como punto\ninicial',
+    desktopPosition: 'left-[-40px] top-[45px]',
+  },
+  {
+    date: 'Octubre 2022-',
+    title: 'Ramos Mejía',
+    description: 'Se abre un nuevo punto\nen Ramos Mejia,\nsumandose al ya\nexistente en Morón',
+    desktopPosition: 'left-[30%] top-[-145px] -translate-x-1/2',
+  },
+  {
+    date: 'Marzo 2024-',
+    title: 'Moreno',
+    description: 'Se suma a Morón y\nRamos Mejia, un nuevo\npunto en la localidad de\nMoreno',
+    desktopPosition: 'left-[55%] top-[55px] -translate-x-1/2',
+  },
+  {
+    date: 'Mayo 2024-',
+    title: 'Reestructuración',
+    description: 'Se agrando el grupo de\norganizadores,\ndiversificamos voces.\nEsta transformación marcó\nel inicio de una etapa más\nsólida y sostenible.',
+    desktopPosition: 'left-[80%] top-[-135px] -translate-x-1/2',
+  },
+  {
+    date: 'Septiembre 2025-',
+    title: 'Rebranding',
+    description: 'Renovamos nuestra\nimagen para fortalecer\nnuestro mensaje solidario,\nampliar el alcance\ncomunitario y comunicar\ncon más claridad',
+    desktopPosition: 'left-full top-[119px] translate-x-[-90px]',
+  },
+]
+
 function Hero() {
   const sectionTwoRef = useRef(null)
   const vectorContainerRef = useRef(null)
@@ -13,7 +46,19 @@ function Hero() {
   const cowImageRef = useRef(null)
   const [sectionTwoVisible, setSectionTwoVisible] = useState(false)
   const [visibleMilestones, setVisibleMilestones] = useState([false, false, false, false, false])
+  const [timelineMarkerPositions, setTimelineMarkerPositions] = useState([])
   const [journeyComplete, setJourneyComplete] = useState(false)
+
+  useEffect(() => {
+    const path = vectorPathRef.current
+    if (!path) return
+
+    const pathLength = path.getTotalLength()
+    setTimelineMarkerPositions([0, 0.25, 0.5, 0.75].map((progress) => {
+      const point = path.getPointAtLength(pathLength * progress)
+      return { left: `${(point.x / 1536) * 100}%`, top: `${point.y}px` }
+    }))
+  }, [])
 
   useEffect(() => {
     const section = sectionTwoRef.current
@@ -24,22 +69,39 @@ function Hero() {
       return
     }
 
+    const mobile = window.matchMedia('(max-width: 1023px)').matches
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) {
         setSectionTwoVisible(true)
         observer.unobserve(section)
       }
-    }, { threshold: 0.15 })
+    }, { threshold: mobile ? 0.35 : 0.15 })
 
     observer.observe(section)
     return () => observer.disconnect()
   }, [])
 
   useEffect(() => {
+    if (!sectionTwoVisible || !window.matchMedia('(max-width: 1023px)').matches) return
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setVisibleMilestones(timelineEvents.map(() => true))
+      return
+    }
+
+    const timers = timelineEvents.map((_, index) => window.setTimeout(() => {
+      setVisibleMilestones((current) => current.map((visible, itemIndex) => visible || itemIndex === index))
+    }, index * 800))
+
+    return () => timers.forEach(window.clearTimeout)
+  }, [sectionTwoVisible])
+
+  useEffect(() => {
     const container = vectorContainerRef.current
     const path = vectorPathRef.current
     const image = cowImageRef.current
     if (!sectionTwoVisible || !container || !path || !image) return
+    if (window.matchMedia('(max-width: 1023px)').matches) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       setVisibleMilestones([true, true, true, true, true])
       return
@@ -147,19 +209,21 @@ function Hero() {
         id="hero-section-2"
         ref={sectionTwoRef}
         aria-label="Contenido destacado"
-        className="relative min-h-[750px] w-full overflow-x-clip overflow-y-visible bg-[#FFF8E9] lg:h-[900px] lg:min-h-0"
+        className="relative min-h-[1250px] w-full overflow-x-clip overflow-y-visible bg-[#FFF8E9] lg:h-[900px] lg:min-h-0"
       >
         <h2 className={`hero-title-slide-in absolute left-1/2 top-[38px] z-10 -translate-x-1/2 whitespace-nowrap font-scripter text-[28px] font-normal leading-none text-[#F13107] lg:left-[239px] lg:top-[96px] lg:translate-x-0 lg:text-[32px] ${sectionTwoVisible ? 'is-visible' : ''}`}>
           Nuestro camino
         </h2>
-        <svg
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 h-full w-full"
-          viewBox="0 0 1440 748"
-          preserveAspectRatio="none"
-        >
+        <svg aria-hidden="true" className="pointer-events-none absolute inset-0 hidden h-full w-full lg:block" viewBox="0 0 1440 748" preserveAspectRatio="none">
           <path
             d="M0 155 C60 155 120 175 180 175 C280 175 360 140 460 140 C560 140 640 175 740 175 C840 175 920 140 1020 140 C1120 140 1200 175 1300 175 C1360 175 1400 165 1440 155 L1440 635 C1400 635 1360 650 1300 650 C1200 650 1120 620 1020 620 C920 620 840 650 740 650 C640 650 560 620 460 620 C360 620 280 650 180 650 C120 650 60 635 0 635 Z"
+            fill="#617D48"
+            fillOpacity="0.5"
+          />
+        </svg>
+        <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full lg:hidden" viewBox="0 0 1440 1250" preserveAspectRatio="none">
+          <path
+            d="M0 92 C120 92 120 104 240 104 C360 104 360 92 480 92 C600 92 600 104 720 104 C840 104 840 92 960 92 C1080 92 1080 104 1200 104 C1320 104 1320 92 1440 92 L1440 1198 C1320 1198 1320 1188 1200 1188 C1080 1188 1080 1198 960 1198 C840 1198 840 1188 720 1188 C600 1188 600 1198 480 1198 C360 1198 360 1188 240 1188 C120 1188 120 1198 0 1198 Z"
             fill="#617D48"
             fillOpacity="0.5"
           />
@@ -167,7 +231,7 @@ function Hero() {
         <div
           aria-hidden="true"
           ref={vectorContainerRef}
-          className="pointer-events-none absolute left-1/2 top-[calc(50%+18px)] z-[1] h-[90px] min-w-[240px] w-[calc(100%_-_560px)] max-w-[1536px] -translate-x-1/2 -translate-y-1/2"
+          className="pointer-events-none absolute left-1/2 top-[calc(50%+18px)] z-[1] hidden h-[90px] min-w-[240px] w-[calc(100%_-_560px)] max-w-[1536px] -translate-x-1/2 -translate-y-1/2 lg:block"
         >
           <svg
             viewBox="0 0 1536 90"
@@ -186,52 +250,39 @@ function Hero() {
               opacity="0.9"
             />
           </svg>
-          <span className="absolute left-[25%] top-[53.6px] h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#466729] bg-[#466729]" />
-          <span className="absolute left-[50%] top-[13.6px] h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#466729] bg-[#466729]" />
-          <span className="absolute left-[74.74%] top-[82.7px] h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#466729] bg-[#466729]" />
+          {timelineMarkerPositions.map((position, index) => (
+            <span
+              key={index}
+              style={position}
+              className="absolute z-10 h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#466729] bg-[#466729]"
+            />
+          ))}
           <span className={`timeline-arrival absolute left-full top-[77px] h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#466729] bg-[#466729] ${journeyComplete ? 'is-complete' : ''}`} />
           <img
             src={cara}
             alt=""
             ref={cowImageRef}
-            className="absolute left-[-60px] top-[-56px] h-[120px] w-[120px] object-contain"
+            className="absolute left-[-60px] top-[-56px] z-20 h-[120px] w-[120px] object-contain"
           />
-          <span className="absolute left-0 top-[4px] z-10 h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#466729] bg-[#466729]" />
-          <TimelineMilestone
-            date="Julio 2019-"
-            title="Creación"
-            description={'Nos separamos de “Healt\nSave” y nos unimos\ncomo “Olla Vegana” en\nMorón como punto\ninicial'}
-            visible={visibleMilestones[0]}
-            className="absolute left-[-40px] top-[45px] z-10"
-          />
-          <TimelineMilestone
-            date="Octubre 2022-"
-            title="Ramos Mejía"
-            description={'Se abre un nuevo punto\nen Ramos Mejia,\nsumandose al ya\nexistente en Morón'}
-            visible={visibleMilestones[1]}
-            className="absolute left-[30%] top-[-145px] z-10 -translate-x-1/2"
-          />
-          <TimelineMilestone
-            date="Marzo 2024-"
-            title="Moreno"
-            description={'Se suma a Morón y\nRamos Mejia, un nuevo\npunto en la localidad de\nMoreno'}
-            visible={visibleMilestones[2]}
-            className="absolute left-[55%] top-[55px] z-10 -translate-x-1/2"
-          />
-          <TimelineMilestone
-            date="Mayo 2024-"
-            title="Reestructuración"
-            description={'Se agrando el grupo de\norganizadores,\ndiversificamos voces.\nEsta transformación marcó\nel inicio de una etapa más\nsólida y sostenible.'}
-            visible={visibleMilestones[3]}
-            className="absolute left-[80%] top-[-135px] z-10 -translate-x-1/2"
-          />
-          <TimelineMilestone
-            date="Septiembre 2025-"
-            title="Rebranding"
-            description={'Renovamos nuestra\nimagen para fortalecer\nnuestro mensaje solidario,\nampliar el alcance\ncomunitario y comunicar\ncon más claridad'}
-            visible={visibleMilestones[4]}
-            className="absolute left-full top-[119px] z-10 translate-x-[-90px]"
-          />
+          {timelineEvents.map((event, index) => (
+            <TimelineMilestone
+              key={event.date}
+              {...event}
+              visible={visibleMilestones[index]}
+              className={`absolute z-10 ${event.desktopPosition}`}
+            />
+          ))}
+        </div>
+        <div className="absolute inset-x-0 top-[170px] z-10 lg:hidden">
+          <div aria-hidden="true" className="absolute bottom-0 left-[23px] top-0 w-[3px] rounded-full bg-[#466729]" />
+          <div className="relative flex flex-col gap-8">
+            {timelineEvents.map((event, index) => (
+              <div key={event.date} className="relative pl-[52px]">
+                <span aria-hidden="true" className={`absolute left-[17px] h-[15px] w-[15px] -translate-y-1/2 rounded-full border-[3px] border-[#466729] bg-[#466729] ${index === 0 ? 'top-0' : 'top-[20.5px]'}`} />
+                <TimelineMilestone {...event} responsive visible={visibleMilestones[index]} />
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     </div>

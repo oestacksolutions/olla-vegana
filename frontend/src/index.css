@@ -82,6 +82,17 @@ body {
   translate: 0 0;
 }
 
+.timeline-milestone-horizontal-reveal {
+  clip-path: inset(0 100% 0 0);
+  translate: -14px 0;
+  transition: clip-path 750ms ease, opacity 750ms ease, translate 750ms ease, visibility 750ms ease;
+}
+
+.timeline-milestone-horizontal-reveal.is-visible {
+  clip-path: inset(0 0 0 0);
+  translate: 0 0;
+}
+
 @keyframes timeline-arrival-sparkle {
   0% {
     opacity: 0;
@@ -137,6 +148,12 @@ body {
   }
 
   .timeline-milestone-reveal {
+    transition: none;
+    translate: 0 0;
+  }
+
+  .timeline-milestone-horizontal-reveal {
+    clip-path: none;
     transition: none;
     translate: 0 0;
   }
