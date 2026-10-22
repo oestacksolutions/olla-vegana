@@ -38,14 +38,16 @@ function MapSection() {
         src={mapsIcon}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 z-0 hidden h-auto w-[667px] lg:block"
+        className="pointer-events-none absolute bottom-0 right-0 z-0 hidden h-auto w-[726px] lg:block"
+
+
       />
       <img
         src={mapsTwoIcon}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 left-0 z-0 hidden h-auto w-[726px] lg:block"
-      />
+        className="pointer-events-none absolute left-0 top-0 z-0 hidden h-auto w-[667px] translate-y-10 lg:block"
+ />
 
       <div className="relative z-10 mx-auto min-h-[500px] w-full max-w-[1200px]">
         <div className="pt-1 lg:absolute lg:left-0 lg:top-[150.76px] lg:p-0">

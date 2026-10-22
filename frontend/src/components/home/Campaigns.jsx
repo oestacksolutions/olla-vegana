@@ -1,57 +1,90 @@
 import flores from '../../assets/brand/svgMagui/flores.png'
 import instagramIcon from '../../assets/brand/svgMagui/instagram-icon.png'
 
+// Importación de los íconos para cada campaña
+import libroIcon from '../../assets/brand/svgMagui/libro.png'
+import manoIcon from '../../assets/brand/svgMagui/mano-icon.png'
+import arbolIcon from '../../assets/brand/svgMagui/arbol-icon.png'
+import regaloIcon from '../../assets/brand/svgMagui/regalo-icon.png'
+
 const campaigns = [
-  { title: 'RÍO A ABASTO', color: 'bg-[#AF71DD]' },
-  { title: 'CAMPAÑA DE INVIERNO', color: 'bg-[#466729]' },
-  { title: 'MESA SOLIDARIA', color: 'bg-[#78935E]' },
-  { title: 'MÁS ALLÁ DEL PLATO', color: 'bg-[#F13107]' },
+  { title: 'VUELTA A CLASE', color: 'bg-[#AF71DD]/80', icon: libroIcon },
+  { title: 'CAMPAÑA DE INVIERNO', color: 'bg-[#78935E]/80', icon: manoIcon },
+  { title: 'NAVIDAD SOLIDARIA', color: 'bg-[#466729]/80', icon: arbolIcon },
+  { title: 'MÁS ALLÁ DEL PLATO', color: 'bg-[#F13107]/80', icon: regaloIcon },
 ]
 
 function Campaigns() {
   return (
     <section
       id="campanas"
-      className="relative overflow-hidden bg-[#FFF8E9] px-6 py-20 sm:px-10 lg:min-h-[1060px] lg:px-0 lg:py-0"
+      className="relative w-full overflow-hidden bg-[#FFF8E9] px-6 py-12 sm:px-10 lg:min-h-[760px] lg:px-0 lg:py-10"
     >
-      <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col items-center text-center lg:min-h-[1060px]">
-        <div className="pt-0 lg:absolute lg:left-1/2 lg:top-[32px] lg:w-[760px] lg:-translate-x-1/2">
+      {/* ILUSTRACIÓN DE FLORES (Alineada al costado de las tarjetas) */}
+      <img
+        src={flores}
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute right-[-10px] top-[58%] z-0 hidden w-[210px] -translate-y-1/2 object-contain opacity-50 sm:block lg:right-[10px] lg:w-[260px] xl:right-[40px] xl:w-[290px]"
+      />
+
+      {/* CONTENIDO PRINCIPAL CENTRADO */}
+      <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col items-center text-center">
+        {/* Encabezados */}
+        <div className="w-full max-w-[760px]">
           <p className="font-scripter text-[28px] leading-[36px] text-[#F13107]">
             Una comunidad que se mueve
           </p>
-          <h2 className="mt-[8px] font-scripter text-[60px] leading-[1.05] text-black/80">
-            Conocé nuestras campañas
+          <h2 className="mt-[4px] font-scripter text-[52px] leading-[1.05] text-black/80">
+            CONOCÉ NUESTRAS CAMPAÑAS
           </h2>
-          <p className="mx-auto mt-[10px] max-w-[592px] font-sans text-base leading-[1.25] text-black/80">
+          <p className="mx-auto mt-[12px] max-w-[592px] font-sans text-[13px] leading-[1.25] text-black/80 lg:text-[14px]">
             Cada campaña es una oportunidad para acompañar, compartir y transformar realidades. Conocé las iniciativas que construimos en comunidad.
           </p>
         </div>
 
-        <div className="mt-12 grid w-full max-w-[1077px] grid-cols-2 gap-4 lg:absolute lg:left-1/2 lg:top-[235px] lg:mt-0 lg:-translate-x-1/2 lg:grid-cols-4 lg:gap-[10px]">
-          {campaigns.map((campaign) => (
-            <article key={campaign.title} className="flex flex-col items-center gap-[10px]">
-              <h3 className={`rounded-full px-4 py-2 font-sans text-[10px] font-bold leading-none text-white ${campaign.color}`}>
-                {campaign.title}
+        {/* Títulos independientes con alineación asimétrica idéntica al diseño */}
+        <div className="mt-8 grid w-full max-w-[700px] grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
+          {campaigns.map((campaign, index) => {
+            // Posición 0 y 1 a la derecha de su columna, 2 y 3 a la izquierda
+            const alignClass = index < 2 ? 'lg:justify-self-end' : 'lg:justify-self-start'
+            const paddingExtra = index === 0 ? 'pr-4 pl-2' : index === 3 ? 'pl-4 pr-2' : 'px-3'
+
+            return (
+              <h3
+                key={campaign.title}
+                className={`flex h-[36px] w-fit min-w-[130px] items-center justify-center gap-2 rounded-full font-scripter text-[11px] font-normal uppercase tracking-wide text-white shadow-sm transition-all ${campaign.color} ${alignClass} ${paddingExtra} justify-self-center`}
+              >
+                <img
+                  src={campaign.icon}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-4 w-4 object-contain brightness-0 invert"
+                />
+                <span>{campaign.title}</span>
               </h3>
-              <div className="flex h-[220px] w-full items-center justify-center rounded-[20px] bg-[#D9D9D9] px-4 text-center font-sans text-[11px] font-semibold text-[#292621] sm:h-[250px] lg:h-[314px]">
-                Publicación de Instagram
-              </div>
-            </article>
+            )
+          })}
+        </div>
+
+        {/* Tarjetas independientes con mejor proporción y separación fina */}
+        <div className="mt-3 grid w-full max-w-[800px] grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
+          {campaigns.map((campaign) => (
+            <div
+              key={campaign.title}
+              className="flex h-[260px] w-full items-center justify-center rounded-[24px] bg-[#D9D9D9] px-4 text-center font-sans text-[11px] font-semibold uppercase text-[#555555] shadow-xs sm:h-[300px] lg:h-[340px]"
+            >
+              PUBLICACIÓN DE IG
+            </div>
           ))}
         </div>
 
-        <img
-          src={flores}
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none absolute right-[-92px] top-[235px] z-0 hidden h-[393.22px] w-[393.22px] object-contain lg:block"
-        />
-
+        {/* Botón inferior a Instagram */}
         <a
           href="https://www.instagram.com/olla.vegana/"
           target="_blank"
           rel="noreferrer"
-          className="mt-10 inline-flex h-[50px] w-full max-w-[430px] items-center justify-center gap-[10px] rounded-[30px] bg-[#AF71DD] px-5 font-sans text-[15px] font-semibold text-[#FFF8E9] transition-colors hover:bg-[#AF71DD]/80 lg:absolute lg:left-1/2 lg:top-[650px] lg:mt-0 lg:-translate-x-1/2"
+          className="relative z-10 mt-8 inline-flex h-[46px] w-full max-w-[400px] items-center justify-center gap-[10px] rounded-[30px] bg-[#AF71DD] px-5 font-sans text-[14px] font-semibold text-[#FFF8E9] transition-all duration-300 hover:bg-[#9b58cc]"
         >
           <img src={instagramIcon} alt="" aria-hidden="true" className="h-5 w-5 object-contain" />
           Seguinos en nuestras redes!
