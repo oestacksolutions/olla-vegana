@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import { Menu, X } from 'lucide-react'
 import logoVaca from '../../assets/brand/svgMagui/logo_olla_vegana.png'
 import BtnAction from '../disenio/btn-action'
@@ -13,10 +13,23 @@ const navigationLinks = [
 function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const [isNavVisible, setIsNavVisible] = useState(true)
+  const previousScrollY = useRef(0)
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10)
+      const currentScrollY = window.scrollY
+      const scrollDifference = currentScrollY - previousScrollY.current
+
+      setIsScrolled(currentScrollY > 10)
+
+      if (currentScrollY <= 10) {
+        setIsNavVisible(true)
+      } else if (Math.abs(scrollDifference) > 3) {
+        setIsNavVisible(scrollDifference < 0)
+      }
+
+      previousScrollY.current = currentScrollY
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
@@ -32,7 +45,7 @@ function Navbar() {
     <>
     <div aria-hidden="true" className="h-[76px] sm:h-[88px] lg:h-[104px] xl:h-[155px]" />
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${
+      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${isNavVisible ? 'translate-y-0' : '-translate-y-full'} ${
         isScrolled
           ? 'border-b border-white/20 bg-transparent backdrop-blur-md'
           : 'bg-brand-cream'
@@ -53,12 +66,12 @@ function Navbar() {
           />
         </a>
 
-        <nav className="absolute left-1/2 top-1/2 hidden w-max -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-6 xl:flex 2xl:gap-12" aria-label="Secciones del sitio">
+        <nav className="absolute left-1/2 top-1/2 hidden w-max -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-10 xl:flex 2xl:gap-[72px]" aria-label="Secciones del sitio">
           {navigationLinks.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className="whitespace-nowrap font-poppins text-sm font-semibold text-brand-ink/75 transition-colors hover:text-brand-orange 2xl:text-base"
+              className="whitespace-nowrap font-poppins text-base font-semibold text-brand-ink/75 transition-colors hover:text-brand-orange 2xl:text-lg"
             >
               {link.label}
             </a>
@@ -88,12 +101,12 @@ function Navbar() {
           className="absolute inset-x-3 top-[calc(100%-0.5rem)] rounded-2xl bg-brand-ink p-3 shadow-xl sm:inset-x-4 sm:p-5 xl:hidden"
           aria-label="Menú móvil"
         >
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-2">
             {navigationLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="font-poppins rounded-xl px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                className="font-poppins rounded-xl px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-white/10"
                 onClick={closeMenu}
               >
                 {link.label}
@@ -115,3 +128,8 @@ function Navbar() {
 }
 
 export default Navbar
+
+
+
+
+
