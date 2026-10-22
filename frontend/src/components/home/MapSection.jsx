@@ -1,4 +1,4 @@
-import { divIcon } from 'leaflet'
+﻿import { divIcon } from 'leaflet'
 import { MapContainer, Marker, TileLayer, Tooltip } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import mapPinIcon from '../../assets/brand/herosvg/map-icon.png'
@@ -51,7 +51,7 @@ function MapSection() {
 
       <div className="relative z-10 mx-auto flex min-h-[500px] w-full max-w-[1200px] flex-col items-center lg:block">
         <div className="flex w-full flex-col items-center pt-1 lg:absolute lg:left-0 lg:top-[150.76px] lg:block lg:w-auto lg:p-0">
-          <h2 className="order-1 mt-0 max-w-[329px] font-scripter text-[60px] leading-[0.98] text-black/80">
+          <h2 className="order-1 mt-0 max-w-[329px] font-scripter text-[42px] font-normal leading-[1.05] text-black/80 sm:text-[52px] lg:text-[60px]">
             DÓNDE NOS
             <br />
             ENCONTRAMOS
@@ -108,3 +108,9 @@ function MapSection() {
 }
 
 export default MapSection
+
+
+
+
+
+
