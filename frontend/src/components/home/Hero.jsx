@@ -211,6 +211,10 @@ function Hero() {
         aria-label="Contenido destacado"
         className="relative min-h-[1250px] w-full overflow-x-clip overflow-y-visible bg-[#FFF8E9] lg:h-[900px] lg:min-h-0"
       >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-[50px] bg-white lg:h-[245px]"
+        />
         <h2 className={`hero-title-slide-in absolute left-1/2 top-[38px] z-10 -translate-x-1/2 whitespace-nowrap font-scripter text-[28px] font-normal leading-none text-[#F13107] lg:left-[239px] lg:top-[96px] lg:translate-x-0 lg:text-[32px] ${sectionTwoVisible ? 'is-visible' : ''}`}>
           Nuestro camino
         </h2>
