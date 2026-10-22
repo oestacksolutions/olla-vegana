@@ -242,7 +242,7 @@ function Hero() {
       >
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-[50px] bg-white lg:h-[245px]"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-[50px] bg-[#FFF8E9] lg:h-[245px]"
         />
         <h2 className={`hero-title-slide-in absolute left-1/2 top-[38px] z-10 -translate-x-1/2 whitespace-nowrap font-scripter text-[28px] font-normal leading-none text-[#F13107] lg:left-[239px] lg:top-[96px] lg:translate-x-0 lg:text-[32px] ${sectionTwoVisible ? 'is-visible' : ''}`}>
           Nuestro camino
@@ -276,7 +276,7 @@ function Hero() {
               ref={vectorPathRef}
               d="M 0 4 C 110 3, 175 45, 290 51 C 430 60, 540 45, 625 25 C 730 2, 830 12, 925 48 C 1015 84, 1090 84, 1205 82 C 1320 82, 1435 78, 1536 77"
               fill="none"
-              stroke="#466729"
+              stroke="#617D48"
               strokeWidth="7"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -287,10 +287,10 @@ function Hero() {
             <span
               key={index}
               style={position}
-              className="absolute z-10 h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#466729] bg-[#466729]"
+              className="absolute z-10 h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#617D48] bg-[#617D48]"
             />
           ))}
-          <span className={`timeline-arrival absolute left-full top-[77px] h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#466729] bg-[#466729] ${journeyComplete ? 'is-complete' : ''}`} />
+          <span className={`timeline-arrival absolute left-full top-[77px] h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#617D48] bg-[#617D48] ${journeyComplete ? 'is-complete' : ''}`} />
           <img
             src={cara}
             alt=""
@@ -307,11 +307,11 @@ function Hero() {
           ))}
         </div>
         <div className="absolute inset-x-0 top-[170px] z-10 lg:hidden">
-          <div aria-hidden="true" className="absolute bottom-0 left-[23px] top-0 w-[3px] rounded-full bg-[#466729]" />
+          <div aria-hidden="true" className="absolute bottom-0 left-[23px] top-0 w-[3px] rounded-full bg-[#617D48]" />
           <div className="relative flex flex-col gap-8">
             {timelineEvents.map((event, index) => (
               <div key={event.date} className="relative pl-[52px]">
-                <span aria-hidden="true" className={`absolute left-[17px] h-[15px] w-[15px] -translate-y-1/2 rounded-full border-[3px] border-[#466729] bg-[#466729] ${index === 0 ? 'top-0' : 'top-[20.5px]'}`} />
+                <span aria-hidden="true" className={`absolute left-[17px] h-[15px] w-[15px] -translate-y-1/2 rounded-full border-[3px] border-[#617D48] bg-[#617D48] ${index === 0 ? 'top-0' : 'top-[20.5px]'}`} />
                 <TimelineMilestone {...event} responsive visible={visibleMilestones[index]} />
               </div>
             ))}
