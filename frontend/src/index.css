@@ -49,6 +49,7 @@
   }
 }
 :root {
+  color-scheme: only light;
   font-family: 'scripter', sans-serif;
   color: #292621;
   background: #FFF8E9;
@@ -312,6 +313,7 @@ body {
     transition: none;
   }
 }
+
 
 
 
