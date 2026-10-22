@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import garabatoLila from '../../assets/brand/svgMagui/garabato-lila.svg'
 import ondasLila from '../../assets/brand/herosvg/ondas-lila.svg'
 import circuloNaranja from '../../assets/brand/svgMagui/circulo-naranja.svg'
@@ -94,7 +94,7 @@ function Hero() {
     const mobile = window.matchMedia('(max-width: 1023px)').matches
     const observer = new IntersectionObserver(([entry]) => {
       setSectionTwoVisible(entry.isIntersecting)
-    }, { threshold: mobile ? 0.35 : 0.15 })
+    }, { threshold: mobile ? 0.05 : 0.15, rootMargin: mobile ? '0px 0px -15% 0px' : '0px' })
 
     observer.observe(section)
     return () => observer.disconnect()
@@ -102,11 +102,6 @@ function Hero() {
 
   useEffect(() => {
     if (!sectionTwoVisible || !window.matchMedia('(max-width: 1023px)').matches) return
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setVisibleMilestones(timelineEvents.map(() => true))
-      return
-    }
 
     const timers = timelineEvents.map((_, index) => window.setTimeout(() => {
       setVisibleMilestones((current) => current.map((visible, itemIndex) => visible || itemIndex === index))
@@ -325,3 +320,4 @@ function Hero() {
 }
 
 export default Hero
+
