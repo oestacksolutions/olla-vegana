@@ -22,7 +22,7 @@ function Footer() {
           src={ollaflor}
           alt=""
           aria-hidden="true"
-          className="footer-flowers absolute z-10 h-[150px] w-[150px] object-contain"
+          className="footer-flowers absolute z-10 h-[190px] w-[150px] object-contain"
           style={{ top: '50%', transform: 'translateY(-50%)' }}
         />
       </div>
