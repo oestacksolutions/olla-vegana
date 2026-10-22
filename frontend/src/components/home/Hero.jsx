@@ -40,14 +40,36 @@ const timelineEvents = [
 ]
 
 function Hero() {
+  const sectionOneRef = useRef(null)
   const sectionTwoRef = useRef(null)
+  const cowHasPlayedRef = useRef(false)
+  const cowElapsedRef = useRef(0)
+  const cowNextMilestoneRef = useRef(0)
   const vectorContainerRef = useRef(null)
   const vectorPathRef = useRef(null)
   const cowImageRef = useRef(null)
+  const [sectionOneVisible, setSectionOneVisible] = useState(false)
   const [sectionTwoVisible, setSectionTwoVisible] = useState(false)
   const [visibleMilestones, setVisibleMilestones] = useState([false, false, false, false, false])
   const [timelineMarkerPositions, setTimelineMarkerPositions] = useState([])
   const [journeyComplete, setJourneyComplete] = useState(false)
+
+  useEffect(() => {
+    const section = sectionOneRef.current
+    if (!section) return
+
+    if (!('IntersectionObserver' in window)) {
+      setSectionOneVisible(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      setSectionOneVisible(entry.isIntersecting)
+    }, { threshold: 0.1 })
+
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     const path = vectorPathRef.current
@@ -71,10 +93,7 @@ function Hero() {
 
     const mobile = window.matchMedia('(max-width: 1023px)').matches
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setSectionTwoVisible(true)
-        observer.unobserve(section)
-      }
+      setSectionTwoVisible(entry.isIntersecting)
     }, { threshold: mobile ? 0.35 : 0.15 })
 
     observer.observe(section)
@@ -100,50 +119,60 @@ function Hero() {
     const container = vectorContainerRef.current
     const path = vectorPathRef.current
     const image = cowImageRef.current
-    if (!sectionTwoVisible || !container || !path || !image) return
+    if (!sectionTwoVisible || cowHasPlayedRef.current || !container || !path || !image) return
     if (window.matchMedia('(max-width: 1023px)').matches) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      cowHasPlayedRef.current = true
       setVisibleMilestones([true, true, true, true, true])
       return
     }
 
-    const duration = 7000
+    const duration = 4000
     const pathLength = path.getTotalLength()
+    const scaleX = container.clientWidth / 1536
     const milestones = [0.03, 0.25, 0.5, 0.75, 1]
     let animationFrame
     let startedAt
-    let nextMilestone = 0
 
     const animateCow = (timestamp) => {
       if (startedAt === undefined) startedAt = timestamp
-      const progress = Math.min((timestamp - startedAt) / duration, 1)
+      const progress = Math.min((cowElapsedRef.current + timestamp - startedAt) / duration, 1)
       const point = path.getPointAtLength(pathLength * progress)
-      const scaleX = container.clientWidth / 1536
 
       image.style.left = `${point.x * scaleX - 60}px`
       image.style.top = `${point.y - 60}px`
 
-      while (nextMilestone < milestones.length && progress >= milestones[nextMilestone]) {
-        const milestoneIndex = nextMilestone
-        nextMilestone += 1
+      while (cowNextMilestoneRef.current < milestones.length && progress >= milestones[cowNextMilestoneRef.current]) {
+        const milestoneIndex = cowNextMilestoneRef.current
+        cowNextMilestoneRef.current += 1
         setVisibleMilestones((current) => current.map((visible, index) => index === milestoneIndex || visible))
       }
 
-      if (progress === 1) setJourneyComplete(true)
+      if (progress === 1) {
+        cowElapsedRef.current = duration
+        cowHasPlayedRef.current = true
+        setJourneyComplete(true)
+      }
 
       if (progress < 1) animationFrame = window.requestAnimationFrame(animateCow)
     }
 
     animationFrame = window.requestAnimationFrame(animateCow)
-    return () => window.cancelAnimationFrame(animationFrame)
+    return () => {
+      window.cancelAnimationFrame(animationFrame)
+      if (startedAt !== undefined && !cowHasPlayedRef.current) {
+        cowElapsedRef.current = Math.min(duration, cowElapsedRef.current + performance.now() - startedAt)
+      }
+    }
   }, [sectionTwoVisible])
 
   return (
-    <div id="inicio" className="hero-appearance w-full overflow-x-clip bg-[#FFF8E9] lg:min-h-[1427px]">
+    <div id="inicio" className="w-full overflow-x-clip bg-[#FFF8E9] lg:min-h-[1427px]">
       <section
         id="hero-section-1"
+        ref={sectionOneRef}
         aria-label="Presentación"
-        className="relative z-10 flex min-h-[400px] w-full flex-col items-stretch overflow-hidden bg-[#FFF8E9] px-6 py-9 sm:min-h-[440px] sm:px-10 lg:block lg:h-[527px] lg:min-h-0 lg:overflow-visible lg:p-0"
+        className={`hero-appearance ${sectionOneVisible ? 'is-visible' : ''} relative z-10 flex min-h-[400px] w-full flex-col items-stretch overflow-hidden bg-[#FFF8E9] px-6 py-9 sm:min-h-[440px] sm:px-10 lg:block lg:h-[527px] lg:min-h-0 lg:overflow-visible lg:p-0`}
       >
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden lg:block">
           <img

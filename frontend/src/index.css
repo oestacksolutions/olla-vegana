@@ -36,7 +36,7 @@ body {
 @keyframes hero-appear {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(22px);
   }
 
   to {
@@ -46,7 +46,11 @@ body {
 }
 
 .hero-appearance {
-  animation: hero-appear 700ms ease-out both;
+  opacity: 0;
+}
+
+.hero-appearance.is-visible {
+  animation: hero-appear 900ms ease-out both;
 }
 
 @keyframes hero-title-slide-in {
@@ -137,9 +141,33 @@ body {
   animation: hero-lilac-float 5s ease-in-out infinite alternate;
 }
 
+.donations-from-left,
+.donations-from-right {
+  position: relative;
+  opacity: 0;
+  filter: blur(3px);
+  transition: left 1100ms cubic-bezier(0.22, 1, 0.36, 1), opacity 1000ms ease-out, filter 1000ms ease-out;
+}
+
+.donations-from-left {
+  left: -72px;
+}
+
+.donations-from-right {
+  left: 72px;
+}
+
+.donations-from-left.is-visible,
+.donations-from-right.is-visible {
+  left: 0;
+  opacity: 1;
+  filter: blur(0);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-appearance {
     animation: none;
+    opacity: 1;
   }
 
   .hero-title-slide-in {
@@ -164,5 +192,13 @@ body {
 
   .hero-lilac-responsive {
     animation: none;
+  }
+
+  .donations-from-left,
+  .donations-from-right {
+    left: 0;
+    opacity: 1;
+    filter: none;
+    transition: none;
   }
 }

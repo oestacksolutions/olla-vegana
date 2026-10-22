@@ -1,7 +1,7 @@
 import Navbar from './components/layout/Navbar'
 import Hero from './components/home/Hero'
-import Timeline from './components/home/Timeline'
 import MissionVision from './components/home/MissionVision'
+import Donaciones from './components/home/Donaciones'
 import Store from './components/home/Store'
 import MapSection from './components/home/MapSection'
 import Campaigns from './components/home/Campaigns'
@@ -13,8 +13,8 @@ function App() {
       <Navbar />
       <main>
         <Hero />
-        <Timeline />
         <MissionVision />
+        <Donaciones />
         <Store />
         <MapSection />
         <Campaigns />
