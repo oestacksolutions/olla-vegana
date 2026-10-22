@@ -50,7 +50,7 @@ function MissionVision() {
     <section
       ref={sectionRef}
       id="propuesta"
-      className="bg-white px-6 py-16 sm:px-10 lg:px-12 lg:py-[72px]"
+      className="bg-[#FFF8E9] px-6 py-16 sm:px-10 lg:px-12 lg:py-[72px]"
     >
       <div className="mx-auto max-w-[936px]">
         <div className="grid items-start gap-10 lg:grid-cols-[1fr_1.1fr] lg:gap-[72px]">

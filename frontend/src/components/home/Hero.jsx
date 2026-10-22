@@ -253,6 +253,7 @@ function Hero() {
             fill="#617D48"
             fillOpacity="0.5"
           />
+          <path d="M0 635 C60 635 120 650 180 650 C280 650 360 620 460 620 C560 620 640 650 740 650 C840 650 920 620 1020 620 C1120 620 1200 650 1300 650 C1360 650 1400 635 1440 635 L1440 748 L0 748 Z" fill="white" />
         </svg>
         <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full lg:hidden" viewBox="0 0 1440 1250" preserveAspectRatio="none">
           <path
@@ -260,6 +261,7 @@ function Hero() {
             fill="#617D48"
             fillOpacity="0.5"
           />
+          <path d="M0 1198 C120 1198 120 1188 240 1188 C360 1188 360 1198 480 1198 C600 1198 600 1188 720 1188 C840 1188 840 1198 960 1198 C1080 1198 1080 1188 1200 1188 C1320 1188 1320 1198 1440 1198 L1440 1250 L0 1250 Z" fill="white" />
         </svg>
         <div
           aria-hidden="true"
