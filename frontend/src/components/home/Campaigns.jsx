@@ -25,7 +25,7 @@ function Campaigns() {
         src={flores}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute right-[-10px] top-[58%] z-0 hidden w-[210px] -translate-y-1/2 object-contain opacity-50 sm:block lg:right-[10px] lg:w-[260px] xl:right-[40px] xl:w-[290px]"
+        className="pointer-events-none absolute right-[-80px] top-[66%] z-0 hidden w-[210px] -translate-y-1/2 -rotate-12 object-contain opacity-50 lg:block lg:right-[-30px] lg:w-[260px] xl:right-[-65px] xl:w-[335px]"
       />
 
       {/* CONTENIDO PRINCIPAL CENTRADO */}
@@ -142,6 +142,8 @@ function Campaigns() {
 }
 
 export default Campaigns
+
+
 
 
 
