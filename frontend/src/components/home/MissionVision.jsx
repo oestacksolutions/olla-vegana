@@ -34,11 +34,11 @@ function MissionVision() {
     >
       <div className="mx-auto max-w-[936px]">
         <div className="grid items-start gap-10 lg:grid-cols-[1fr_1.1fr] lg:gap-[72px]">
-          <div className="max-w-[279px]">
+          <div className="w-[279px] max-w-[279px] lg:ml-[60px]">
             <p className="font-scripter text-[32px] leading-[1.05] text-[#466729]">
               QUIENES SOMOS
             </p>
-            <h2 className="mt-3 font-scripter text-[60px] leading-[0.99] tracking-[-0.02em] text-black/80">
+            <h2 className="mt-3 font-scripter text-[60px] leading-[1.2] tracking-[-0.02em] text-black/80">
               HACIA
               <br />
               DÓNDE
@@ -47,7 +47,7 @@ function MissionVision() {
             </h2>
           </div>
 
-          <div className="flex max-w-[488px] flex-col items-start pt-7 lg:pt-[116px]">
+          <div className="flex max-w-[388px] flex-col items-start pt-7 lg:pt-[20px]">
             <p className="font-sans text-base leading-[1.25] text-black">
               Somos una red de voluntarios impulsada por la empatía y la convicción de que en un mundo más justo es posible. Nos unimos para brindar asistencia a quienes más lo necesitan, acercando platos nutritivos libres de crueldad y promoviendo el paso a paso una comunidad basada en el respeto y la solidaridad sustentable.
             </p>
