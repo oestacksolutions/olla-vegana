@@ -1,7 +1,8 @@
-import flores from '../../assets/brand/svgMagui/flores.png'
+import ollaflor from '../../assets/brand/svgMagui/olla-flor-titulo.png'
 import instagramIcon from '../../assets/brand/svgMagui/instagram-icon.png'
 import mailIcon from '../../assets/brand/svgMagui/mail-icon.png'
 import wspIcon from '../../assets/brand/svgMagui/wsp-icon.png'
+
 
 const footerLinks = [
   { label: 'Donaciones', href: '#dona' },
@@ -18,7 +19,7 @@ function Footer() {
         style={{ left: '-119.5px', top: '50%', transform: 'translateY(-50%)' }}
       >
         <img
-          src={flores}
+          src={ollaflor}
           alt=""
           aria-hidden="true"
           className="footer-flowers absolute z-10 h-[150px] w-[150px] object-contain"
