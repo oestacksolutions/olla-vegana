@@ -1,11 +1,83 @@
+import { useEffect, useRef, useState } from 'react'
 import garabatoLila from '../../assets/brand/svgMagui/garabato-lila.svg'
 import ondasLila from '../../assets/brand/herosvg/ondas-lila.svg'
 import circuloNaranja from '../../assets/brand/svgMagui/circulo-naranja.svg'
+import cara from '../../assets/brand/svgMagui/cara.png'
 import BtnAction from '../disenio/btn-action'
+import TimelineMilestone from './TimelineMilestone'
 
 function Hero() {
+  const sectionTwoRef = useRef(null)
+  const vectorContainerRef = useRef(null)
+  const vectorPathRef = useRef(null)
+  const cowImageRef = useRef(null)
+  const [sectionTwoVisible, setSectionTwoVisible] = useState(false)
+  const [visibleMilestones, setVisibleMilestones] = useState([false, false, false, false, false])
+  const [journeyComplete, setJourneyComplete] = useState(false)
+
+  useEffect(() => {
+    const section = sectionTwoRef.current
+    if (!section) return
+
+    if (!('IntersectionObserver' in window)) {
+      setSectionTwoVisible(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setSectionTwoVisible(true)
+        observer.unobserve(section)
+      }
+    }, { threshold: 0.15 })
+
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const container = vectorContainerRef.current
+    const path = vectorPathRef.current
+    const image = cowImageRef.current
+    if (!sectionTwoVisible || !container || !path || !image) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setVisibleMilestones([true, true, true, true, true])
+      return
+    }
+
+    const duration = 7000
+    const pathLength = path.getTotalLength()
+    const milestones = [0.03, 0.25, 0.5, 0.75, 1]
+    let animationFrame
+    let startedAt
+    let nextMilestone = 0
+
+    const animateCow = (timestamp) => {
+      if (startedAt === undefined) startedAt = timestamp
+      const progress = Math.min((timestamp - startedAt) / duration, 1)
+      const point = path.getPointAtLength(pathLength * progress)
+      const scaleX = container.clientWidth / 1536
+
+      image.style.left = `${point.x * scaleX - 60}px`
+      image.style.top = `${point.y - 60}px`
+
+      while (nextMilestone < milestones.length && progress >= milestones[nextMilestone]) {
+        const milestoneIndex = nextMilestone
+        nextMilestone += 1
+        setVisibleMilestones((current) => current.map((visible, index) => index === milestoneIndex || visible))
+      }
+
+      if (progress === 1) setJourneyComplete(true)
+
+      if (progress < 1) animationFrame = window.requestAnimationFrame(animateCow)
+    }
+
+    animationFrame = window.requestAnimationFrame(animateCow)
+    return () => window.cancelAnimationFrame(animationFrame)
+  }, [sectionTwoVisible])
+
   return (
-    <div id="inicio" className="hero-appearance w-full overflow-x-clip bg-[#FFF8E9] lg:h-[1275px]">
+    <div id="inicio" className="hero-appearance w-full overflow-x-clip bg-[#FFF8E9] lg:min-h-[1427px]">
       <section
         id="hero-section-1"
         aria-label="Presentación"
@@ -73,9 +145,95 @@ function Hero() {
       </section>
       <section
         id="hero-section-2"
+        ref={sectionTwoRef}
         aria-label="Contenido destacado"
-        className="min-h-[360px] w-full bg-[#FFF8E9] lg:h-[748px] lg:min-h-0"
-      />
+        className="relative min-h-[750px] w-full overflow-x-clip overflow-y-visible bg-[#FFF8E9] lg:h-[900px] lg:min-h-0"
+      >
+        <h2 className={`hero-title-slide-in absolute left-1/2 top-[38px] z-10 -translate-x-1/2 whitespace-nowrap font-scripter text-[28px] font-normal leading-none text-[#F13107] lg:left-[239px] lg:top-[96px] lg:translate-x-0 lg:text-[32px] ${sectionTwoVisible ? 'is-visible' : ''}`}>
+          Nuestro camino
+        </h2>
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 h-full w-full"
+          viewBox="0 0 1440 748"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M0 155 C60 155 120 175 180 175 C280 175 360 140 460 140 C560 140 640 175 740 175 C840 175 920 140 1020 140 C1120 140 1200 175 1300 175 C1360 175 1400 165 1440 155 L1440 635 C1400 635 1360 650 1300 650 C1200 650 1120 620 1020 620 C920 620 840 650 740 650 C640 650 560 620 460 620 C360 620 280 650 180 650 C120 650 60 635 0 635 Z"
+            fill="#617D48"
+            fillOpacity="0.5"
+          />
+        </svg>
+        <div
+          aria-hidden="true"
+          ref={vectorContainerRef}
+          className="pointer-events-none absolute left-1/2 top-[calc(50%+18px)] z-[1] h-[90px] min-w-[240px] w-[calc(100%_-_560px)] max-w-[1536px] -translate-x-1/2 -translate-y-1/2"
+        >
+          <svg
+            viewBox="0 0 1536 90"
+            aria-hidden="true"
+            preserveAspectRatio="none"
+            className="absolute inset-0 h-full w-full"
+          >
+            <path
+              ref={vectorPathRef}
+              d="M 0 4 C 110 3, 175 45, 290 51 C 430 60, 540 45, 625 25 C 730 2, 830 12, 925 48 C 1015 84, 1090 84, 1205 82 C 1320 82, 1435 78, 1536 77"
+              fill="none"
+              stroke="#466729"
+              strokeWidth="7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity="0.9"
+            />
+          </svg>
+          <span className="absolute left-[25%] top-[53.6px] h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#466729] bg-[#466729]" />
+          <span className="absolute left-[50%] top-[13.6px] h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#466729] bg-[#466729]" />
+          <span className="absolute left-[74.74%] top-[82.7px] h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#466729] bg-[#466729]" />
+          <span className={`timeline-arrival absolute left-full top-[77px] h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#466729] bg-[#466729] ${journeyComplete ? 'is-complete' : ''}`} />
+          <img
+            src={cara}
+            alt=""
+            ref={cowImageRef}
+            className="absolute left-[-60px] top-[-56px] h-[120px] w-[120px] object-contain"
+          />
+          <span className="absolute left-0 top-[4px] z-10 h-[15px] w-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#466729] bg-[#466729]" />
+          <TimelineMilestone
+            date="Julio 2019-"
+            title="Creación"
+            description={'Nos separamos de “Healt\nSave” y nos unimos\ncomo “Olla Vegana” en\nMorón como punto\ninicial'}
+            visible={visibleMilestones[0]}
+            className="absolute left-[-40px] top-[45px] z-10"
+          />
+          <TimelineMilestone
+            date="Octubre 2022-"
+            title="Ramos Mejía"
+            description={'Se abre un nuevo punto\nen Ramos Mejia,\nsumandose al ya\nexistente en Morón'}
+            visible={visibleMilestones[1]}
+            className="absolute left-[30%] top-[-145px] z-10 -translate-x-1/2"
+          />
+          <TimelineMilestone
+            date="Marzo 2024-"
+            title="Moreno"
+            description={'Se suma a Morón y\nRamos Mejia, un nuevo\npunto en la localidad de\nMoreno'}
+            visible={visibleMilestones[2]}
+            className="absolute left-[55%] top-[55px] z-10 -translate-x-1/2"
+          />
+          <TimelineMilestone
+            date="Mayo 2024-"
+            title="Reestructuración"
+            description={'Se agrando el grupo de\norganizadores,\ndiversificamos voces.\nEsta transformación marcó\nel inicio de una etapa más\nsólida y sostenible.'}
+            visible={visibleMilestones[3]}
+            className="absolute left-[80%] top-[-135px] z-10 -translate-x-1/2"
+          />
+          <TimelineMilestone
+            date="Septiembre 2025-"
+            title="Rebranding"
+            description={'Renovamos nuestra\nimagen para fortalecer\nnuestro mensaje solidario,\nampliar el alcance\ncomunitario y comunicar\ncon más claridad'}
+            visible={visibleMilestones[4]}
+            className="absolute left-full top-[119px] z-10 translate-x-[-90px]"
+          />
+        </div>
+      </section>
     </div>
   )
 }

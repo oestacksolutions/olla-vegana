@@ -49,6 +49,69 @@ body {
   animation: hero-appear 700ms ease-out both;
 }
 
+@keyframes hero-title-slide-in {
+  from {
+    opacity: 0;
+    translate: -18px 0;
+  }
+
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+.hero-title-slide-in {
+  opacity: 0;
+}
+
+.hero-title-slide-in.is-visible {
+  animation: hero-title-slide-in 800ms ease-out 120ms both;
+}
+
+.timeline-milestone-reveal {
+  opacity: 0;
+  visibility: hidden;
+  translate: 0 10px;
+  transition: opacity 650ms ease, translate 650ms ease, visibility 650ms ease;
+}
+
+.timeline-milestone-reveal.is-visible {
+  opacity: 1;
+  visibility: visible;
+  translate: 0 0;
+}
+
+@keyframes timeline-arrival-sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(2.7);
+  }
+}
+
+.timeline-arrival::after {
+  position: absolute;
+  inset: -5px;
+  border: 2px solid #AF71DD;
+  border-radius: 9999px;
+  box-shadow: 0 0 10px #AF71DD;
+  content: '';
+  opacity: 0;
+}
+
+.timeline-arrival.is-complete::after {
+  animation: timeline-arrival-sparkle 900ms ease-out 2;
+}
+
 @keyframes hero-lilac-float {
   from {
     transform: translateY(0);
@@ -65,6 +128,20 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .hero-appearance {
+    animation: none;
+  }
+
+  .hero-title-slide-in {
+    animation: none;
+    opacity: 1;
+  }
+
+  .timeline-milestone-reveal {
+    transition: none;
+    translate: 0 0;
+  }
+
+  .timeline-arrival.is-complete::after {
     animation: none;
   }
 
