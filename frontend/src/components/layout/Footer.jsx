@@ -1,4 +1,4 @@
-import ollaflor from '../../assets/brand/svgMagui/olla-flor-titulo.png'
+﻿import ollaflor from '../../assets/brand/svgMagui/olla-flor-titulo.png'
 import instagramIcon from '../../assets/brand/svgMagui/instagram-icon.png'
 import mailIcon from '../../assets/brand/svgMagui/mail-icon.png'
 import wspIcon from '../../assets/brand/svgMagui/wsp-icon.png'
@@ -15,15 +15,14 @@ function Footer() {
   return (
     <footer className="relative h-auto min-h-[218px] w-full overflow-hidden bg-[#AF71DD] sm:h-[218px]">
       <div
-        className="absolute z-0 h-[271px] w-[279px] rounded-full bg-[#FEEFEC]"
-        style={{ left: '-119.5px', top: '50%', transform: 'translateY(-50%)' }}
+        className="footer-circle absolute z-0 rounded-full bg-[#FEEFEC]"
+        style={{ top: '50%', transform: 'translateY(-50%)' }}
       >
         <img
           src={ollaflor}
           alt=""
           aria-hidden="true"
-          className="footer-flowers absolute z-10 h-[190px] w-[150px] object-contain"
-          style={{ top: '50%', transform: 'translateY(-50%)' }}
+          className="footer-flowers absolute z-10 h-[265px] w-[205px] object-contain lg:h-[280px] lg:w-[225px]"
         />
       </div>
       <div className="relative z-10 mx-auto grid w-full max-w-[1100px] grid-cols-1 items-center gap-y-6 py-8 pl-[170px] pr-6 sm:h-full sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.25fr)] sm:gap-x-6 sm:gap-y-0 sm:py-0 sm:pl-[190px] sm:pr-10 lg:gap-x-10">
@@ -76,3 +75,11 @@ function Footer() {
 }
 
 export default Footer
+
+
+
+
+
+
+
+
