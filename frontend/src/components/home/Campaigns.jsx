@@ -43,37 +43,32 @@ function Campaigns() {
           </p>
         </div>
 
-        {/* Títulos independientes con alineación asimétrica idéntica al diseño */}
-        <div className="mt-8 grid w-full max-w-[700px] grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
-          {campaigns.map((campaign, index) => {
-            // Posición 0 y 1 a la derecha de su columna, 2 y 3 a la izquierda
-            const alignClass = index < 2 ? 'lg:justify-self-end' : 'lg:justify-self-start'
-            const paddingExtra = index === 0 ? 'pr-4 pl-2' : index === 3 ? 'pl-4 pr-2' : 'px-3'
-
-            return (
-              <h3
-                key={campaign.title}
-                className={`flex h-[36px] w-fit min-w-[130px] items-center justify-center gap-2 rounded-full font-scripter text-[11px] font-normal uppercase tracking-wide text-white shadow-sm transition-all ${campaign.color} ${alignClass} ${paddingExtra} justify-self-center`}
-              >
-                <img
-                  src={campaign.icon}
-                  alt=""
-                  aria-hidden="true"
-                  className="h-4 w-4 object-contain brightness-0 invert"
-                />
-                <span>{campaign.title}</span>
+        <div className="mt-8 grid w-full max-w-[800px] grid-cols-1 gap-6 sm:grid-cols-2 lg:hidden">
+          {campaigns.map((campaign) => (
+            <article key={campaign.title} className="flex flex-col items-center gap-3">
+              <h3 className={`flex h-[36px] w-fit min-w-[130px] items-center justify-center gap-2 rounded-full px-3 font-scripter text-[11px] uppercase tracking-wide text-white ${campaign.color}`}>
+                <img src={campaign.icon} alt="" aria-hidden="true" className="h-4 w-4 object-contain brightness-0 invert" />
+                {campaign.title}
               </h3>
-            )
-          })}
+              <div className="flex h-[260px] w-full items-center justify-center rounded-[24px] bg-[#D9D9D9] px-4 text-center font-sans text-[11px] font-semibold uppercase text-[#555555]">
+                PUBLICACIÓN DE IG
+              </div>
+            </article>
+          ))}
         </div>
 
-        {/* Tarjetas independientes con mejor proporción y separación fina */}
-        <div className="mt-3 grid w-full max-w-[800px] grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
+        {/* Composición desktop: títulos y tarjetas en filas independientes */}
+        <div className="mt-8 hidden w-full max-w-[1077px] grid-cols-4 gap-[10px] lg:grid">
           {campaigns.map((campaign) => (
-            <div
-              key={campaign.title}
-              className="flex h-[260px] w-full items-center justify-center rounded-[24px] bg-[#D9D9D9] px-4 text-center font-sans text-[11px] font-semibold uppercase text-[#555555] shadow-xs sm:h-[300px] lg:h-[340px]"
-            >
+            <h3 key={campaign.title} className={`flex h-[36px] items-center justify-center gap-2 rounded-full px-3 font-scripter text-[11px] uppercase tracking-wide text-white ${campaign.color}`}>
+              <img src={campaign.icon} alt="" aria-hidden="true" className="h-4 w-4 object-contain brightness-0 invert" />
+              {campaign.title}
+            </h3>
+          ))}
+        </div>
+        <div className="mt-3 hidden w-full max-w-[1077px] grid-cols-4 gap-[10px] lg:grid">
+          {campaigns.map((campaign) => (
+            <div key={campaign.title} className="flex h-[314px] items-center justify-center rounded-[24px] bg-[#D9D9D9] px-4 text-center font-sans text-[11px] font-semibold uppercase text-[#555555]">
               PUBLICACIÓN DE IG
             </div>
           ))}
