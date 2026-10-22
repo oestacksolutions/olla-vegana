@@ -51,6 +51,36 @@ body {
   margin: 0;
 }
 
+.custom-map-marker {
+  background: transparent;
+  border: 0;
+}
+
+.map-location-pin {
+  position: relative;
+  display: block;
+  width: 58px;
+  height: 74px;
+}
+
+.map-location-pin > img:first-child {
+  position: absolute;
+  left: 16px;
+  top: 29px;
+  width: 24px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.map-location-art {
+  position: absolute;
+  left: 7px;
+  top: 0;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
 @keyframes hero-appear {
   from {
     opacity: 0;
