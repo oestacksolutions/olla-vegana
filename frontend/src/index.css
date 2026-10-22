@@ -16,6 +16,24 @@
   font-family: 'Poppins', sans-serif;
 }
 
+.footer-hover-link {
+  transition: color 180ms ease;
+}
+
+.footer-hover-link:hover {
+  color: rgba(241, 49, 7, 0.8);
+}
+
+.footer-flowers {
+  left: 107.5px;
+}
+
+@media (min-width: 640px) {
+  .footer-flowers {
+    left: 119.5px;
+  }
+}
+
 :root {
   font-family: 'scripter', sans-serif;
   color: #292621;
