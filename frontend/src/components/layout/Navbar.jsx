@@ -15,6 +15,7 @@ function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isNavVisible, setIsNavVisible] = useState(true)
   const previousScrollY = useRef(0)
+  const isDonationPage = window.location.pathname === '/donacion'
 
   useEffect(() => {
     const handleScroll = () => {
@@ -70,7 +71,7 @@ function Navbar() {
           {navigationLinks.map((link) => (
             <a
               key={link.href}
-              href={link.href}
+              href={isDonationPage ? `/${link.href}` : link.href}
               className="whitespace-nowrap font-poppins text-base font-semibold text-brand-ink/75 transition-colors hover:text-brand-orange 2xl:text-lg"
             >
               {link.label}
@@ -105,7 +106,7 @@ function Navbar() {
             {navigationLinks.map((link) => (
               <a
                 key={link.href}
-                href={link.href}
+                href={isDonationPage ? `/${link.href}` : link.href}
                 className="font-poppins rounded-xl px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-white/10"
                 onClick={closeMenu}
               >
@@ -128,8 +129,6 @@ function Navbar() {
 }
 
 export default Navbar
-
-
 
 
 
