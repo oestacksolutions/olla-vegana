@@ -83,28 +83,48 @@ body {
   border: 0;
 }
 
+.map-location-marker {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 40px;
+}
+
+.map-location-label {
+  display: flex;
+  position: absolute;
+  bottom: 44px;
+  left: 50%;
+  min-height: 22px;
+  align-items: center;
+  justify-content: center;
+  transform: translateX(-50%);
+  border-radius: 30px;
+  background: #617d48;
+  padding: 1px 9px;
+  color: white;
+  font-family: 'scripter', sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 .map-location-pin {
   position: relative;
   display: block;
-  width: 58px;
-  height: 74px;
-}
-
-.map-location-pin > img:first-child {
-  position: absolute;
-  left: 16px;
-  top: 29px;
-  width: 24px;
-  height: 42px;
-  object-fit: contain;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: rgb(97 125 72 / 80%);
 }
 
 .map-location-art {
   position: absolute;
-  left: 7px;
-  top: 0;
-  width: 44px;
-  height: 44px;
+  left: -28px;
+  top: -25px;
+  width: 88px;
+  height: 88px;
+  max-width: none;
   object-fit: contain;
 }
 

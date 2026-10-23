@@ -3,26 +3,28 @@ import { divIcon } from 'leaflet'
 import { MapContainer, Marker, Popup, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import mapPinIcon from '../../assets/brand/herosvg/map-icon.png'
-import ollaFlorIcon from '../../assets/brand/svgMagui/olla-flor-titulo.png'
+import caraIcon from '../../assets/brand/svgMagui/cara.png'
 import mapsIcon from '../../assets/brand/herosvg/maps.svg'
 import mapsTwoIcon from '../../assets/brand/herosvg/maps2.svg'
 import { distributionPoints } from '../../data/distributionPoints'
 
-const markerImages = {
-  moreno: ollaFlorIcon,
-  moron: ollaFlorIcon,
-  'ramos-mejia': ollaFlorIcon,
+const markerImageSize = 40
+const markerLabels = {
+  moreno: 'Moreno',
+  moron: 'Mor\u00f3n',
+  'ramos-mejia': 'Ramos Mejia',
 }
-
-const markerImageSize = 120
 const mapCenter = [-34.645, -58.68]
 
-function createMarkerIcon(image) {
+function createMarkerIcon(label) {
   return divIcon({
     className: 'custom-map-marker',
     html: `
-      <span class="map-location-pin" style="width: ${markerImageSize}px; height: ${markerImageSize}px;">
-        <img class="map-location-art" src="${image}" alt="" style="left: 0; top: 0; width: ${markerImageSize}px; height: ${markerImageSize}px;" />
+      <span class="map-location-marker">
+        <span class="map-location-label">${label}</span>
+        <span class="map-location-pin" style="width: ${markerImageSize}px; height: ${markerImageSize}px;">
+          <img class="map-location-art" src="${caraIcon}" alt="" />
+        </span>
       </span>
     `,
     iconSize: [markerImageSize, markerImageSize],
@@ -121,7 +123,7 @@ function DistributionMarker({ point }) {
   return (
     <Marker
       position={point.coordinates}
-      icon={createMarkerIcon(markerImages[point.id])}
+      icon={createMarkerIcon(markerLabels[point.id])}
       eventHandlers={{ click: focusMarker }}
     >
       <Tooltip direction="top" offset={[0, -34]}>{point.city}</Tooltip>
