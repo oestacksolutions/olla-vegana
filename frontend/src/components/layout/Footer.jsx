@@ -5,6 +5,7 @@ import wspIcon from '../../assets/brand/svgMagui/wsp-icon.png'
 
 
 const footerLinks = [
+  { label: 'Inicio', href: '/#inicio' },
   { label: 'Donaciones', href: '/#dona' },
   { label: 'Tienda', href: '/#tienda' },
   { label: 'Quienes somos', href: '/#propuesta' },
@@ -12,8 +13,6 @@ const footerLinks = [
 ]
 
 function Footer() {
-  const isDonationPage = window.location.pathname === '/donacion'
-
   return (
     <footer className="relative h-auto min-h-[218px] w-full overflow-hidden bg-[#AF71DD] sm:h-[218px]">
       <div
@@ -40,7 +39,7 @@ function Footer() {
           <ul className="mt-2 flex flex-col items-start gap-1 font-poppins text-[15px] font-light leading-5">
             {footerLinks.map(({ label, href }) => (
               <li key={href}>
-                <a className="footer-hover-link" href={isDonationPage ? `/${href}` : href}>
+                <a className="footer-hover-link" href={href}>
                   {label}
                 </a>
               </li>
@@ -77,7 +76,6 @@ function Footer() {
 }
 
 export default Footer
-
 
 
 

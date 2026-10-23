@@ -28,7 +28,7 @@ function Donaciones() {
       ref={sectionRef}
       id="dona"
       aria-label="Donaciones"
-      className="relative isolate min-h-[300px] w-full overflow-hidden bg-[#FFF8E9] px-6 py-8 sm:px-10 lg:min-h-[585px] lg:px-0 lg:py-[10px] xl:h-[585px]"
+      className="relative isolate min-h-[300px] w-full overflow-hidden bg-[#FFF8E9] px-6 py-8 text-center sm:px-10 lg:px-0 lg:py-[10px] lg:text-left xl:h-[585px]"
     >
       <img
         src={circuloNaranja}
@@ -38,8 +38,8 @@ function Donaciones() {
       />
       <div aria-hidden="true" className="pointer-events-none absolute left-[1030px] top-[-70px] z-0 hidden h-[513px] w-[518px] rounded-[50%] bg-[#AF71DD]/50 lg:block" />
       <div aria-hidden="true" className="pointer-events-none absolute left-[1112px] top-[310px] z-0 hidden h-[513px] w-[518px] rounded-[50%] bg-[#AF71DD]/50 lg:block" />
-      <div className="relative z-10 mx-auto flex w-full max-w-[1120px] flex-col items-center gap-8 text-left xl:min-h-[565px] xl:flex-row xl:items-center xl:justify-center xl:gap-[60px]">
-        <div className={`donations-from-left ${isVisible ? 'is-visible' : ''} flex w-full max-w-[460px] flex-col items-start text-left xl:w-[460px] xl:shrink-0 xl:translate-x-4`}>
+      <div className="relative z-10 mx-auto flex w-full max-w-[1120px] flex-col items-center gap-8 xl:min-h-[565px] xl:flex-row xl:items-center xl:justify-center xl:gap-[60px]">
+        <div className={`donations-from-left ${isVisible ? 'is-visible' : ''} flex w-full max-w-[460px] flex-col items-center text-center lg:items-start lg:text-left xl:w-[460px] xl:shrink-0 xl:translate-x-4`}>
           <h2 className="font-scripter text-[22px] font-normal leading-tight text-[#F13107] sm:text-[25px] lg:text-[28px]">
             ¿Construimos juntos esta <br></br>
             realidad?
@@ -54,7 +54,7 @@ function Donaciones() {
           </p>
         </div>
 
-        <div className={`donations-from-right ${isVisible ? 'is-visible' : ''} flex w-full max-w-[371px] flex-col items-start`}>
+        <div className={`donations-from-right ${isVisible ? 'is-visible' : ''} flex w-full max-w-[371px] flex-col items-center text-center lg:items-start lg:text-left`}>
           <div className="h-auto w-full font-poppins text-[16px] font-normal leading-6 text-black/80 sm:h-[264px]">
             <p className="mb-6">
               Pasamos de ser un grupo de vecinos a una<br className="hidden sm:block" /> organización con impacto regional. La<br className="hidden sm:block" /> eficiencia de nuestro equipo y la<br className="hidden sm:block" /> transparencia de nuestra gestión son nuestra<br className="hidden sm:block" /> garantía.
