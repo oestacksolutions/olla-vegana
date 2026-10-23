@@ -1,4 +1,5 @@
 ﻿import flores from '../../assets/brand/svgMagui/flores.png'
+import { useEffect, useRef, useState } from 'react'
 import instagramIcon from '../../assets/brand/svgMagui/instagram-icon.png'
 
 // Importación de los íconos para cada campaña
@@ -15,10 +16,31 @@ const campaigns = [
 ]
 
 function Campaigns() {
+  const sectionRef = useRef(null)
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+
+    if (!('IntersectionObserver' in window)) {
+      setIsVisible(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      setIsVisible(entry.isIntersecting)
+    }, { threshold: 0.1 })
+
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <section
+      ref={sectionRef}
       id="campanas"
-      className="relative w-full overflow-hidden bg-[#FFF8E9] px-6 py-16 sm:px-10 lg:min-h-[760px] lg:px-0 lg:py-16"
+      className={`store-appearance ${isVisible ? 'is-visible' : ''} relative w-full overflow-hidden bg-[#FFF8E9] px-6 py-16 sm:px-10 lg:min-h-[760px] lg:px-0 lg:py-16`}
     >
       {/* ILUSTRACIÓN DE FLORES (Alineada al costado de las tarjetas) */}
       <img

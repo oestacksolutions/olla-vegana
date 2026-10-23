@@ -37,6 +37,11 @@ function MissionVision() {
     const section = sectionRef.current
     if (!section) return
 
+    if (!('IntersectionObserver' in window)) {
+      setCardsVisible(true)
+      return
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => setCardsVisible(entry.isIntersecting),
       { threshold: 0.2 },
@@ -54,7 +59,7 @@ function MissionVision() {
     >
       <div className="mx-auto max-w-[936px]">
         <div className="grid justify-items-center gap-10 text-center lg:grid-cols-[1fr_1.1fr] lg:justify-items-start lg:gap-[72px] lg:text-left">
-          <div className="w-[279px] max-w-[279px] lg:ml-[60px]">
+          <div className={`donations-from-left ${cardsVisible ? 'is-visible' : ''} w-[279px] max-w-[279px] lg:ml-[60px]`}>
             <p className="font-scripter text-[32px] leading-[1.05] text-[#466729]">
               QUIENES SOMOS
             </p>
@@ -67,7 +72,7 @@ function MissionVision() {
             </h2>
           </div>
 
-          <div className="flex max-w-[388px] flex-col items-center pt-7 lg:items-start lg:pt-[20px]">
+          <div className={`donations-from-right ${cardsVisible ? 'is-visible' : ''} flex max-w-[388px] flex-col items-center pt-7 lg:items-start lg:pt-[20px]`}>
             <p className="font-sans text-base leading-[1.25] text-black">
               Somos una red de voluntarios impulsada por la empatía y la convicción de que en un mundo más justo es posible. Nos unimos para brindar asistencia a quienes más lo necesitan, acercando platos nutritivos libres de crueldad y promoviendo el paso a paso una comunidad basada en el respeto y la solidaridad sustentable.
             </p>

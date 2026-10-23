@@ -1,4 +1,5 @@
 ﻿import { useEffect } from 'react'
+import { useRef, useState } from 'react'
 import { divIcon } from 'leaflet'
 import { MapContainer, Marker, Popup, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -46,8 +47,32 @@ function FitDistributionPoints() {
 }
 
 function MapSection() {
+  const sectionRef = useRef(null)
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+
+    if (!('IntersectionObserver' in window)) {
+      setIsVisible(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      setIsVisible(entry.isIntersecting)
+    }, { threshold: 0.1 })
+
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <section id="puntos" className="relative overflow-hidden bg-[#FFF8E9] px-6 py-16 text-center sm:px-10 lg:min-h-[500px] lg:px-0 lg:py-0 lg:text-left">
+    <section
+      ref={sectionRef}
+      id="puntos"
+      className={`store-appearance ${isVisible ? 'is-visible' : ''} relative overflow-hidden bg-[#FFF8E9] px-6 py-16 text-center sm:px-10 lg:min-h-[500px] lg:px-0 lg:py-0 lg:text-left`}
+    >
       <img
         src={mapsIcon}
         alt=""

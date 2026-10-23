@@ -60,6 +60,7 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 76px;
+  overflow-x: clip;
 }
 
 @media (min-width: 640px) {
@@ -77,6 +78,7 @@ html {
 body {
   min-width: 320px;
   margin: 0;
+  overflow-x: clip;
 }
 .custom-map-marker {
   background: transparent;

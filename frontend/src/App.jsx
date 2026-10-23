@@ -35,11 +35,11 @@ function App() {
       <Navbar />
       <main>
         <Hero />
-        <MissionVision />
+        <Campaigns />
+        <MapSection />
         <Donaciones />
         <Store />
-        <MapSection />
-        <Campaigns />
+        <MissionVision />
       </main>
       <Footer />
     </>

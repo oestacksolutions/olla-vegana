@@ -75,8 +75,8 @@ function Navbar() {
     <>
       <div aria-hidden="true" className="h-[76px] sm:h-[88px] lg:h-[104px] xl:h-[155px]" />
       <header
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-          isNavVisible ? 'translate-y-0' : '-translate-y-full'
+        className={`fixed inset-x-0 top-0 z-50 translate-y-0 transition-all duration-300 ${
+          isNavVisible ? 'xl:translate-y-0' : 'xl:-translate-y-full'
         } ${
           isScrolled
             ? 'border-b border-white/20 bg-transparent backdrop-blur-md shadow-sm'
