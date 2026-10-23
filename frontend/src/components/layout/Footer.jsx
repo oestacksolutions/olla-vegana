@@ -6,10 +6,10 @@ import wspIcon from '../../assets/brand/svgMagui/wsp-icon.png'
 
 const footerLinks = [
   { label: 'Inicio', href: '/#inicio' },
-  { label: 'Donaciones', href: '/#dona' },
+  { label: 'Donde estamos', href: '/#puntos' },
   { label: 'Tienda', href: '/#tienda' },
   { label: 'Quienes somos', href: '/#propuesta' },
-  { label: 'Donde estamos', href: '/#puntos' },
+  { label: 'Donaciones', href: '/#dona' },
 ]
 
 function Footer() {
@@ -76,7 +76,6 @@ function Footer() {
 }
 
 export default Footer
-
 
 
 

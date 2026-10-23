@@ -24,10 +24,10 @@ const cafecitoPlans = [
 ]
 
 const debitPlans = [
-  'SOCIO COLABORADOR ($2.000/mes)',
-  'SOCIO PROTECTOR ($5.000/mes)',
-  'APADRINÁ 1 JORNADA ($10.000/mes)',
-  'ELEGÍ OTRO MONTO',
+  ['SOCIO COLABORADOR ($2.000/mes)', 'https://www.enlacevaaca.com'],
+  ['SOCIO PROTECTOR ($5.000/mes)', 'https://www.enlacevaaca.com'],
+  ['APADRINÁ 1 JORNADA ($10.000/mes)', 'https://www.enlacevaaca.com'],
+  ['ELEGÍ OTRO MONTO', 'https://www.enlacevaaca.com'],
 ]
 
 function DonationCard({ title, description, children, actionLabel, onAction }) {
@@ -129,6 +129,8 @@ function DonationPage() {
                 <BtnAction
                   key={index}
                   href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="!w-full !max-w-[280px] !px-3 !h-auto !min-h-[40px] !py-2 text-center !whitespace-normal text-[11px] sm:text-[12px] font-semibold bg-[#AF71DD] text-white hover:bg-[#AF71DD]/80 flex items-center justify-center !leading-tight transition-all"
                 >
                   {label}
@@ -139,14 +141,20 @@ function DonationPage() {
 
           {/* TARJETA 3 */}
           <DonationCard
-            title="POR DÉBITO AUTOMÁTICO"
+            title="DÉBITO AUTOMÁTICO"
             description={<>Adherite al débito automático mensual<br />con tu cuenta.</>}
           >
             <div className="donation-plan-list">
-              {debitPlans.map((label) => (
-                <button key={label} type="button" disabled className="donation-disabled-plan">
+              {debitPlans.map(([label, href]) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="donation-disabled-plan inline-flex items-center justify-center text-center no-underline"
+                >
                   {label}
-                </button>
+                </a>
               ))}
             </div>
           </DonationCard>

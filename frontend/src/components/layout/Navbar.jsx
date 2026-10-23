@@ -4,9 +4,9 @@ import BtnAction from '../disenio/btn-action'
 
 const navigationLinks = [
   { label: 'Inicio', href: '/#inicio' },
-  { label: '¿Quiénes Somos?', href: '/#propuesta' },
   { label: 'Dónde Estamos', href: '/#puntos' },
   { label: 'Tienda', href: '/#tienda' },
+  { label: '¿Quiénes Somos?', href: '/#propuesta' },
 ]
 
 function Navbar() {

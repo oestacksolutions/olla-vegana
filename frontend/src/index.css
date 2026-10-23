@@ -4,6 +4,14 @@
 @tailwind components;
 @tailwind utilities;
 
+#inicio,
+#puntos,
+#tienda,
+#propuesta,
+#dona {
+  scroll-margin-top: 110px;
+}
+
 @font-face {
   font-family: 'scripter';
   src: url('./assets/brand/font/Scripter-Regular.woff2') format('woff2');
@@ -481,21 +489,39 @@ body {
     height: auto;
     padding: 20px;
   }
-  .donation-card { width: 100%; }
+  .donation-card { width: 100%; min-width: 0; }
   .donation-divider { width: calc(100% - 40px); }
 }
 
 @media (max-width: 800px) {
-  .donation-page { padding-top: 45px; }
+  .donation-page { padding: 45px 12px 70px; }
+  .donation-page h1 { font-size: clamp(36px, 11vw, 52px); }
   .donation-cards {
     grid-template-columns: 1fr;
     justify-items: center;
     gap: 24px;
     margin-top: 42px;
-    padding-right: 10px;
-    padding-left: 10px;
+    width: 100%;
+    padding: 16px 8px;
   }
-  .donation-card { width: min(320px, 100%); margin: 0 auto; }
+  .donation-card {
+    width: min(100%, 360px);
+    height: auto;
+    min-height: 420px;
+    padding-bottom: 24px;
+  }
+  .donation-card h2 { margin-top: 24px; font-size: clamp(16px, 5vw, 20px); }
+  .donation-card-description {
+    width: calc(100% - 28px);
+    height: auto;
+    min-height: 34px;
+    font-size: 11px;
+  }
+  .bank-name { margin-top: 14px; font-size: 13px; line-height: 20px; }
+  .bank-alias { width: min(280px, calc(100% - 24px)); font-size: 15px; }
+  .donation-plan-list { gap: 12px; margin-top: 20px; padding: 0 12px; }
+  .donation-plan-list > * { max-width: 100%; }
+  .donation-disabled-plan { width: 100%; height: auto; min-height: 42px; padding: 8px 12px; line-height: 16px; }
   .donation-art { opacity: .35; }
 }
 
@@ -573,7 +599,6 @@ body {
     transition: none;
   }
 }
-
 
 
 

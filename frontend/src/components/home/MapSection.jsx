@@ -106,14 +106,17 @@ function MapSection() {
 
             return (
               <div key={point.id} className="flex min-h-[40px] items-center gap-[14px]">
-                <img
-                  src={pinIcon}
-                  alt=""
-                  aria-hidden="true"
-                  className="h-[24px] w-[24px] shrink-0 object-contain"
-                />
+                <a
+                  href={point.mapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Abrir ubicación de ${point.city} en Google Maps`}
+                  className="shrink-0"
+                >
+                  <img src={pinIcon} alt="" aria-hidden="true" className="h-[24px] w-[24px] object-contain" />
+                </a>
                 <BtnAction
-                  href={`https://www.google.com/maps/search/?api=1&query=${point.coordinates[0]},${point.coordinates[1]}`}
+                  href={point.mapsUrl}
                   target="_blank"
                   rel="noreferrer"
                   fluid
@@ -167,6 +170,8 @@ function DistributionMarker({ point }) {
         {point.city}
         <br />
         {point.schedule}
+        <br />
+        <a href={point.mapsUrl} target="_blank" rel="noreferrer">Abrir en Google Maps</a>
       </Popup>
     </Marker>
   )
