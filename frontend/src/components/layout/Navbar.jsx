@@ -4,10 +4,10 @@ import logoVaca from '../../assets/brand/svgMagui/logo_olla_vegana.png'
 import BtnAction from '../disenio/btn-action'
 
 const navigationLinks = [
-  { label: 'Inicio', href: '#inicio' },
-  { label: '¿Quiénes Somos?', href: '#propuesta' },
-  { label: 'Donde Estamos', href: '#puntos' },
-  { label: 'Tienda', href: '#tienda' },
+  { label: 'Inicio', href: '/#inicio' },
+  { label: '¿Quiénes Somos?', href: '/#propuesta' },
+  { label: 'Donde Estamos', href: '/#puntos' },
+  { label: 'Tienda', href: '/#tienda' },
 ]
 
 function Navbar() {
@@ -55,7 +55,7 @@ function Navbar() {
     >
       <div className="mx-auto flex h-[76px] min-h-0 max-w-7xl items-center justify-between px-4 sm:h-[88px] sm:px-6 lg:h-[104px] lg:px-8 xl:h-[155px] xl:px-10">
         <a
-          href="#inicio"
+          href="/#inicio"
           className="flex shrink-0 items-center text-brand-ink"
           aria-label="Olla Vegana, ir al inicio"
           onClick={closeMenu}
@@ -80,7 +80,7 @@ function Navbar() {
         </nav>
 
         <BtnAction
-          href={isDonationPage ? '#donacion' : '#dona'}
+          href="/#dona"
           className="hidden xl:inline-flex xl:mr-6"
         >
           Quiero Ayudar!
@@ -114,7 +114,7 @@ function Navbar() {
               </a>
             ))}
             <BtnAction
-              href={isDonationPage ? '#donacion' : '#dona'}
+              href="/#dona"
               className="mt-3 self-center"
               onClick={closeMenu}
             >
