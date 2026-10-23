@@ -72,7 +72,7 @@ function MissionVision() {
               Somos una red de voluntarios impulsada por la empatía y la convicción de que en un mundo más justo es posible. Nos unimos para brindar asistencia a quienes más lo necesitan, acercando platos nutritivos libres de crueldad y promoviendo el paso a paso una comunidad basada en el respeto y la solidaridad sustentable.
             </p>
             <BtnAction
-              href="#historia"
+              href="/donacion"
               width="164px"
               height="53px"
               className="mt-4 text-base font-semibold"

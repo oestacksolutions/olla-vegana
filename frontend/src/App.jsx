@@ -6,8 +6,13 @@ import Store from './components/home/Store'
 import MapSection from './components/home/MapSection'
 import Campaigns from './components/home/Campaigns'
 import Footer from './components/layout/Footer'
+import DonationPage from './components/pages/DonationPage'
 
 function App() {
+  if (window.location.pathname === '/donacion') {
+    return <DonationPage />
+  }
+
   return (
     <>
       <Navbar />
