@@ -301,7 +301,7 @@ body {
   gap: 40px;
   width: 1120px;
   height: 540px;
-  margin: 28px auto 0;
+  margin: 60px auto 0;
   padding: 30px 40px;
   background: rgba(117, 117, 117, .48);
   opacity: .65;
@@ -412,8 +412,16 @@ body {
 }
 
 @media (max-width: 800px) {
-  .donation-cards { grid-template-columns: 1fr; gap: 24px; }
-  .donation-card { width: 320px; max-width: 100%; margin: 0 auto; }
+  .donation-page { padding-top: 45px; }
+  .donation-cards {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 24px;
+    margin-top: 42px;
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+  .donation-card { width: min(320px, 100%); margin: 0 auto; }
   .donation-art { opacity: .35; }
 }
 
@@ -482,7 +490,6 @@ body {
     transition: none;
   }
 }
-
 
 
 
