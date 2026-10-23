@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Navbar from '../components/layout/Navbar'
 import Footer from '../components/layout/Footer'
+import HeroTimeline from '../components/home/HeroTimeline'
 import integrantes from '../assets/brand/svgMagui/integrantes.JPG'
 
 const teamRoles = [
@@ -115,6 +116,7 @@ function Nosotros() {
             className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[180px] bg-gradient-to-t from-[#FFF8E9]/45 via-[#FFF8E9]/25 to-transparent"
           />
         </div>
+        <HeroTimeline />
         <section
           aria-label="Contenido de Nosotros"
           className="relative isolate h-auto w-full overflow-hidden bg-[#FFF8E9] px-6 pb-8 sm:px-8"
