@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Check, Copy } from 'lucide-react'
 import Navbar from '../components/layout/Navbar'
 import Footer from '../components/layout/Footer'
 import BtnAction from '../components/disenio/btn-action'
@@ -17,7 +18,7 @@ const cafecitoPlans = [
   [
     <>
       ELEGÍ OTRO MONTO<br />/ TRANSFERENCIA
-    </>, 
+    </>,
     'https://cafecito.app/ollavegana'
   ],
 ]
@@ -96,29 +97,26 @@ function DonationPage() {
             title="TRANSFERENCIA BANCARIA"
             description="Doná el importe que quieras directamente en nuestra cuenta bancaria."
           >
-            <div className="flex items-center justify-center gap-2 bank-alias">
-              <span>Alias: olla.vegana.mp</span>
+            <div className="flex flex-col items-center">
+              <p className="bank-name">Nombre: Wanda Montes</p>
+              <p className="bank-name">CUIT/CUIL: **-*****216-**</p>
+              <p className="bank-name">Entidad: Mercado Pago</p>
+
               <button
                 type="button"
                 onClick={copyAlias}
                 title="Copiar alias"
                 aria-label="Copiar alias"
-                className="p-1.5 text-white hover:text-white/80 bg-white/10 hover:bg-white/20 active:scale-95 transition-all rounded-md focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="mt-4 flex items-center justify-center gap-2 bank-alias cursor-pointer transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50"
               >
+                <span>Alias: olla.vegana.mp</span>
                 {copied ? (
-                  <svg className="w-5 h-5 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-                  </svg>
+                  <Check className="h-5 w-5 text-green-300 shrink-0" />
                 ) : (
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
+                  <Copy className="h-5 w-5 text-white shrink-0" />
                 )}
               </button>
             </div>
-            <p className="bank-name">Nombre: Wanda Montes</p>
-            <p className="bank-name">CUIT/CUIL: **-*****216-**</p>
-            <p className="bank-name">Entidad: Mercado Pago</p>
           </DonationCard>
 
           {/* TARJETA 2 */}
@@ -128,9 +126,9 @@ function DonationPage() {
           >
             <div className="donation-plan-list flex flex-col items-center !w-full gap-2">
               {cafecitoPlans.map(([label, href], index) => (
-                <BtnAction 
-                  key={index} 
-                  href={href} 
+                <BtnAction
+                  key={index}
+                  href={href}
                   className="!w-full !max-w-[280px] !px-3 !h-auto !min-h-[40px] !py-2 text-center !whitespace-normal text-[11px] sm:text-[12px] font-semibold bg-[#AF71DD] text-white hover:bg-[#AF71DD]/80 flex items-center justify-center !leading-tight transition-all"
                 >
                   {label}
@@ -140,8 +138,8 @@ function DonationPage() {
           </DonationCard>
 
           {/* TARJETA 3 */}
-          <DonationCard 
-            title="POR DÉBITO AUTOMÁTICO" 
+          <DonationCard
+            title="POR DÉBITO AUTOMÁTICO"
             description={<>Adherite al débito automático mensual<br />con tu cuenta.</>}
           >
             <div className="donation-plan-list">
