@@ -79,7 +79,7 @@ function Navbar() {
           isNavVisible ? 'translate-y-0' : '-translate-y-full'
         } ${
           isScrolled
-            ? 'border-b border-black/10 bg-[#FFF8E9]/90 backdrop-blur-md shadow-sm'
+            ? 'border-b border-white/20 bg-transparent backdrop-blur-md shadow-sm'
             : 'bg-[#FFF8E9]'
         }`}
         aria-label="Navegación principal"
