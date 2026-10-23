@@ -31,10 +31,9 @@ const cards = [
 
 function MissionVision() {
   const sectionRef = useRef(null)
-  const cardsRef = useRef(null)
   const cardElementRefs = useRef([])
+  const cardAnimationsRef = useRef(new WeakMap())
   const [sectionVisible, setSectionVisible] = useState(false)
-  const [cardsVisible, setCardsVisible] = useState(false)
   const [iconAnimationRuns, setIconAnimationRuns] = useState(cards.map(() => 0))
 
   useEffect(() => {
@@ -43,7 +42,6 @@ function MissionVision() {
 
     if (!('IntersectionObserver' in window)) {
       setSectionVisible(true)
-      setCardsVisible(true)
       return
     }
 
@@ -57,28 +55,14 @@ function MissionVision() {
   }, [])
 
   useEffect(() => {
-    const cardsContainer = cardsRef.current
-    if (!cardsContainer) return
-
-    if (!('IntersectionObserver' in window)) {
-      setCardsVisible(true)
-      return
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => setCardsVisible(entry.isIntersecting),
-      { threshold: 0 },
-    )
-
-    observer.observe(cardsContainer)
-    return () => observer.disconnect()
-  }, [])
-
-  useEffect(() => {
     const cardElements = cardElementRefs.current.filter(Boolean)
     if (!cardElements.length) return
 
     if (!('IntersectionObserver' in window)) {
+      cardElements.forEach((card) => {
+        card.style.opacity = '1'
+        card.style.transform = 'none'
+      })
       if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         setIconAnimationRuns(cards.map(() => 1))
       }
@@ -90,32 +74,43 @@ function MissionVision() {
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
         if (reduceMotion) return
 
-        setIconAnimationRuns((current) => {
-          const next = [...current]
-          entries.forEach((entry) => {
-            if (!entry.isIntersecting) return
-            const index = cardElementRefs.current.indexOf(entry.target)
-            if (index !== -1) next[index] += 1
-          })
-          return next
-        })
-
         entries.forEach((entry) => {
           if (!entry.isIntersecting) return
-          entry.target.animate(
+
+          const card = entry.target
+          const index = cardElementRefs.current.indexOf(card)
+          if (index === -1) return
+
+          cardAnimationsRef.current.get(card)?.cancel()
+          const animation = card.animate(
             [
-              { opacity: 0.75, transform: 'translateY(18px)' },
+              { opacity: 0, transform: 'translateY(56px)' },
               { opacity: 1, transform: 'translateY(0)' },
             ],
-            { duration: 700, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' },
+            {
+              duration: 1250,
+              delay: index * 400,
+              easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+              fill: 'both',
+            },
           )
+          cardAnimationsRef.current.set(card, animation)
+          animation.onfinish = () => {
+            cardAnimationsRef.current.delete(card)
+            setIconAnimationRuns((current) => current.map((runs, cardIndex) => (
+              cardIndex === index ? runs + 1 : runs
+            )))
+          }
         })
       },
       { threshold: 0.15, rootMargin: '-10% 0px -10% 0px' },
     )
 
     cardElements.forEach((card) => observer.observe(card))
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+      cardElements.forEach((card) => cardAnimationsRef.current.get(card)?.cancel())
+    }
   }, [])
 
   return (
@@ -154,13 +149,12 @@ function MissionVision() {
           </div>
         </div>
 
-        <div ref={cardsRef} className="mt-16 grid justify-items-center gap-8 sm:grid-cols-2 lg:mt-[73px] lg:grid-cols-[repeat(3,276px)] lg:justify-between lg:gap-0">
+        <div className="mt-16 grid justify-items-center gap-8 sm:grid-cols-2 lg:mt-[73px] lg:grid-cols-[repeat(3,276px)] lg:justify-between lg:gap-0">
           {cards.map(({ title, description, displayDescription, values, color, icon }, index) => (
             <article
               key={title}
               ref={(element) => { cardElementRefs.current[index] = element }}
-              className={`mission-vision-card flex h-[433px] w-full max-w-[276px] flex-col items-center rounded-b-[999px] px-8 pt-[29px] text-center text-white transition-[opacity,transform] duration-[1400ms] ease-out motion-reduce:transition-none ${color} ${cardsVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0 motion-reduce:opacity-100'}`}
-              style={{ transitionDelay: cardsVisible ? `${index * 350}ms` : '0ms' }}
+              className={`mission-vision-card flex h-[433px] w-full max-w-[276px] translate-y-14 flex-col items-center rounded-b-[999px] px-8 pt-[29px] text-center text-white opacity-0 motion-reduce:translate-y-0 motion-reduce:opacity-100 ${color}`}
             >
               <img
                 key={`${title}-${iconAnimationRuns[index]}`}
