@@ -32,10 +32,10 @@ const cards = [
 function MissionVision() {
   const sectionRef = useRef(null)
   const cardsRef = useRef(null)
-  const finishedIconAnimationsRef = useRef(0)
+  const cardElementRefs = useRef([])
   const [sectionVisible, setSectionVisible] = useState(false)
   const [cardsVisible, setCardsVisible] = useState(false)
-  const [iconsAnimationActive, setIconsAnimationActive] = useState(false)
+  const [iconAnimationRuns, setIconAnimationRuns] = useState(cards.map(() => 0))
 
   useEffect(() => {
     const section = sectionRef.current
@@ -75,21 +75,48 @@ function MissionVision() {
   }, [])
 
   useEffect(() => {
-    if (!cardsVisible) {
-      setIconsAnimationActive(false)
+    const cardElements = cardElementRefs.current.filter(Boolean)
+    if (!cardElements.length) return
+
+    if (!('IntersectionObserver' in window)) {
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        setIconAnimationRuns(cards.map(() => 1))
+      }
       return
     }
 
-    finishedIconAnimationsRef.current = 0
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        if (reduceMotion) return
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    setIconsAnimationActive(true)
-  }, [cardsVisible])
+        setIconAnimationRuns((current) => {
+          const next = [...current]
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return
+            const index = cardElementRefs.current.indexOf(entry.target)
+            if (index !== -1) next[index] += 1
+          })
+          return next
+        })
 
-  const finishIconAnimation = () => {
-    finishedIconAnimationsRef.current += 1
-    if (finishedIconAnimationsRef.current === cards.length) setIconsAnimationActive(false)
-  }
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return
+          entry.target.animate(
+            [
+              { opacity: 0.75, transform: 'translateY(18px)' },
+              { opacity: 1, transform: 'translateY(0)' },
+            ],
+            { duration: 700, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' },
+          )
+        })
+      },
+      { threshold: 0.15, rootMargin: '-10% 0px -10% 0px' },
+    )
+
+    cardElements.forEach((card) => observer.observe(card))
+    return () => observer.disconnect()
+  }, [])
 
   return (
     <section
@@ -131,16 +158,16 @@ function MissionVision() {
           {cards.map(({ title, description, displayDescription, values, color, icon }, index) => (
             <article
               key={title}
+              ref={(element) => { cardElementRefs.current[index] = element }}
               className={`mission-vision-card flex h-[433px] w-full max-w-[276px] flex-col items-center rounded-b-[999px] px-8 pt-[29px] text-center text-white transition-[opacity,transform] duration-[1400ms] ease-out motion-reduce:transition-none ${color} ${cardsVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0 motion-reduce:opacity-100'}`}
               style={{ transitionDelay: cardsVisible ? `${index * 350}ms` : '0ms' }}
             >
               <img
+                key={`${title}-${iconAnimationRuns[index]}`}
                 src={icon}
                 alt=""
                 aria-hidden="true"
-                className={`mission-vision-icon h-16 w-16 ${iconsAnimationActive ? 'is-revealing' : ''}`}
-                style={{ '--icon-entry-delay': `${index * 350}ms` }}
-                onAnimationEnd={finishIconAnimation}
+                className={`mission-vision-icon h-16 w-16 ${iconAnimationRuns[index] > 0 ? 'is-revealing' : ''}`}
               />
               <h3 className="mt-2 font-scripter text-[36px] leading-[47px]">
                 {title}
