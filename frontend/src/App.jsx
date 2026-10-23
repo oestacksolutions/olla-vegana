@@ -9,6 +9,7 @@ import Campaigns from './components/home/Campaigns'
 import Footer from './components/layout/Footer'
 import Nosotros from './pages/nosotros'
 import DonationPage from './pages/DonationPage'
+import HomeTienda from './pages/tienda/HomeTienda'
 
 function App() {
   useEffect(() => {
@@ -28,6 +29,10 @@ function App() {
 
   if (window.location.pathname.replace(/\/$/, '') === '/donacion') {
     return <DonationPage />
+  }
+
+  if (window.location.pathname.replace(/\/$/, '') === '/tienda') {
+    return <HomeTienda />
   }
 
   return (
