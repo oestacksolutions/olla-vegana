@@ -63,7 +63,7 @@ function Donaciones() {
               No buscamos solo donaciones; buscamos<br className="hidden sm:block" /> aliados que crean en un mundo más justo y<br className="hidden sm:block" /> sin violencia. Ya sea con productos, logística<br className="hidden sm:block" /> o fondos, tu participación es la llave para<br className="hidden sm:block" /> que nuestra olla nunca deje de llenarse.
             </p>
           </div>
-          <BtnAction href="#dona" className="mt-[22px]">
+          <BtnAction href="/donacion" className="mt-[22px]">
             Quiero Donar
           </BtnAction>
         </div>

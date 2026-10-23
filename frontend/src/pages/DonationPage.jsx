@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import Navbar from '../layout/Navbar'
-import Footer from '../layout/Footer'
-import BtnAction from '../disenio/btn-action'
-import violeta1 from '../../assets/brand/donacion/violeta1.svg'
-import violeta2 from '../../assets/brand/donacion/violeta2.svg'
-import lineas from '../../assets/brand/donacion/lineas.svg'
-import flor from '../../assets/brand/donacion/flor.svg'
-import ondas from '../../assets/brand/donacion/ondas.svg'
-import circulo from '../../assets/brand/donacion/circulo.svg'
+import Navbar from '../components/layout/Navbar'
+import Footer from '../components/layout/Footer'
+import BtnAction from '../components/disenio/btn-action'
+import violeta1 from '../assets/brand/donacion/violeta1.svg'
+import violeta2 from '../assets/brand/donacion/violeta2.svg'
+import lineas from '../assets/brand/donacion/lineas.svg'
+import flor from '../assets/brand/donacion/flor.svg'
+import ondas from '../assets/brand/donacion/ondas.svg'
+import circulo from '../assets/brand/donacion/circulo.svg'
 
 const cafecitoPlans = [
   ['1 CAFECITO ($1.000)', '1000'],
