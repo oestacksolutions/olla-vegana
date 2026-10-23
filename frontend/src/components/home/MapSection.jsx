@@ -3,10 +3,10 @@ import { useRef, useState } from 'react'
 import { divIcon } from 'leaflet'
 import { MapContainer, Marker, Popup, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import mapPinIcon from '../../assets/brand/herosvg/map-icon.png'
+import cloudIcon from '../../assets/brand/herosvg/nube.svg'
+import pinIcon from '../../assets/brand/herosvg/pin.svg'
 import caraIcon from '../../assets/brand/svgMagui/cara.png'
-import mapsIcon from '../../assets/brand/herosvg/maps.svg'
-import mapsTwoIcon from '../../assets/brand/herosvg/maps2.svg'
+import BtnAction from '../disenio/btn-action'
 import { distributionPoints } from '../../data/distributionPoints'
 
 const markerImageSize = 40
@@ -16,6 +16,7 @@ const markerLabels = {
   'ramos-mejia': 'Ramos Mejia',
 }
 const mapCenter = [-34.645, -58.68]
+const orderedPointIds = ['moreno', 'moron', 'ramos-mejia']
 
 function createMarkerIcon(label) {
   return divIcon({
@@ -71,55 +72,63 @@ function MapSection() {
     <section
       ref={sectionRef}
       id="puntos"
-      className={`store-appearance ${isVisible ? 'is-visible' : ''} relative overflow-hidden bg-[#FFF8E9] px-6 py-16 text-center sm:px-10 lg:min-h-[500px] lg:px-0 lg:py-0 lg:text-left`}
+      className={`store-appearance ${isVisible ? 'is-visible' : ''} relative overflow-hidden bg-[#FFF8E9] px-6 py-12 sm:px-10 lg:min-h-[400px] lg:px-0 lg:py-0`}
     >
-      <img
-        src={mapsIcon}
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 right-0 z-0 hidden h-auto w-[726px] lg:block"
+      <div className="relative z-10 mx-auto flex w-full max-w-[900px] flex-col gap-8 lg:grid lg:min-h-[400px] lg:grid-cols-[500px_360px] lg:gap-[40px]">
+        <div className="relative flex w-full flex-col items-center lg:items-start">
+          <div className="relative h-[145px] w-full shrink-0">
+            <img
+              src={cloudIcon}
+              alt=""
+              aria-hidden="true"
+              className="pointer-events-none absolute left-1/2 top-[-8px] h-[138px] w-[420px] -translate-x-1/2 lg:left-[-8px] lg:translate-x-0"
+            />
 
+            <h2 className="absolute left-1/2 top-[61px] z-10 w-[420px] -translate-x-1/2 -translate-y-1/2 text-center font-scripter text-[36px] font-normal leading-none text-white lg:left-[-8px] lg:translate-x-0">
+              ¿DÓNDE ESTAMOS?
+            </h2>
+          </div>
 
-      />
-      <img
-        src={mapsTwoIcon}
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 z-0 hidden h-auto w-[667px] translate-y-10 lg:block"
- />
+          <div className="relative z-10 w-full text-center font-scripter text-[22px] leading-[1.15] text-[#F13107] lg:w-[390px] lg:text-left">
+            estamos presentes en tres puntos de Zona Oeste:
+          </div>
 
-      <div className="relative z-10 mx-auto flex min-h-[500px] w-full max-w-[1200px] flex-col items-center lg:block">
-        <div className="flex w-full flex-col items-center pt-1 lg:absolute lg:left-0 lg:top-[150.76px] lg:block lg:w-auto lg:p-0">
-          <h2 className="order-1 mt-0 max-w-[329px] font-scripter text-[42px] font-normal leading-[1.05] text-black/80 sm:text-[52px] lg:text-[60px]">
-            DÓNDE NOS
-            <br />
-            ENCONTRAMOS
-          </h2>
-          <p className="order-2 mt-4 max-w-[320px] font-sans text-base leading-[1.25] text-black/80 lg:mt-1">
-            Puntos estratégicos de alta densidad poblacional y vulnerabilidad social.
-          </p>
-          <p className="order-3 mt-8 font-scripter text-[28px] leading-[30px] text-[#F13107] lg:absolute lg:left-[409px] lg:top-[-45px] lg:mt-0 lg:whitespace-nowrap">
-            Huellas en zona oeste
-          </p>
+          <div className="relative z-10 mt-[16px] flex w-full max-w-[400px] flex-col gap-[14px]">
+          {orderedPointIds.map((pointId) => {
+            const point = distributionPoints.find(({ id }) => id === pointId)
+            if (!point) return null
 
-          <div className="order-4 mt-8 flex h-[192.28px] w-full max-w-[377px] flex-col justify-between gap-[10px] lg:absolute lg:left-[409px] lg:top-0 lg:mt-0">
-            {distributionPoints.map((point) => (
-              <div key={point.id} className="flex min-h-0 flex-1 items-center gap-[10px]">
-                <img src={mapPinIcon} alt="" aria-hidden="true" className="h-[42px] w-6 shrink-0 object-contain" />
-                <a
+            const buttonText = {
+              moreno: <>MORENO - Plaza Mariano Moreno<br />(Viernes 20 a 21hs)</>,
+              moron: <>MORÓN - Plaza La Roche<br />(Jueves 20 a 21hs)</>,
+              'ramos-mejia': <>RAMOS MEJIA - Plaza Sarmiento<br />(Martes 20 a 21hs)</>,
+            }[point.id]
+
+            return (
+              <div key={point.id} className="flex min-h-[40px] items-center gap-[14px]">
+                <img
+                  src={pinIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-[24px] w-[24px] shrink-0 object-contain"
+                />
+                <BtnAction
                   href={`https://www.google.com/maps/search/?api=1&query=${point.coordinates[0]},${point.coordinates[1]}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex h-full min-w-0 flex-1 items-center justify-center rounded-full bg-[#E87C55] px-3 text-center font-sans text-[15px] font-bold leading-[1.15] text-white transition-transform hover:scale-[1.02] sm:px-5"
+                  fluid
+                  fontSize="12px"
+                  className="min-h-[40px] min-w-0 flex-1 justify-center overflow-hidden px-[12px] text-center text-[11px] font-semibold leading-[15px] lg:h-[40px] lg:text-[12px] lg:leading-[18px]"
                 >
-                  {point.city.toUpperCase()} - {point.address.toUpperCase()} ({point.schedule.toUpperCase()})
-                </a>
+                  {buttonText}
+                </BtnAction>
               </div>
-            ))}
+            )
+          })}
           </div>
         </div>
 
-        <div className="mx-auto order-5 mt-12 aspect-[453/307] w-full max-w-[453px] overflow-hidden rounded-[14px] shadow-sm lg:absolute lg:right-0 lg:top-[120px] lg:mx-0 lg:mt-0 lg:aspect-[453/307] lg:h-auto lg:w-[clamp(300px,30vw,400px)]">
+        <div className="relative order-4 mt-8 aspect-[360/254] w-full max-w-[360px] self-start overflow-hidden rounded-[10px] shadow-sm lg:mt-[50px] lg:mx-0 lg:h-[310px] lg:w-[450px]">
           <MapContainer
             center={mapCenter}
             zoom={12}
@@ -164,11 +173,3 @@ function DistributionMarker({ point }) {
 }
 
 export default MapSection
-
-
-
-
-
-
-
-
