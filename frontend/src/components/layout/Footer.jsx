@@ -1,4 +1,4 @@
-﻿import ollaflor from '../../assets/brand/svgMagui/olla-flor-titulo.png'
+﻿import logoOllaVegana from '../../assets/brand/svgMagui/logo_olla_vegana.png'
 import instagramIcon from '../../assets/brand/svgMagui/instagram-icon.png'
 import mailIcon from '../../assets/brand/svgMagui/mail-icon.png'
 import wspIcon from '../../assets/brand/svgMagui/wsp-icon.png'
@@ -20,7 +20,7 @@ function Footer() {
         style={{ top: '50%', transform: 'translateY(-50%)' }}
       >
         <img
-          src={ollaflor}
+          src={logoOllaVegana}
           alt=""
           aria-hidden="true"
           className="footer-flowers absolute z-10 h-[265px] w-[205px] object-contain lg:h-[280px] lg:w-[225px]"
