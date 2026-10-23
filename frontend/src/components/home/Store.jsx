@@ -65,7 +65,9 @@ function Store() {
           Comprando en nuestra tienda no solo te llevás algo increíble, sino que también nos ayudás a que Olla Vegana siga creciendo.
         </p>
         <div className="mt-7">
-          <BtnAction>Ir a la tienda</BtnAction>
+          <BtnAction href="/tienda" target="_blank" rel="noopener noreferrer">
+            Ir a la tienda
+          </BtnAction>
         </div>
         <div className="relative mt-12 h-[310px] w-full max-w-[1000px] overflow-hidden sm:mt-14 sm:h-[340px]" aria-label="Productos de la tienda">
           {visibleItems.map(({ item, position }) => {
