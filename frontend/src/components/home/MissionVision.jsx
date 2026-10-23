@@ -31,11 +31,34 @@ const cards = [
 
 function MissionVision() {
   const sectionRef = useRef(null)
+  const cardsRef = useRef(null)
+  const finishedIconAnimationsRef = useRef(0)
+  const [sectionVisible, setSectionVisible] = useState(false)
   const [cardsVisible, setCardsVisible] = useState(false)
+  const [iconsAnimationActive, setIconsAnimationActive] = useState(false)
 
   useEffect(() => {
     const section = sectionRef.current
     if (!section) return
+
+    if (!('IntersectionObserver' in window)) {
+      setSectionVisible(true)
+      setCardsVisible(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setSectionVisible(entry.isIntersecting),
+      { threshold: 0.1 },
+    )
+
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const cardsContainer = cardsRef.current
+    if (!cardsContainer) return
 
     if (!('IntersectionObserver' in window)) {
       setCardsVisible(true)
@@ -44,12 +67,29 @@ function MissionVision() {
 
     const observer = new IntersectionObserver(
       ([entry]) => setCardsVisible(entry.isIntersecting),
-      { threshold: 0.2 },
+      { threshold: 0 },
     )
 
-    observer.observe(section)
+    observer.observe(cardsContainer)
     return () => observer.disconnect()
   }, [])
+
+  useEffect(() => {
+    if (!cardsVisible) {
+      setIconsAnimationActive(false)
+      return
+    }
+
+    finishedIconAnimationsRef.current = 0
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    setIconsAnimationActive(true)
+  }, [cardsVisible])
+
+  const finishIconAnimation = () => {
+    finishedIconAnimationsRef.current += 1
+    if (finishedIconAnimationsRef.current === cards.length) setIconsAnimationActive(false)
+  }
 
   return (
     <section
@@ -59,7 +99,7 @@ function MissionVision() {
     >
       <div className="mx-auto max-w-[936px]">
         <div className="grid justify-items-center gap-10 text-center lg:grid-cols-[1fr_1.1fr] lg:justify-items-start lg:gap-[72px] lg:text-left">
-          <div className={`donations-from-left ${cardsVisible ? 'is-visible' : ''} w-[279px] max-w-[279px] lg:ml-[60px]`}>
+          <div className={`donations-from-left ${sectionVisible ? 'is-visible' : ''} w-[279px] max-w-[279px] lg:ml-[60px]`}>
             <p className="font-scripter text-[32px] leading-[1.05] text-[#466729]">
               QUIENES SOMOS
             </p>
@@ -72,7 +112,7 @@ function MissionVision() {
             </h2>
           </div>
 
-          <div className={`donations-from-right ${cardsVisible ? 'is-visible' : ''} flex max-w-[388px] flex-col items-center pt-7 lg:items-start lg:pt-[20px]`}>
+          <div className={`donations-from-right ${sectionVisible ? 'is-visible' : ''} flex max-w-[388px] flex-col items-center pt-7 lg:items-start lg:pt-[20px]`}>
             <p className="font-sans text-base leading-[1.25] text-black">
               Somos una red de voluntarios impulsada por la empatía y la convicción de que en un mundo más justo es posible. Nos unimos para brindar asistencia a quienes más lo necesitan, acercando platos nutritivos libres de crueldad y promoviendo el paso a paso una comunidad basada en el respeto y la solidaridad sustentable.
             </p>
@@ -87,14 +127,21 @@ function MissionVision() {
           </div>
         </div>
 
-        <div className="mt-16 grid justify-items-center gap-8 sm:grid-cols-2 lg:mt-[73px] lg:grid-cols-[repeat(3,276px)] lg:justify-between lg:gap-0">
+        <div ref={cardsRef} className="mt-16 grid justify-items-center gap-8 sm:grid-cols-2 lg:mt-[73px] lg:grid-cols-[repeat(3,276px)] lg:justify-between lg:gap-0">
           {cards.map(({ title, description, displayDescription, values, color, icon }, index) => (
             <article
               key={title}
-              className={`flex h-[433px] w-full max-w-[276px] flex-col items-center rounded-b-[999px] px-8 pt-[29px] text-center text-white transition-[opacity,transform] duration-1000 ease-out motion-reduce:transition-none ${color} ${cardsVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0 motion-reduce:opacity-100'}`}
-              style={{ transitionDelay: cardsVisible ? `${index * 280}ms` : '0ms' }}
+              className={`mission-vision-card flex h-[433px] w-full max-w-[276px] flex-col items-center rounded-b-[999px] px-8 pt-[29px] text-center text-white transition-[opacity,transform] duration-[1400ms] ease-out motion-reduce:transition-none ${color} ${cardsVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0 motion-reduce:opacity-100'}`}
+              style={{ transitionDelay: cardsVisible ? `${index * 350}ms` : '0ms' }}
             >
-              <img src={icon} alt="" aria-hidden="true" className="h-16 w-16" />
+              <img
+                src={icon}
+                alt=""
+                aria-hidden="true"
+                className={`mission-vision-icon h-16 w-16 ${iconsAnimationActive ? 'is-revealing' : ''}`}
+                style={{ '--icon-entry-delay': `${index * 350}ms` }}
+                onAnimationEnd={finishIconAnimation}
+              />
               <h3 className="mt-2 font-scripter text-[36px] leading-[47px]">
                 {title}
               </h3>
