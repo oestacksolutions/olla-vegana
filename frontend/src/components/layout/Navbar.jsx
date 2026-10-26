@@ -117,7 +117,7 @@ function Navbar() {
           </nav>
 
           <BtnAction href="/donacion" className="hidden xl:inline-flex xl:mr-6">
-            Quiero Ayudar!
+            ¡Quiero donar!
           </BtnAction>
 
           {/* Botón Hamburguesa Animado (Mobile) */}
@@ -209,7 +209,7 @@ function Navbar() {
               style={{ transitionDelay: `${isMenuOpen ? 260 : 0}ms` }}
             >
               <BtnAction href="/donacion" onClick={closeMenu}>
-                ¡Quiero Ayudar!
+                ¡Quiero donar!
               </BtnAction>
             </li>
           </ul>

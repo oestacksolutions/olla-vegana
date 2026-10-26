@@ -7,12 +7,16 @@ import libroIcon from '../../assets/brand/svgMagui/libro.png'
 import manoIcon from '../../assets/brand/svgMagui/mano-icon.png'
 import arbolIcon from '../../assets/brand/svgMagui/arbol-icon.png'
 import regaloIcon from '../../assets/brand/svgMagui/regalo-icon.png'
+import kitsEscolaresImage from '../../assets/brand/svgMagui/kits-escolares.jpg'
+import campInviernoImage from '../../assets/brand/svgMagui/camp-invierno.jpg'
+import navidadSolidariaImage from '../../assets/brand/svgMagui/navidad-solidaria.jpg'
+import diaNinezImage from '../../assets/brand/svgMagui/dia-ninez.jpg'
 
 const campaigns = [
-  { title: 'VUELTA A CLASES', color: 'bg-[#AF71DD]/80', icon: libroIcon, href: 'https://www.instagram.com/p/DWIBQ-TDgyB/?hl=es' },
-  { title: 'CAMPAÑA DE INVIERNO', color: 'bg-[#686868]/80', icon: manoIcon, href: 'https://www.instagram.com/p/Da6Rx5WAjC8/?img_index=1' },
-  { title: 'NAVIDAD SOLIDARIA', color: 'bg-[#466729]/80', icon: arbolIcon },
-  { title: 'DÍA DE LA NIÑEZ', color: 'bg-[#F13107]/80', icon: regaloIcon },
+  { title: 'KITS ESCOLARES', color: 'bg-[#AF71DD]/80', icon: libroIcon, image: kitsEscolaresImage, href: 'https://www.instagram.com/reel/DWIBQ-TDgyB/' },
+  { title: 'CAMPAÑA DE INVIERNO', color: 'bg-[#686868]/80', icon: manoIcon, image: campInviernoImage, href: 'https://www.instagram.com/reel/DXfscmvukm6/' },
+  { title: 'NAVIDAD SOLIDARIA', color: 'bg-[#466729]/80', icon: arbolIcon, image: navidadSolidariaImage, href: 'https://www.instagram.com/p/DS0dvQuDslE/?hl=es' },
+  { title: 'DÍA DE LA NIÑEZ', color: 'bg-[#F13107]/80', icon: regaloIcon, image: diaNinezImage, href: 'https://www.instagram.com/reel/DayWIK_pXe9/' },
 ]
 
 function Campaigns() {
@@ -70,38 +74,20 @@ function Campaigns() {
         <div className="mt-8 grid w-full max-w-[800px] grid-cols-1 gap-6 sm:grid-cols-2 lg:hidden">
           {campaigns.map((campaign) => (
             <article key={campaign.title} className="flex flex-col items-center gap-3">
-              <h3 className={`flex h-[36px] w-fit min-w-[130px] items-center justify-center gap-2 rounded-full px-3 font-scripter text-[11px] uppercase tracking-wide text-white ${campaign.color}`}>
+              <a href={campaign.href} target="_blank" rel="noreferrer" className={`flex h-[36px] w-fit min-w-[130px] items-center justify-center gap-2 rounded-full px-3 font-scripter text-[11px] uppercase tracking-wide text-white ${campaign.color}`}>
                 <img src={campaign.icon} alt="" aria-hidden="true" className="h-4 w-4 object-contain brightness-0 invert" />
                 {campaign.title}
-              </h3>
-              <div className="group relative h-[260px] w-full overflow-hidden rounded-[24px] bg-[#D9D9D9] text-center font-sans text-[11px] font-semibold uppercase text-[#555555]">
-                {campaign.href ? (
-                  <iframe
-                    title={`Publicación de Instagram: ${campaign.title}`}
-                    src={`${campaign.href.split('?')[0]}embed/`}
-                    className="-translate-y-[70px] h-[720px] w-full border-0"
-                    scrolling="no"
-                    allowFullScreen
-                    loading="lazy"
-                  />
-                ) : (
-                  <span className="flex h-full items-center justify-center px-4">PUBLICACIÓN DE IG</span>
-                )}
-                {campaign.href && (
-                  <a
-                    href={campaign.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="absolute inset-x-0 bottom-0 z-10 flex h-[58px] items-end justify-between bg-[#FFF8E9]/95 px-3 pb-2 font-sans normal-case text-[#AF71DD]"
-                  >
-                    <span className="flex flex-col items-start text-left">
-                      <span className="text-[12px] font-semibold">@olla.vegana</span>
-                      <span className="text-[10px]">Ver en Instagram</span>
-                    </span>
-                    <img src={instagramIcon} alt="Instagram" className="mb-1 h-5 w-5 object-contain" />
-                  </a>
-                )}
-              </div>
+              </a>
+              <a href={campaign.href} target="_blank" rel="noreferrer" aria-label={`Ver campaña ${campaign.title} en Instagram`} className="group relative block h-[260px] w-full overflow-hidden rounded-[24px] bg-[#D9D9D9]">
+                <img src={campaign.image} alt={campaign.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                <span aria-hidden="true" className="absolute inset-x-0 bottom-0 flex h-[58px] items-end justify-between bg-[#FFF8E9]/95 px-3 pb-2 font-sans normal-case text-[#AF71DD]">
+                  <span className="flex flex-col items-start text-left">
+                    <span className="text-[12px] font-semibold">@olla.vegana</span>
+                    <span className="text-[10px]">Ver en Instagram</span>
+                  </span>
+                  <img src={instagramIcon} alt="" className="mb-1 h-5 w-5 object-contain" />
+                </span>
+              </a>
             </article>
           ))}
         </div>
@@ -109,42 +95,24 @@ function Campaigns() {
         {/* Composición desktop: títulos y tarjetas en filas independientes */}
         <div className="mt-8 hidden h-[57px] w-full max-w-[937px] items-center justify-between lg:flex">
           {campaigns.map((campaign) => (
-            <h3 key={campaign.title} className={`flex h-[55px] w-[199px] items-center justify-center gap-2 rounded-[20px] px-3 font-scripter text-[16px] leading-none uppercase tracking-wide text-white ${campaign.color}`}>
+            <a key={campaign.title} href={campaign.href} target="_blank" rel="noreferrer" className={`flex h-[55px] w-[199px] items-center justify-center gap-2 rounded-[20px] px-3 font-scripter text-[16px] leading-none uppercase tracking-wide text-white ${campaign.color}`}>
               <img src={campaign.icon} alt="" aria-hidden="true" className="relative top-[-1px] block h-[21px] w-[21px] shrink-0 object-contain brightness-0 invert" />
               <span className="inline-flex items-center whitespace-nowrap leading-[21px]">{campaign.title}</span>
-            </h3>
+            </a>
           ))}
         </div>
         <div className="mt-[35px] hidden w-full max-w-[1077px] justify-between lg:flex">
           {campaigns.map((campaign) => (
-            <div key={campaign.title} className="group relative h-[314px] w-[240px] overflow-hidden rounded-[20px] bg-[#D9D9D9] text-center font-sans text-[11px] font-semibold uppercase text-[#555555]">
-              {campaign.href ? (
-                <iframe
-                  title={`Publicación de Instagram: ${campaign.title}`}
-                  src={`${campaign.href.split('?')[0]}embed/`}
-                  className="-translate-y-[70px] h-[720px] w-full border-0"
-                  scrolling="no"
-                  allowFullScreen
-                  loading="lazy"
-                />
-              ) : (
-                <span className="flex h-full items-center justify-center px-4">PUBLICACIÓN DE IG</span>
-              )}
-              {campaign.href && (
-                <a
-                  href={campaign.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="absolute inset-x-0 bottom-0 z-10 flex h-[58px] items-end justify-between bg-[#FFF8E9]/95 px-3 pb-2 font-sans normal-case text-[#AF71DD]"
-                >
-                  <span className="flex flex-col items-start text-left">
-                    <span className="text-[12px] font-semibold">@olla.vegana</span>
-                    <span className="text-[10px]">Ver en Instagram</span>
-                  </span>
-                  <img src={instagramIcon} alt="Instagram" className="mb-1 h-5 w-5 object-contain" />
-                </a>
-              )}
-            </div>
+            <a key={campaign.title} href={campaign.href} target="_blank" rel="noreferrer" aria-label={`Ver campaña ${campaign.title} en Instagram`} className="group relative block h-[314px] w-[240px] overflow-hidden rounded-[20px] bg-[#D9D9D9]">
+              <img src={campaign.image} alt={campaign.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+              <span aria-hidden="true" className="absolute inset-x-0 bottom-0 flex h-[58px] items-end justify-between bg-[#FFF8E9]/95 px-3 pb-2 font-sans normal-case text-[#AF71DD]">
+                <span className="flex flex-col items-start text-left">
+                  <span className="text-[12px] font-semibold">@olla.vegana</span>
+                  <span className="text-[10px]">Ver en Instagram</span>
+                </span>
+                <img src={instagramIcon} alt="" className="mb-1 h-5 w-5 object-contain" />
+              </span>
+            </a>
           ))}
         </div>
 

@@ -19,7 +19,7 @@ function ProductDetailPage({ productId }) {
       <StoreLayout>
         <section className="mx-auto flex w-full max-w-[1000px] flex-1 flex-col items-center justify-center px-6 py-20 text-center">
           <h1 className="font-poppins text-3xl text-[#466729]">No encontramos ese producto</h1>
-          <a href="/tienda" className="mt-6 font-poppins text-[#466729] underline">Volver a la tienda</a>
+          <a href="/tienda/productos" className="mt-6 font-poppins text-[#466729] underline">Volver a productos</a>
         </section>
       </StoreLayout>
     )
@@ -45,7 +45,7 @@ function ProductDetailPage({ productId }) {
   return (
     <StoreLayout>
       <main className="mx-auto w-full max-w-[1100px] flex-1 px-6 py-10 sm:px-10 sm:py-16">
-        <a href="/tienda" className="inline-flex items-center gap-2 font-poppins text-sm text-[#466729] transition-colors hover:text-[#F13107]">
+        <a href="/tienda/productos" className="inline-flex items-center gap-2 font-poppins text-sm text-[#466729] transition-colors hover:text-[#F13107]">
           <ArrowLeft aria-hidden="true" className="h-4 w-4" /> Volver a productos
         </a>
         <section className="mx-auto mt-8 grid w-full max-w-[900px] grid-cols-1 items-start gap-8 sm:grid-cols-2 sm:gap-14">

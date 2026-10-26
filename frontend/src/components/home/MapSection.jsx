@@ -131,7 +131,7 @@ function MapSection() {
           </div>
         </div>
 
-        <div className="relative order-4 mt-8 aspect-[360/254] w-full max-w-[360px] self-start overflow-hidden rounded-[10px] shadow-sm lg:mt-[50px] lg:mx-0 lg:h-[310px] lg:w-[450px]">
+        <div className="relative order-4 mx-auto mt-8 aspect-[360/254] w-full max-w-[360px] self-center overflow-hidden rounded-[10px] shadow-sm lg:mt-[50px] lg:mx-0 lg:self-start lg:h-[310px] lg:w-[450px]">
           <MapContainer
             center={mapCenter}
             zoom={12}

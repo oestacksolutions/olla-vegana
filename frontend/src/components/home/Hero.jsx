@@ -70,10 +70,10 @@ function Hero() {
           OLLA VEGANA
         </h1>
         <p className="relative z-10 mt-6 w-full self-center font-poppins text-[13px] font-light leading-relaxed text-black/80 sm:max-w-[499px] sm:text-[18px] lg:absolute lg:left-[251.9px] lg:top-[270.93px] lg:mt-0 lg:h-[120px] lg:w-[499.21px] lg:leading-normal">
-          Somos una organización sin fines de lucro que<br className="hidden lg:block" />
-          garantiza alimento a casi 700 personas cada semana.<br className="hidden lg:block" />
-          Unimos la asistencia alimentaria con la ética<br className="hidden lg:block" />
-          antiespecista, ofreciendo platos llenos y libres de<br className="hidden lg:block" />
+          Somos una organización sin fines de lucro que<br className="hidden lg:block" />{' '}
+          garantiza alimento a casi 700 personas cada semana.<br className="hidden lg:block" />{' '}
+          Unimos la asistencia alimentaria con la ética<br className="hidden lg:block" />{' '}
+          antiespecista, ofreciendo platos llenos y libres de<br className="hidden lg:block" />{' '}
           crueldad.
         </p>
         <BtnAction

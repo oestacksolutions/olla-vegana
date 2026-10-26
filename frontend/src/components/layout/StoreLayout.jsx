@@ -74,9 +74,11 @@ function StoreLayout({ children }) {
         <div className="absolute right-4 top-2 sm:hidden">{cartSummary}</div>
         <div className="absolute right-8 top-4 hidden sm:block">{cartSummary}</div>
       </div>
-      <nav aria-label="Categorías de la tienda" className="hidden h-[48px] w-full items-center justify-center gap-8 sm:flex sm:gap-12">
-        {storeCategories.map(([label, href, category]) => <a key={label} href={href} aria-current={activeCategory === category ? 'page' : undefined} className={`font-scripter text-[20px] transition-colors hover:text-[#F13107] ${activeCategory === category ? 'text-[#F13107]' : 'text-black/80'}`}>{label}</a>)}
-      </nav>
+      <div className="sticky top-0 z-30 mt-8 hidden h-[48px] w-full bg-[#FFF8E9] shadow-sm sm:block">
+        <nav aria-label="Categorías de la tienda" className="flex h-full w-full items-center justify-center gap-8 border-b border-[#AF71DD]/15 sm:gap-12">
+          {storeCategories.map(([label, href, category]) => <a key={label} href={href} aria-current={activeCategory === category ? 'page' : undefined} className={`inline-flex h-full items-center px-2 font-scripter text-[20px] transition-colors hover:text-[#F13107] ${activeCategory === category ? 'text-[#F13107]' : 'text-black/80'}`}>{label}</a>)}
+        </nav>
+      </div>
       {isCartOpen && (
         <>
           <button type="button" aria-label="Cerrar carrito" onClick={() => setIsCartOpen(false)} className="fixed inset-0 z-40 cursor-default bg-black/30" />

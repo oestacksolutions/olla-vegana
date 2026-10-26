@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 import StoreLayout from '../../components/layout/StoreLayout'
 import ProductCard from '../../components/tienda/ProductCard'
 import remeraFrente from '../../assets/brand/svgMagui/remera-frente.jpg'
@@ -9,6 +9,7 @@ function HomeTienda() {
   const filteredProducts = selectedCategory
     ? products.filter((product) => product.category === selectedCategory)
     : products
+  const distinctProductCount = new Set(products.map((product) => product.id)).size
 
   return (
     <StoreLayout>
@@ -35,24 +36,33 @@ function HomeTienda() {
             Volver a todos los productos
           </a>
         )}
+        {!selectedCategory && distinctProductCount > 4 && (
+          <div className="mx-auto mb-4 flex w-full max-w-[960px] justify-end">
+            <a href="/tienda/productos" className="inline-flex items-center gap-1 font-poppins text-xs text-[#466729] transition-colors hover:text-[#F13107]">
+              Ver todos los productos <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
+            </a>
+          </div>
+        )}
         <div className="mx-auto grid w-full max-w-[960px] justify-center gap-14" style={{ gridTemplateColumns: 'repeat(auto-fit, 180px)' }}>
           {filteredProducts.map((product, index) => <ProductCard key={product.id} animationIndex={index} {...product} />)}
         </div>
       </section>
-      <section aria-label="Información de compra y pago" className="w-full px-6 pb-16 sm:px-8">
-        <div className="mx-auto grid w-full max-w-[720px] grid-cols-1 justify-items-center gap-12 sm:grid-cols-2">
-          <article id="compra-online" className="flex h-[190px] w-full max-w-[320px] flex-col items-center justify-center rounded-[20px] border border-[#AF71DD] bg-white px-6 py-7 text-center shadow-sm">
-            <h2 className="font-poppins text-[18px] font-semibold text-black/80">Compra Online</h2>
-            <p className="mt-3 font-poppins text-[14px] font-light text-black/80">Todos los días del año, las 24 hs</p>
-          </article>
-          <article className="flex h-[190px] w-full max-w-[320px] flex-col items-center justify-center rounded-[20px] border border-[#AF71DD] bg-white px-6 py-7 text-center shadow-sm">
-            <h2 className="font-poppins text-[18px] font-semibold text-black/80">Formas de pago</h2>
-            <p className="mt-3 font-poppins text-[14px] font-light text-black/80">
-              Mercado Pago, tarjetas de crédito de Mercado Pago, transferencia bancaria
-            </p>
-          </article>
-        </div>
-      </section>
+      {!selectedCategory && (
+        <section aria-label="Información de compra y pago" className="w-full px-6 pb-16 sm:px-8">
+          <div className="mx-auto grid w-full max-w-[720px] grid-cols-1 justify-items-center gap-12 sm:grid-cols-2">
+            <article id="compra-online" className="flex h-[190px] w-full max-w-[320px] flex-col items-center justify-center rounded-[20px] border border-[#AF71DD] bg-white px-6 py-7 text-center shadow-sm">
+              <h2 className="font-poppins text-[18px] font-semibold text-black/80">Compra Online</h2>
+              <p className="mt-3 font-poppins text-[14px] font-light text-black/80">Todos los días del año, las 24 hs</p>
+            </article>
+            <article className="flex h-[190px] w-full max-w-[320px] flex-col items-center justify-center rounded-[20px] border border-[#AF71DD] bg-white px-6 py-7 text-center shadow-sm">
+              <h2 className="font-poppins text-[18px] font-semibold text-black/80">Formas de pago</h2>
+              <p className="mt-3 font-poppins text-[14px] font-light text-black/80">
+                Mercado Pago, tarjetas de crédito de Mercado Pago, transferencia bancaria
+              </p>
+            </article>
+          </div>
+        </section>
+      )}
       <div className="mb-10 w-full bg-[#AF71DD]/50 px-6 py-8 text-center">
         <p className="mx-auto max-w-[900px] font-poppins text-[16px] italic text-black/80 sm:text-[18px]">
           Todos los productos que se venden en nuestra tienda son 100% a beneficio de Olla Vegana
