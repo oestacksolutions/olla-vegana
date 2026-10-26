@@ -41,7 +41,7 @@ function Donaciones() {
       <div className="relative z-10 mx-auto flex w-full max-w-[1120px] flex-col items-center gap-8 xl:min-h-[565px] xl:flex-row xl:items-center xl:justify-center xl:gap-[60px]">
         <div className={`donations-from-left ${isVisible ? 'is-visible' : ''} flex w-full max-w-[460px] flex-col items-center text-center lg:items-start lg:text-left xl:w-[460px] xl:shrink-0 xl:translate-x-4`}>
           <h2 className="font-scripter text-[22px] font-normal leading-tight text-[#F13107] sm:text-[25px] lg:text-[28px]">
-            ¿Construimos juntos esta <br></br>
+            ¿Construimos juntxs esta <br></br>
             realidad?
           </h2>
           <h3 className="mt-6 font-scripter text-[48px] font-normal leading-[0.95] text-black/80 sm:text-[54px] lg:text-[60px]">
@@ -57,10 +57,10 @@ function Donaciones() {
         <div className={`donations-from-right ${isVisible ? 'is-visible' : ''} flex w-full max-w-[371px] flex-col items-center text-center lg:items-start lg:text-left`}>
           <div className="h-auto w-full font-poppins text-[16px] font-normal leading-6 text-black/80 sm:h-[264px]">
             <p className="mb-6">
-              Pasamos de ser un grupo de vecinos a una<br className="hidden sm:block" /> organización con impacto regional. La<br className="hidden sm:block" /> eficiencia de nuestro equipo y la<br className="hidden sm:block" /> transparencia de nuestra gestión son nuestra<br className="hidden sm:block" /> garantía.
+              Pasamos de ser un grupo de vecinxs a una<br className="hidden sm:block" /> organización con impacto regional. La<br className="hidden sm:block" /> eficiencia de nuestro equipo y la<br className="hidden sm:block" /> transparencia de nuestra gestión son nuestra<br className="hidden sm:block" /> garantía.
             </p>
             <p>
-              No buscamos solo donaciones; buscamos<br className="hidden sm:block" /> aliados que crean en un mundo más justo y<br className="hidden sm:block" /> sin violencia. Ya sea con productos, logística<br className="hidden sm:block" /> o fondos, tu participación es la llave para<br className="hidden sm:block" /> que nuestra olla nunca deje de llenarse.
+              No buscamos solo donaciones; buscamos<br className="hidden sm:block" /> aliadxs que crean en un mundo más justo y<br className="hidden sm:block" /> sin violencia. Ya sea con productos, logística<br className="hidden sm:block" /> o fondos, tu participación es la llave para<br className="hidden sm:block" /> que nuestra olla nunca deje de llenarse.
             </p>
           </div>
           <BtnAction href="/donacion" className="mt-[22px]">

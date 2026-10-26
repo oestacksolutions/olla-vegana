@@ -7,7 +7,7 @@ import integrantes from '../assets/brand/svgMagui/integrantes.JPG'
 
 const teamRoles = [
   { title: 'Organizadores', detail: '6 VOLUNTARIOS', color: 'bg-[#F13107]' },
-  { title: 'Coordinadores', detail: '3 VOLUNTARIOS POR PUNTO\n(CAMBIAN CADA 4 MESES)', color: 'bg-[#466729]' },
+  { title: 'Coordinadores', detail: '3 VOLUNTARIOS POR PUNTO\n(ROTACIÓN CADA 4 MESES)', color: 'bg-[#466729]' },
   { title: 'Voluntarios', detail: '80 VOLUNTARIOS EN\nTODOS LOS EQUIPOS', color: 'bg-[#AF71DD]' },
 ]
 
@@ -157,7 +157,7 @@ function Nosotros() {
               className={`whitespace-pre-line text-center font-poppins text-[16px] font-normal leading-[1.45] text-black/80 transition-all duration-1000 ease-out md:text-left ${teamVisible ? 'translate-x-0 opacity-100' : 'translate-x-12 opacity-0'}`}
               style={{ transitionDelay: teamVisible ? '350ms' : '0ms' }}
             >
-              {'Contamos con un equipo de +80\nvoluntarios activos, coordinados\nmediante roles claros y\nrotativos que garantizan la\ntransparencia, el orden logístico\ny la ejecución impecable de cada\njornada.'}
+              {'Contamos con un equipo de +80\nvoluntarixs activos, coordinados\nmediante roles claros y\nrotativos que garantizan la\ntransparencia, el orden logístico\ny la ejecución impecable de cada\njornada.'}
             </p>
           </div>
         </section>
@@ -325,10 +325,10 @@ function Nosotros() {
             className="whitespace-pre-line font-poppins text-[16px] font-normal italic leading-relaxed text-black/80 sm:text-[18px] lg:text-[22px]"
             style={{ fontFamily: "'Poppins', sans-serif", fontStyle: 'italic' }}
           >
-            {'No buscamos solo donaciones, buscamos aliados\nque crean en un mundo más justo y sin violencia.'}
+            {'No buscamos solo donaciones, buscamos aliadxs\nque crean en un mundo más justo y sin violencia.'}
           </p>
           <p className="mt-6 font-scripter text-[20px] font-normal leading-tight text-[#F13107] sm:text-[24px] lg:text-[32px]">
-            ¿Construimos juntos esta realidad?
+            ¿Construimos juntxs esta realidad?
           </p>
         </section>
       </main>

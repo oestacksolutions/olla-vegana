@@ -8,15 +8,15 @@ const cards = [
   {
     title: 'MISIÓN',
     description:
-      'Acompañamos a personas en situación de vulnerabilidad ofreciendo comida nutritiva a base de plantas, promoviendo el bienestar emocional a través de recorridos y trabajo comunitario, con el compromiso de una ciudad hacia ningún ser.',
+      'Acompañamos a personas en situación de vulnerabilidad ofreciendo comida nutritiva a base de plantas, promoviendo el bienestar emocional a través de recorridos y trabajo comunitario, con el compromiso de una ciudad sin crueldad hacia cada ser.',
     color: 'bg-[#AF71DD]/70',
-    displayDescription: 'Acompa\u00f1amos a personas en\nsituaci\u00f3n de vulnerabilidad\nofreciendo comida nutritiva a\nbase de plantas, ropa y\ncontenci\u00f3n\nemocional, a trav\u00e9s de\nrecorridas y trabajo voluntario,\ncon el\ncompromiso de una vida sin\ncrueldad hacia ning\u00fan ser.',
+    displayDescription: 'Acompa\u00f1amos a personas en\nsituaci\u00f3n de vulnerabilidad\nofreciendo comida nutritiva a\nbase de plantas, ropa y\ncontenci\u00f3n\nemocional, a trav\u00e9s de\nrecorridas y trabajo de\nvoluntariado, con el\ncompromiso de una vida sin\ncrueldad hacia cada ser.',
     icon: misionIcon,
   },
   {
     title: 'VISIÓN',
     description:
-      'Expandir nuestra presencia a lo largo del territorio argentino con una comunidad consciente como una red de voluntariado para brindar apoyo alimentario, basada en la empatía, la educación y el respeto hacia todos.',
+      'Expandir nuestra presencia a lo largo del territorio argentino con una comunidad consciente como una red de voluntariado para brindar apoyo alimentario, basada en la empatía, la educación y el respeto hacia todxs.',
     color: 'bg-[#466729]/70',
     displayDescription: 'Expandir nuestra presencia a lo\nlargo de toda la l\u00ednea del tren\nSarmiento, alcanzando cada una\nde sus localidades para brindar\nayuda integral, basada en la\nempat\u00eda, la alimentaci\u00f3n sin\ncrueldad\ny el compromiso humano,\nestableciendo un modelo\nreplicable de\nsolidaridad sustentable.',
     icon: visionIcon,
@@ -136,7 +136,7 @@ function MissionVision({ cardsOnly = false, introOnly = false }) {
 
           <div className={`donations-from-right ${sectionVisible ? 'is-visible' : ''} flex max-w-[388px] flex-col items-center pt-7 lg:items-start lg:pt-[20px]`}>
             <p className="font-sans text-base leading-[1.25] text-black">
-              Somos una red de voluntarios impulsada por la empatía y la convicción de que en un mundo más justo es posible. Nos unimos para brindar asistencia a quienes más lo necesitan, acercando platos nutritivos libres de crueldad y promoviendo el paso a paso una comunidad basada en el respeto y la solidaridad sustentable.
+              Somos una red de voluntarixs impulsada por la empatía y la convicción de que un mundo más justo es posible. Nos unimos para brindar asistencia a quienes más lo necesitan, acercando platos nutritivos libres de crueldad y promoviendo una comunidad basada en el respeto y la solidaridad sustentable.
             </p>
             <BtnAction
               href="/nosotros"

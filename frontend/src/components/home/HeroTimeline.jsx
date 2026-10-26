@@ -24,7 +24,7 @@ const timelineEvents = [
   {
     date: 'Mayo 2024-',
     title: 'Reestructuración',
-    description: 'Se agrando el grupo de\norganizadores,\ndiversificamos voces.\nEsta transformación marcó\nel inicio de una etapa más\nsólida y sostenible.',
+    description: 'Se agrandó el grupo de\norganizadorxs,\ndiversificamos voces.\nEsta transformación marcó\nel inicio de una etapa más\nsólida y sostenible.',
     desktopPosition: 'left-[80%] top-[-115px] -translate-x-1/2',
   },
   {
