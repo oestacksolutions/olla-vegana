@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Menu, Search, ShoppingCart, Trash2, X } from 'lucide-react'
 import BtnAction from '../disenio/btn-action'
 import StoreFooter from './StoreFooter'
-import logoOllaVegana from '../../assets/brand/svgMagui/logo_olla_vegana.png'
+import logoOllaVegana from '../../assets/png/logo_olla_vegana.png'
 import { storeCategories, storeProducts } from '../../data/storeProducts'
 import { CART_UPDATED_EVENT, getStoreCart, removeStoreCartItem } from '../../data/storeCart'
 
@@ -40,38 +40,33 @@ function StoreLayout({ children }) {
   }
 
   const cartSummary = (
-    <button type="button" onClick={openCart} aria-label={`Abrir carrito${cartTotal > 0 ? `, total $${cartTotal.toLocaleString('es-AR')}` : ''}`} aria-expanded={isCartOpen} aria-controls="store-cart-panel" className="relative flex min-w-[76px] flex-col items-center pt-8 font-poppins text-[14px] text-[#466729]">
-      <ShoppingCart aria-hidden="true" className="absolute left-1/2 top-0 h-8 w-8 -translate-x-1/2" />
-      {cartTotal > 0 && <div className="mt-1 flex min-h-6 items-center justify-center">${cartTotal.toLocaleString('es-AR')}</div>}
+    <button type="button" onClick={openCart} aria-label={`Abrir carrito${cartTotal > 0 ? `, total $${cartTotal.toLocaleString('es-AR')}` : ''}`} aria-expanded={isCartOpen} aria-controls="store-cart-panel" className="relative ml-auto flex min-w-[44px] flex-col items-center pt-6 font-poppins text-[11px] text-[#466729] sm:min-w-[76px] sm:pt-8 sm:text-[14px] sm:ml-0">
+      <ShoppingCart aria-hidden="true" className="absolute left-1/2 top-0 h-6 w-6 -translate-x-1/2 sm:h-8 sm:w-8" />
+      {cartTotal > 0 && <div className="mt-1 flex min-h-5 items-center justify-center sm:min-h-6">${cartTotal.toLocaleString('es-AR')}</div>}
     </button>
   )
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#FFF8E9]">
-      <header className="min-h-[76px] w-full border-b border-[#AF71DD]/20 bg-[#FFF8E9] sm:h-[84px]">
-        <div className="grid min-h-[76px] w-full grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2 px-4 py-3 sm:flex sm:h-full sm:flex-nowrap sm:justify-between sm:px-6 sm:py-0 lg:px-8">
-          <div className="col-start-1 row-start-1 flex min-w-0 flex-col items-start gap-2 sm:flex-none sm:flex-row sm:items-center sm:gap-4">
-            <form role="search" onSubmit={(event) => event.preventDefault()} className="hidden h-[42px] min-w-0 w-[220px] max-w-full items-center gap-2 rounded-[20px] border border-[#AF71DD] bg-white px-3 text-[#AF71DD] sm:flex sm:h-[46px] sm:w-full sm:max-w-[280px]">
+    <div className="flex min-h-screen w-full max-w-full flex-col overflow-x-clip bg-[#FFF8E9]">
+      <header className="relative min-h-[112px] w-full border-b border-[#AF71DD]/20 bg-[#FFF8E9] sm:min-h-0">
+        <div className="flex min-h-[76px] w-full items-center justify-between gap-4 px-4 py-2 sm:h-[84px] sm:px-6 sm:py-0 lg:h-[128px] lg:px-8">
+          <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
+            <a href="/tienda" aria-label="Ver todos los productos" className="shrink-0 lg:ml-36">
+              <img src={logoOllaVegana} alt="Olla Vegana" className="h-[70px] w-[70px] object-contain sm:h-[82px] sm:w-[82px] lg:h-[118px] lg:w-[118px]" />
+            </a>
+            <form role="search" onSubmit={(event) => event.preventDefault()} className="hidden h-[42px] min-w-0 w-[220px] max-w-full items-center gap-2 rounded-[20px] border border-[#AF71DD] bg-white px-3 text-[#AF71DD] sm:ml-auto sm:flex sm:h-[46px] sm:w-full sm:max-w-[280px]">
               <Search aria-hidden="true" className="h-5 w-5 shrink-0" />
               <input type="search" name="productos" aria-label="Buscar productos" placeholder="Buscar productos" className="min-w-0 flex-1 bg-transparent font-poppins text-sm text-[#292621] outline-none placeholder:text-[#AF71DD]/70" />
             </form>
+            <div className="hidden sm:flex">{cartSummary}</div>
           </div>
-          <nav aria-label="Cuenta" className="col-start-1 row-start-1 ml-0 flex shrink-0 flex-row items-center gap-2 font-scripter text-[12px] text-[#466729] sm:ml-auto sm:gap-4 sm:text-[16px]">
-            <a className="transition-colors hover:text-[#F13107]" href="#iniciar-sesion">Iniciar Sesion</a>
-            <span aria-hidden="true" className="h-5 w-px bg-[#466729]/60" />
-            <a className="transition-colors hover:text-[#F13107]" href="#registrarme">Registrarme</a>
-          </nav>
           <button type="button" aria-label={isMenuOpen ? 'Cerrar categorías' : 'Abrir categorías'} aria-expanded={isMenuOpen} aria-controls="menu-categorias-tienda" onClick={() => setIsMenuOpen((open) => !open)} className="col-start-2 row-start-1 flex h-10 w-10 items-center justify-center rounded-full text-[#466729] transition-colors hover:bg-[#AF71DD]/15 sm:hidden">
             {isMenuOpen ? <X aria-hidden="true" className="h-6 w-6" /> : <Menu aria-hidden="true" className="h-6 w-6" />}
           </button>
         </div>
+        <div className="absolute right-4 top-[60px] sm:hidden">{cartSummary}</div>
         {isMenuOpen && <nav id="menu-categorias-tienda" aria-label="Categorías de la tienda" className="border-t border-[#AF71DD]/20 px-4 py-3 sm:hidden"><ul className="flex flex-col gap-3">{storeCategories.map(([label, href]) => <li key={href}><a href={href} onClick={() => setIsMenuOpen(false)} className="block font-scripter text-[18px] text-black/80 transition-colors hover:text-[#F13107]">{label}</a></li>)}</ul></nav>}
       </header>
-      <div className="relative flex h-[120px] w-full flex-none items-center justify-between px-6 py-4 sm:h-[250px] sm:justify-center sm:py-8" aria-label="Tienda online">
-        <div className="flex flex-1 items-center justify-start sm:justify-center"><a href="/tienda" aria-label="Ver todos los productos" className="flex"><img src={logoOllaVegana} alt="Olla Vegana" className="h-[96px] w-[96px] object-contain sm:h-[300px] sm:w-[300px]" /></a></div>
-        <div className="absolute right-4 top-2 sm:hidden">{cartSummary}</div>
-        <div className="absolute right-8 top-4 hidden sm:block">{cartSummary}</div>
-      </div>
       <div className="sticky top-0 z-30 mt-8 hidden h-[48px] w-full bg-[#FFF8E9] shadow-sm sm:block">
         <nav aria-label="Categorías de la tienda" className="flex h-full w-full items-center justify-center gap-8 border-b border-[#AF71DD]/15 sm:gap-12">
           {storeCategories.map(([label, href, category]) => <a key={label} href={href} aria-current={activeCategory === category ? 'page' : undefined} className={`inline-flex h-full items-center px-2 font-scripter text-[20px] transition-colors hover:text-[#F13107] ${activeCategory === category ? 'text-[#F13107]' : 'text-black/80'}`}>{label}</a>)}

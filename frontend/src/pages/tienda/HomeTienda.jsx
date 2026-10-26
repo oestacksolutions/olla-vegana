@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import StoreLayout from '../../components/layout/StoreLayout'
 import ProductCard from '../../components/tienda/ProductCard'
-import remeraFrente from '../../assets/brand/svgMagui/remera-frente.jpg'
+import remeraFrente from '../../assets/jpg/remera-frente.jpg'
 import { storeProducts as products } from '../../data/storeProducts'
 
 function HomeTienda() {

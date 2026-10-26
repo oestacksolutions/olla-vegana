@@ -1,5 +1,5 @@
-﻿import { useEffect, useRef, useState } from 'react'
-import logoVaca from '../../assets/brand/svgMagui/logo_olla_vegana.png'
+import { useEffect, useRef, useState } from 'react'
+import logoVaca from '../../assets/png/logo_olla_vegana.png'
 import BtnAction from '../disenio/btn-action'
 
 const navigationLinks = [

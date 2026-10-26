@@ -1,8 +1,8 @@
-import remeras from '../assets/brand/svgMagui/remeras.jpg'
-import gorraBeige from '../assets/brand/svgMagui/gorra.JPG'
-import gorraNegra from '../assets/brand/svgMagui/gorra-negra.JPG'
-import tote from '../assets/brand/svgMagui/tote.JPG'
-import toteFlores from '../assets/brand/svgMagui/tote-flores.JPG'
+import remeras from '../assets/jpg/remeras.jpg'
+import gorraBeige from '../assets/jpg/gorra.JPG'
+import gorraNegra from '../assets/jpg/gorra-negra.JPG'
+import tote from '../assets/jpg/tote.JPG'
+import toteFlores from '../assets/jpg/tote-flores.JPG'
 
 export const storeProducts = [
   {

@@ -3,12 +3,12 @@ import { Check, Copy } from 'lucide-react'
 import Navbar from '../components/layout/Navbar'
 import Footer from '../components/layout/Footer'
 import BtnAction from '../components/disenio/btn-action'
-import violeta1 from '../assets/brand/donacion/violeta1.svg'
-import violeta2 from '../assets/brand/donacion/violeta2.svg'
-import lineas from '../assets/brand/donacion/lineas.svg'
-import flor from '../assets/brand/donacion/flor.svg'
-import ondas from '../assets/brand/donacion/ondas.svg'
-import circulo from '../assets/brand/donacion/circulo.svg'
+import violeta1 from '../assets/svg/violeta1.svg'
+import violeta2 from '../assets/svg/violeta2.svg'
+import lineas from '../assets/svg/lineas.svg'
+import flor from '../assets/svg/flor.svg'
+import ondas from '../assets/svg/ondas.svg'
+import circulo from '../assets/svg/circulo.svg'
 
 const cafecitoPlans = [
   ['1 CAFECITO ($7625)', 'https://www.mercadopago.com.ar/checkout/v1/payment/redirect/1a5d5a6d-6491-439f-b177-709eafe1cbdb/payment-option-form/?router-request-id=fe38dd35-6cad-435a-b2d4-666d1b713ac7&preference-id=1142261062-e1894595-b1cd-4c89-802c-2c86951d64dc&p=3c22dbd1a5abdd7add3aa65e851e082d'],

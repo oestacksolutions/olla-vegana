@@ -3,7 +3,7 @@ import Navbar from '../components/layout/Navbar'
 import Footer from '../components/layout/Footer'
 import HeroTimeline from '../components/home/HeroTimeline'
 import MissionVision from '../components/home/MissionVision'
-import integrantes from '../assets/brand/svgMagui/integrantes.JPG'
+import integrantes from '../assets/jpg/integrantes.JPG'
 
 const teamRoles = [
   { title: 'Organizadores', detail: '7 VOLUNTARIXS', color: 'bg-[#F13107]' },
@@ -17,7 +17,6 @@ const foodSlices = [
   { label: 'VERDURAS', value: 240, color: '#F13107' },
   { label: 'FRUTAS', value: 140, color: '#FFBDD6' },
 ]
-const foodTotal = foodSlices.reduce((total, slice) => total + slice.value, 0)
 
 const proposals = [
   'Entregar viandas de comida nutritivas y Plant Based',
@@ -238,14 +237,14 @@ function Nosotros() {
               </h3>
               <svg
                 role="img"
-                aria-label={`Cantidad de comida cocinada al mes: ${foodTotal} kg en total; 160 kg de carbohidratos, 120 kg de legumbres, 240 kg de verduras y 140 kg de frutas`}
+                aria-label="Cantidad de comida cocinada al mes: 160 kilos de carbohidratos, 120 de legumbres, 240 de verduras y 140 de frutas"
                 viewBox="0 0 440 360"
                 className="mt-3 h-auto w-full"
               >
                 {(() => {
                   let startAngle = -90
                   return foodSlices.map((slice, index) => {
-                    const endAngle = startAngle + (slice.value / foodTotal) * 360
+                    const endAngle = startAngle + (slice.value / 660) * 360
                     const path = getPieSlicePath(startAngle, endAngle)
                     startAngle = endAngle
                     return (
@@ -260,9 +259,6 @@ function Nosotros() {
                     )
                   })
                 })()}
-                <text x="220" y="25" textAnchor="middle" className="fill-black/80 font-poppins text-[14px] font-semibold">
-                  TOTAL: {foodTotal} kg
-                </text>
                 {[
                   { label: 'CARBOHIDRATOS', value: '160', x: 365, y: 74 },
                   { label: 'LEGUMBRES', value: '120', x: 370, y: 296 },
@@ -278,7 +274,7 @@ function Nosotros() {
                       {label}
                     </text>
                     <text x={x} y={y + 15} textAnchor="middle" className="fill-black/80 font-poppins text-[11px] font-semibold">
-                      {value} kg
+                      {value}
                     </text>
                   </g>
                 ))}

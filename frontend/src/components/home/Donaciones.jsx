@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import BtnAction from '../disenio/btn-action'
-import circuloNaranja from '../../assets/brand/svgMagui/circulo-naranja.svg'
+import circuloNaranja from '../../assets/svg/circulo-naranja.svg'
 
 function Donaciones() {
   const sectionRef = useRef(null)

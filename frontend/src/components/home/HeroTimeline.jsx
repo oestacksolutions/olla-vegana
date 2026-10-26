@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import cara from '../../assets/brand/svgMagui/cara.png'
+import cara from '../../assets/png/cara.png'
 import TimelineMilestone from './TimelineMilestone'
 
 const timelineEvents = [

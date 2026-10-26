@@ -1,16 +1,16 @@
-﻿import flores from '../../assets/brand/svgMagui/flores.png'
+import flores from '../../assets/png/flores.png'
 import { useEffect, useRef, useState } from 'react'
-import instagramIcon from '../../assets/brand/svgMagui/instagram-icon.png'
+import instagramIcon from '../../assets/png/instagram-icon.png'
 
 // Importación de los íconos para cada campaña
-import libroIcon from '../../assets/brand/svgMagui/libro.png'
-import manoIcon from '../../assets/brand/svgMagui/mano-icon.png'
-import arbolIcon from '../../assets/brand/svgMagui/arbol-icon.png'
-import regaloIcon from '../../assets/brand/svgMagui/regalo-icon.png'
-import kitsEscolaresImage from '../../assets/brand/svgMagui/kits-escolares.jpg'
-import campInviernoImage from '../../assets/brand/svgMagui/camp-invierno.jpg'
-import navidadSolidariaImage from '../../assets/brand/svgMagui/navidad-solidaria.jpg'
-import diaNinezImage from '../../assets/brand/svgMagui/dia-ninez.jpg'
+import libroIcon from '../../assets/png/libro.png'
+import manoIcon from '../../assets/png/mano-icon.png'
+import arbolIcon from '../../assets/png/arbol-icon.png'
+import regaloIcon from '../../assets/png/regalo-icon.png'
+import kitsEscolaresImage from '../../assets/jpg/kits-escolares.jpg'
+import campInviernoImage from '../../assets/jpg/camp-invierno.jpg'
+import navidadSolidariaImage from '../../assets/jpg/navidad-solidaria.jpg'
+import diaNinezImage from '../../assets/jpg/dia-ninez.jpg'
 
 const campaigns = [
   { title: 'KITS ESCOLARES', color: 'bg-[#AF71DD]/80', icon: libroIcon, image: kitsEscolaresImage, href: 'https://www.instagram.com/reel/DWIBQ-TDgyB/' },

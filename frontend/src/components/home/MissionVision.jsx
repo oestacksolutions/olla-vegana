@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import BtnAction from '../disenio/btn-action'
-import misionIcon from '../../assets/brand/herosvg/mision.svg'
-import valoresIcon from '../../assets/brand/herosvg/valores.svg'
-import visionIcon from '../../assets/brand/herosvg/vision.svg'
+import misionIcon from '../../assets/svg/mision.svg'
+import valoresIcon from '../../assets/svg/valores.svg'
+import visionIcon from '../../assets/svg/vision.svg'
 
 const cards = [
   {

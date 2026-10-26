@@ -1,5 +1,5 @@
-import logoOllaVegana from '../../assets/brand/svgMagui/logo_olla_vegana.png'
-import instagramIcon from '../../assets/brand/svgMagui/instagram-icon.png'
+import logoOllaVegana from '../../assets/png/logo_olla_vegana.png'
+import instagramIcon from '../../assets/png/instagram-icon.png'
 
 const productLinks = [
   ['Remeras', '/tienda?categoria=remeras'],

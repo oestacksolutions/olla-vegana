@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import garabatoLila from '../../assets/brand/svgMagui/garabato-lila.svg'
-import ondasLila from '../../assets/brand/herosvg/ondas-lila.svg'
-import circuloNaranja from '../../assets/brand/svgMagui/circulo-naranja.svg'
+import garabatoLila from '../../assets/svg/garabato-lila.svg'
+import ondasLila from '../../assets/svg/ondas-lila.svg'
+import circuloNaranja from '../../assets/svg/circulo-naranja.svg'
 import BtnAction from '../disenio/btn-action'
 
 function Hero() {

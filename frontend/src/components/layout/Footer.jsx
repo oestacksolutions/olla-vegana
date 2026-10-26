@@ -1,7 +1,7 @@
-﻿import logoOllaVegana from '../../assets/brand/svgMagui/logo_olla_vegana.png'
-import instagramIcon from '../../assets/brand/svgMagui/instagram-icon.png'
-import mailIcon from '../../assets/brand/svgMagui/mail-icon.png'
-import wspIcon from '../../assets/brand/svgMagui/wsp-icon.png'
+import logoOllaVegana from '../../assets/png/logo_olla_vegana.png'
+import instagramIcon from '../../assets/png/instagram-icon.png'
+import mailIcon from '../../assets/png/mail-icon.png'
+import wspIcon from '../../assets/png/wsp-icon.png'
 
 
 const footerLinks = [

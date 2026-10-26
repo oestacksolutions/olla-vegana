@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import BtnAction from '../disenio/btn-action'
 import CardTiendaSection from '../disenio/Card-tienda-section'
-import gorra from '../../assets/brand/svgMagui/gorra.JPG'
-import remeras from '../../assets/brand/svgMagui/remeras.jpg'
-import tote from '../../assets/brand/svgMagui/tote.JPG'
+import gorra from '../../assets/jpg/gorra.JPG'
+import remeras from '../../assets/jpg/remeras.jpg'
+import tote from '../../assets/jpg/tote.JPG'
 
 const storeItems = [
   { title: 'Gorras', image: gorra, imageFit: 'contain' },
