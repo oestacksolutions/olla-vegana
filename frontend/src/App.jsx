@@ -10,6 +10,8 @@ import Footer from './components/layout/Footer'
 import Nosotros from './pages/nosotros'
 import DonationPage from './pages/DonationPage'
 import HomeTienda from './pages/tienda/HomeTienda'
+import ProductDetailPage from './pages/tienda/ProductDetailPage'
+import AllProductsPage from './pages/tienda/AllProductsPage'
 
 function App() {
   useEffect(() => {
@@ -31,8 +33,19 @@ function App() {
     return <DonationPage />
   }
 
-  if (window.location.pathname.replace(/\/$/, '') === '/tienda') {
+  const pathname = window.location.pathname.replace(/\/$/, '')
+
+  if (pathname === '/tienda') {
     return <HomeTienda />
+  }
+
+  if (pathname === '/tienda/productos') {
+    return <AllProductsPage />
+  }
+
+  const productMatch = pathname.match(/^\/tienda\/([^/]+)$/)
+  if (productMatch) {
+    return <ProductDetailPage productId={decodeURIComponent(productMatch[1])} />
   }
 
   return (
