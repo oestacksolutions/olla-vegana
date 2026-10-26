@@ -12,6 +12,7 @@ import DonationPage from './pages/DonationPage'
 import HomeTienda from './pages/tienda/HomeTienda'
 import ProductDetailPage from './pages/tienda/ProductDetailPage'
 import AllProductsPage from './pages/tienda/AllProductsPage'
+import CheckoutPage from './pages/tienda/CheckoutPage'
 
 function App() {
   useEffect(() => {
@@ -41,6 +42,10 @@ function App() {
 
   if (pathname === '/tienda/productos') {
     return <AllProductsPage />
+  }
+
+  if (pathname === '/tienda/checkout') {
+    return <CheckoutPage />
   }
 
   const productMatch = pathname.match(/^\/tienda\/([^/]+)$/)

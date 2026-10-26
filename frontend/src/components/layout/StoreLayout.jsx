@@ -10,7 +10,6 @@ function StoreLayout({ children }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [cartItems, setCartItems] = useState(() => getStoreCart())
   const [isCartOpen, setIsCartOpen] = useState(false)
-  const [checkoutNotice, setCheckoutNotice] = useState(false)
   const cartTotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
   const selectedCategory = new URLSearchParams(window.location.search).get('categoria')
   const activeCategory = window.location.pathname.replace(/\/$/, '') === '/tienda'
@@ -37,7 +36,6 @@ function StoreLayout({ children }) {
   }, [isCartOpen])
 
   const openCart = () => {
-    setCheckoutNotice(false)
     setIsCartOpen(true)
   }
 
@@ -117,8 +115,7 @@ function StoreLayout({ children }) {
 
             <div className="border-t border-[#AF71DD]/30 pt-5">
               <div className="mb-5 flex items-center justify-between font-poppins text-base text-black/80"><span>Total</span><strong className="font-medium">${cartTotal.toLocaleString('es-AR')}</strong></div>
-              {checkoutNotice && <p role="status" className="mb-4 font-poppins text-xs leading-5 text-[#466729]">El pago estará disponible cuando conectemos el checkout.</p>}
-              {cartItems.length > 0 && <BtnAction href="#finalizar-compra" onClick={(event) => { event.preventDefault(); setCheckoutNotice(true) }} width="100%" height="48px" className="!w-full !rounded-[10px] !font-light !text-[14px]">Finalizar compra</BtnAction>}
+              {cartItems.length > 0 && <BtnAction href="/tienda/checkout" onClick={() => setIsCartOpen(false)} width="100%" height="48px" className="!w-full !rounded-[10px] !font-light !text-[14px]">Finalizar compra</BtnAction>}
               <button type="button" onClick={() => setIsCartOpen(false)} className={`flex h-12 w-full items-center justify-center rounded-[10px] border border-[#AF71DD] bg-[#FFF8E9] font-poppins text-sm text-[#7A42A7] transition-colors hover:bg-[#AF71DD]/10 ${cartItems.length > 0 ? 'mt-3' : ''}`}>Seguir comprando</button>
             </div>
           </aside>
