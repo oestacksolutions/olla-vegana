@@ -5,7 +5,7 @@ import BtnAction from '../disenio/btn-action'
 const navigationLinks = [
   { label: 'Inicio', href: '/#inicio' },
   { label: 'Dónde Estamos', href: '/#puntos' },
-  { label: 'Tienda', href: '/tienda' },
+  { label: 'Tienda', href: '/tienda', target: '_blank' },
   { label: '¿Quiénes Somos?', href: '/#propuesta' },
 ]
 
@@ -107,6 +107,8 @@ function Navbar() {
               <a
                 key={link.href}
                 href={link.href}
+                target={link.target}
+                rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
                 className="whitespace-nowrap font-poppins text-base font-semibold text-brand-ink/75 transition-colors hover:text-[#466729] 2xl:text-lg"
               >
                 {link.label}
@@ -189,6 +191,8 @@ function Navbar() {
               >
                 <a
                   href={link.href}
+                  target={link.target}
+                  rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
                   className="block text-lg sm:text-xl font-semibold uppercase tracking-widest text-[#FFF8E9] hover:text-[#AF71DD] active:scale-95 transition-all"
                   onClick={closeMenu}
                 >
