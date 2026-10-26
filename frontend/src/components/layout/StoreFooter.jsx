@@ -2,9 +2,9 @@ import logoOllaVegana from '../../assets/brand/svgMagui/logo_olla_vegana.png'
 import instagramIcon from '../../assets/brand/svgMagui/instagram-icon.png'
 
 const productLinks = [
-  ['Remeras', '#remera'],
-  ['Gorras', '#gorra'],
-  ['Totes', '#tote'],
+  ['Remeras', '/tienda?categoria=remeras'],
+  ['Gorras', '/tienda?categoria=gorras'],
+  ['Totes', '/tienda?categoria=totes'],
 ]
 
 function StoreFooter() {
@@ -36,7 +36,7 @@ function StoreFooter() {
         <nav aria-label="Ayuda">
           <h2 className="font-scripter text-[24px]">Ayuda</h2>
           <ul className="mt-3 flex flex-col gap-2 font-poppins text-[14px] font-light">
-            <li><a className="transition-opacity hover:opacity-75" href="#compra-online">Cómo comprar</a></li>
+            <li><a className="transition-opacity hover:opacity-75" href="/tienda#compra-online">Cómo comprar</a></li>
             <li><a className="transition-opacity hover:opacity-75" href="#terminos-y-condiciones">Términos y Condiciones</a></li>
           </ul>
         </nav>
