@@ -77,7 +77,7 @@ function Hero() {
           crueldad.
         </p>
         <BtnAction
-          href="#propuesta"
+          href="/nosotros"
           responsive
           width="154px"
           height="48px"

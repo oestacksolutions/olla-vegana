@@ -90,7 +90,7 @@ function DonationPage() {
         <img src={ondas} alt="" aria-hidden="true" className="donation-art donation-waves" />
         <img src={circulo} alt="" aria-hidden="true" className="donation-art donation-circle" />
 
-        <h1>¡Ayudanos a ayudar!</h1>
+        <h1 className="donation-title-appear">¡Ayudanos a ayudar!</h1>
         <section className="donation-cards" aria-label="Formas de colaborar">
           {/* TARJETA 1 */}
           <DonationCard

@@ -5,7 +5,7 @@ import BtnAction from '../disenio/btn-action'
 const navigationLinks = [
   { label: 'Inicio', href: '/#inicio' },
   { label: 'Dónde Estamos', href: '/#puntos' },
-  { label: 'Tienda', href: '/#tienda' },
+  { label: 'Tienda', href: '/tienda' },
   { label: '¿Quiénes Somos?', href: '/#propuesta' },
 ]
 
@@ -114,7 +114,7 @@ function Navbar() {
             ))}
           </nav>
 
-          <BtnAction href="/#dona" className="hidden xl:inline-flex xl:mr-6">
+          <BtnAction href="/donacion" className="hidden xl:inline-flex xl:mr-6">
             Quiero Ayudar!
           </BtnAction>
 
@@ -204,7 +204,7 @@ function Navbar() {
               }`}
               style={{ transitionDelay: `${isMenuOpen ? 260 : 0}ms` }}
             >
-              <BtnAction href="/#dona" onClick={closeMenu}>
+              <BtnAction href="/donacion" onClick={closeMenu}>
                 ¡Quiero Ayudar!
               </BtnAction>
             </li>

@@ -29,7 +29,7 @@ const cards = [
   },
 ]
 
-function MissionVision() {
+function MissionVision({ cardsOnly = false, introOnly = false }) {
   const sectionRef = useRef(null)
   const cardElementRefs = useRef([])
   const cardAnimationsRef = useRef(new WeakMap())
@@ -116,11 +116,11 @@ function MissionVision() {
   return (
     <section
       ref={sectionRef}
-      id="propuesta"
-      className="bg-[#FFF8E9] px-6 py-16 sm:px-10 lg:px-12 lg:py-[72px]"
+      id={cardsOnly ? undefined : 'propuesta'}
+      className={cardsOnly ? 'bg-[#FFF8E9] px-6 py-12 sm:px-10 lg:px-12 lg:py-[56px]' : 'bg-[#FFF8E9] px-6 py-16 sm:px-10 lg:px-12 lg:py-[72px]'}
     >
       <div className="mx-auto max-w-[936px]">
-        <div className="grid justify-items-center gap-10 text-center lg:grid-cols-[1fr_1.1fr] lg:justify-items-start lg:gap-[72px] lg:text-left">
+        {!cardsOnly && <div className="grid justify-items-center gap-10 text-center lg:grid-cols-[1fr_1.1fr] lg:justify-items-start lg:gap-[72px] lg:text-left">
           <div className={`donations-from-left ${sectionVisible ? 'is-visible' : ''} w-[279px] max-w-[279px] lg:ml-[60px]`}>
             <p className="font-scripter text-[32px] leading-[1.05] text-[#466729]">
               QUIENES SOMOS
@@ -147,9 +147,9 @@ function MissionVision() {
               Conócenos
             </BtnAction>
           </div>
-        </div>
+        </div>}
 
-        <div className="mt-16 grid justify-items-center gap-8 sm:grid-cols-2 lg:mt-[73px] lg:grid-cols-[repeat(3,276px)] lg:justify-between lg:gap-0">
+        {!introOnly && <div className={`${cardsOnly ? '' : 'mt-16 lg:mt-[73px]'} grid justify-items-center gap-8 sm:grid-cols-2 lg:grid-cols-[repeat(3,276px)] lg:justify-between lg:gap-0`}>
           {cards.map(({ title, description, displayDescription, values, color, icon }, index) => (
             <article
               key={title}
@@ -179,7 +179,7 @@ function MissionVision() {
               )}
             </article>
           ))}
-        </div>
+        </div>}
       </div>
     </section>
   )

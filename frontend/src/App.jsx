@@ -44,7 +44,7 @@ function App() {
         <MapSection />
         <Donaciones />
         <Store />
-        <MissionVision />
+        <MissionVision introOnly />
       </main>
       <Footer />
     </>

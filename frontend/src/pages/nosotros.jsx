@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Navbar from '../components/layout/Navbar'
 import Footer from '../components/layout/Footer'
 import HeroTimeline from '../components/home/HeroTimeline'
+import MissionVision from '../components/home/MissionVision'
 import integrantes from '../assets/brand/svgMagui/integrantes.JPG'
 
 const teamRoles = [
@@ -117,6 +118,7 @@ function Nosotros() {
           />
         </div>
         <HeroTimeline />
+        <MissionVision cardsOnly />
         <section
           aria-label="Contenido de Nosotros"
           className="relative isolate h-auto w-full overflow-hidden bg-[#FFF8E9] px-6 pb-8 sm:px-8"
