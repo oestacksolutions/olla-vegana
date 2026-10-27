@@ -4,6 +4,19 @@
 @tailwind components;
 @tailwind utilities;
 
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #466729;
+  outline-offset: 3px;
+}
+
+input:not([type='radio']):not([type='checkbox']):focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: #AF71DD;
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(175 113 221 / 22%), 0 0 14px rgb(175 113 221 / 35%);
+}
+
 #inicio,
 #puntos,
 #tienda,

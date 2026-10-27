@@ -14,6 +14,11 @@ export function getStoreCartTotal() {
   return getStoreCart().reduce((total, item) => total + item.price * item.quantity, 0)
 }
 
+export function clearStoreCart() {
+  window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify([]))
+  window.dispatchEvent(new Event(CART_UPDATED_EVENT))
+}
+
 export function removeStoreCartItem(productId, size, variant) {
   const cart = getStoreCart().filter((item) =>
     !(item.productId === productId && item.size === size && item.variant === variant)

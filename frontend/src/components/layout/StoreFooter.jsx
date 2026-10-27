@@ -37,6 +37,7 @@ function StoreFooter() {
           <h2 className="font-scripter text-[24px]">Ayuda</h2>
           <ul className="mt-3 flex flex-col gap-2 font-poppins text-[14px] font-light">
             <li><a className="transition-opacity hover:opacity-75" href="/tienda#compra-online">Cómo comprar</a></li>
+            <li><a className="transition-opacity hover:opacity-75" href="/tienda/seguimiento">Consultar pedido</a></li>
             <li><a className="transition-opacity hover:opacity-75" href="#terminos-y-condiciones">Términos y Condiciones</a></li>
           </ul>
         </nav>

@@ -13,6 +13,8 @@ import HomeTienda from './pages/tienda/HomeTienda'
 import ProductDetailPage from './pages/tienda/ProductDetailPage'
 import AllProductsPage from './pages/tienda/AllProductsPage'
 import CheckoutPage from './pages/tienda/CheckoutPage'
+import OrderStatusPage from './pages/tienda/OrderStatusPage'
+import OrderTrackingPage from './pages/tienda/OrderTrackingPage'
 
 function App() {
   useEffect(() => {
@@ -46,6 +48,15 @@ function App() {
 
   if (pathname === '/tienda/checkout') {
     return <CheckoutPage />
+  }
+
+  if (pathname === '/tienda/seguimiento') {
+    return <OrderTrackingPage />
+  }
+
+  const orderMatch = pathname.match(/^\/tienda\/pedido\/([^/]+)$/)
+  if (orderMatch) {
+    return <OrderStatusPage orderId={decodeURIComponent(orderMatch[1])} />
   }
 
   const productMatch = pathname.match(/^\/tienda\/([^/]+)$/)

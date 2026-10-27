@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Menu, Search, ShoppingCart, Trash2, X } from 'lucide-react'
 import BtnAction from '../disenio/btn-action'
 import StoreFooter from './StoreFooter'
@@ -10,6 +10,9 @@ function StoreLayout({ children }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [cartItems, setCartItems] = useState(() => getStoreCart())
   const [isCartOpen, setIsCartOpen] = useState(false)
+  const cartPanelRef = useRef(null)
+  const cartCloseButtonRef = useRef(null)
+  const previouslyFocusedRef = useRef(null)
   const cartTotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
   const selectedCategory = new URLSearchParams(window.location.search).get('categoria')
   const activeCategory = window.location.pathname.replace(/\/$/, '') === '/tienda'
@@ -28,14 +31,34 @@ function StoreLayout({ children }) {
 
   useEffect(() => {
     if (!isCartOpen) return undefined
-    const closeOnEscape = (event) => {
-      if (event.key === 'Escape') setIsCartOpen(false)
+    cartCloseButtonRef.current?.focus()
+    const handleDialogKeys = (event) => {
+      if (event.key === 'Escape') {
+        setIsCartOpen(false)
+        return
+      }
+      if (event.key !== 'Tab') return
+      const focusable = [...cartPanelRef.current.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
-    window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
+    window.addEventListener('keydown', handleDialogKeys)
+    return () => {
+      window.removeEventListener('keydown', handleDialogKeys)
+      previouslyFocusedRef.current?.focus()
+    }
   }, [isCartOpen])
 
   const openCart = () => {
+    previouslyFocusedRef.current = document.activeElement
     setIsCartOpen(true)
   }
 
@@ -75,10 +98,10 @@ function StoreLayout({ children }) {
       {isCartOpen && (
         <>
           <button type="button" aria-label="Cerrar carrito" onClick={() => setIsCartOpen(false)} className="fixed inset-0 z-40 cursor-default bg-black/30" />
-          <aside id="store-cart-panel" role="dialog" aria-modal="true" aria-labelledby="store-cart-title" className="fixed inset-y-0 right-0 z-50 flex h-dvh w-full max-w-[390px] flex-col bg-[#FFF8E9] p-6 shadow-2xl sm:p-8">
+          <aside ref={cartPanelRef} id="store-cart-panel" role="dialog" aria-modal="true" aria-labelledby="store-cart-title" className="fixed inset-y-0 right-0 z-50 flex h-dvh w-full max-w-[390px] flex-col bg-[#FFF8E9] p-6 shadow-2xl sm:p-8">
             <div className="flex items-center justify-between border-b border-[#AF71DD]/30 pb-5">
               <h2 id="store-cart-title" className="font-poppins text-xl font-medium text-[#466729]">Tu carrito</h2>
-              <button type="button" aria-label="Cerrar carrito" onClick={() => setIsCartOpen(false)} className="rounded-full p-2 text-[#466729] transition-colors hover:bg-[#AF71DD]/15"><X aria-hidden="true" className="h-5 w-5" /></button>
+              <button ref={cartCloseButtonRef} type="button" aria-label="Cerrar carrito" onClick={() => setIsCartOpen(false)} className="rounded-full p-2 text-[#466729] transition-colors hover:bg-[#AF71DD]/15"><X aria-hidden="true" className="h-5 w-5" /></button>
             </div>
 
             {cartItems.length === 0 ? (

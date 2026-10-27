@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import StoreLayout from '../../components/layout/StoreLayout'
-import { CART_UPDATED_EVENT, getStoreCart } from '../../data/storeCart'
+import { CART_UPDATED_EVENT, clearStoreCart, getStoreCart } from '../../data/storeCart'
+import { createStoreOrder } from '../../data/storeOrders'
 
 const steps = ['Tus datos', 'Método de pago', 'Retiro']
 const paymentMethods = [
@@ -19,7 +20,7 @@ function CheckoutPage() {
   const [step, setStep] = useState(0)
   const [payment, setPayment] = useState('')
   const [pickup, setPickup] = useState('')
-  const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [form, setForm] = useState({ name: '', email: '', phone: '', instagram: '' })
   const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
@@ -34,20 +35,49 @@ function CheckoutPage() {
     }
   }, [])
 
-  const continueStep = (event) => {
+  const submitStep = (event) => {
     event.preventDefault()
     setFormError('')
-    setStep((current) => Math.min(current + 1, steps.length - 1))
+    if (step === 0) {
+      setStep(1)
+      return
+    }
+    if (step === 1) {
+      if (!payment) {
+        setFormError('Elegí un método de pago para continuar.')
+        return
+      }
+      setStep(2)
+      return
+    }
+    confirmOrder()
   }
 
-  const confirmOrder = () => {
+  const confirmOrder = async () => {
     const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
     if (!form.name.trim() || !validEmail || !form.phone.trim() || !payment || !pickup) {
       setFormError('Para confirmar, completá tus datos y elegí un método de pago y un punto de retiro.')
       return
     }
     setFormError('')
-    setSubmitted(true)
+    setSubmitting(true)
+    try {
+      const order = await createStoreOrder({
+        customer: form,
+        items: cartItems,
+        total,
+        payment,
+        paymentTitle: paymentMethods.find((option) => option.id === payment)?.title,
+        pickup,
+        pickupTitle: pickupOptions.find((option) => option.id === pickup)?.title,
+      })
+      clearStoreCart()
+      window.location.assign(`/tienda/pedido/${encodeURIComponent(order.id)}`)
+    } catch {
+      setFormError('No pudimos registrar el pedido. Revisá tu conexión e intentá nuevamente.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const summary = (
@@ -79,29 +109,18 @@ function CheckoutPage() {
             <div className="mt-8 rounded-[18px] bg-white p-8 text-center font-poppins text-black/70">
               Tu carrito está vacío. <a href="/tienda" className="text-[#7A42A7] underline">Volver a la tienda</a>
             </div>
-          ) : submitted ? (
-            <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px]">
-              <section className="rounded-[18px] border border-[#AF71DD]/40 bg-white p-6 sm:p-8">
-                <p className="font-poppins text-sm font-semibold uppercase tracking-wide text-[#AF71DD]">Pedido preparado</p>
-                <h2 className="mt-2 font-poppins text-2xl font-semibold text-[#466729]">¡Gracias, {form.name}!</h2>
-                <p className="mt-4 font-poppins text-sm leading-6 text-black/70">Elegiste pagar con {paymentMethods.find((option) => option.id === payment)?.title} y retirar en {pickupOptions.find((option) => option.id === pickup)?.title}. Una vez ingresada la compra, coordinaremos los detalles del retiro por email o Instagram.</p>
-                <p className="mt-4 font-poppins text-sm text-black/70">En esta etapa, el formulario prepara los datos del pedido; el pago y el envío de la compra se conectarán al integrar el backend.</p>
-                <a href="/tienda" className="mt-6 inline-flex h-11 items-center rounded-full bg-[#AF71DD] px-6 font-poppins text-sm font-semibold text-white">Seguir en la tienda</a>
-              </section>
-              {summary}
-            </div>
           ) : (
             <div className="mt-8 grid items-start gap-8 lg:grid-cols-[1fr_360px]">
               <section className="rounded-[18px] border border-[#AF71DD]/40 bg-white p-5 sm:p-8">
                 <ol aria-label="Pasos del checkout" className="mb-8 grid grid-cols-3 gap-2">
                   {steps.map((label, index) => (
-                    <li key={label} className={`border-b-2 pb-3 font-poppins text-xs sm:text-sm ${index === step ? 'border-[#AF71DD] font-semibold text-[#466729]' : index < step ? 'border-[#466729] text-[#466729]' : 'border-[#466729]/15 text-black/45'}`}>
+                    <li key={label} aria-current={index === step ? 'step' : undefined} className={`border-b-2 pb-3 font-poppins text-xs sm:text-sm ${index === step ? 'border-[#AF71DD] font-semibold text-[#466729]' : index < step ? 'border-[#466729] text-[#466729]' : 'border-[#466729]/15 text-black/45'}`}>
                       <span className="mr-1">{index + 1}.</span>{label}
                     </li>
                   ))}
                 </ol>
 
-                <form onSubmit={(event) => event.preventDefault()}>
+                <form onSubmit={submitStep}>
                   {step === 0 && (
                     <fieldset>
                       <legend className="font-poppins text-lg font-semibold text-[#466729]">1. Tus datos</legend>
@@ -115,7 +134,8 @@ function CheckoutPage() {
                         ].map(({ key, label, ...attributes }) => (
                           <label key={key} className="font-poppins text-sm text-black/75">
                             {label}
-                            <input {...attributes} value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} className="mt-2 h-11 w-full rounded-[8px] border border-[#466729]/30 bg-[#FFFDF8] px-3 outline-none focus:border-[#AF71DD]" />
+                            <input {...attributes} inputMode={key === 'phone' ? 'numeric' : undefined} pattern={key === 'phone' ? '[0-9]*' : undefined} value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: key === 'phone' ? event.target.value.replace(/\D/g, '') : event.target.value }))} className="mt-2 h-11 w-full rounded-[8px] border border-[#466729]/30 bg-[#FFFDF8] px-3 outline-none focus:border-[#AF71DD]" />
+                            {key === 'instagram' && <span className="mt-1 block text-xs text-black/55">Opcional; lo usamos para coordinar la entrega.</span>}
                           </label>
                         ))}
                       </div>
@@ -153,12 +173,12 @@ function CheckoutPage() {
                     </fieldset>
                   )}
 
-                  {formError && <p role="alert" className="mt-4 font-poppins text-xs leading-5 text-[#F13107]">{formError}</p>}
+                  {formError && <p role="alert" aria-live="assertive" className="mt-4 font-poppins text-sm leading-5 text-[#B42318]">{formError}</p>}
                   <div className="mt-8 flex items-center justify-between gap-3 border-t border-[#466729]/15 pt-5">
                     {step > 0 ? <button type="button" onClick={() => setStep((current) => current - 1)} className="h-11 rounded-full border border-[#AF71DD] px-5 font-poppins text-sm text-[#7A42A7]">Atrás</button> : <span />}
-                    {step < 2
-                      ? <button type="button" onClick={continueStep} className="h-11 rounded-full bg-[#AF71DD] px-6 font-poppins text-sm font-semibold text-white transition-colors hover:bg-[#9b58cc]">Continuar</button>
-                      : <button type="button" onClick={confirmOrder} className="h-11 rounded-full bg-[#AF71DD] px-6 font-poppins text-sm font-semibold text-white transition-colors hover:bg-[#9b58cc]">Confirmar pedido</button>}
+                    <button type="submit" disabled={submitting} className="h-11 rounded-full bg-[#AF71DD] px-6 font-poppins text-sm font-semibold text-white transition-colors hover:bg-[#9b58cc] disabled:cursor-wait disabled:opacity-60" aria-live="polite">
+                      {submitting ? 'Registrando pedido…' : step < 2 ? 'Continuar' : 'Confirmar pedido'}
+                    </button>
                   </div>
                 </form>
               </section>
