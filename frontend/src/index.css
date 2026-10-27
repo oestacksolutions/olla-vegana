@@ -17,6 +17,21 @@ textarea:focus-visible {
   box-shadow: 0 0 0 3px rgb(175 113 221 / 22%), 0 0 14px rgb(175 113 221 / 35%);
 }
 
+@keyframes store-banner-fade {
+  from { opacity: 0.45; }
+  to { opacity: 1; }
+}
+
+.store-banner-slide {
+  animation: store-banner-fade 500ms ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .store-banner-slide {
+    animation: none;
+  }
+}
+
 #inicio,
 #puntos,
 #tienda,

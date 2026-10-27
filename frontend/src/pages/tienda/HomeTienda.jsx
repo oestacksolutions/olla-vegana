@@ -1,25 +1,110 @@
+import { useEffect, useState } from 'react'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import StoreLayout from '../../components/layout/StoreLayout'
 import ProductCard from '../../components/tienda/ProductCard'
 import remeraFrente from '../../assets/jpg/remera-frente.jpg'
 import { storeProducts as products } from '../../data/storeProducts'
+import { getVisibleStoreBanners, STORE_BANNERS_UPDATED_EVENT } from '../../data/storeBanners'
 
 function HomeTienda() {
+  const [heroBanners, setHeroBanners] = useState(() => getVisibleStoreBanners())
+  const [bannerIndex, setBannerIndex] = useState(0)
+  const [carouselPaused, setCarouselPaused] = useState(false)
+  const heroBanner = heroBanners[bannerIndex] || null
   const selectedCategory = new URLSearchParams(window.location.search).get('categoria')
   const filteredProducts = selectedCategory
     ? products.filter((product) => product.category === selectedCategory)
     : products
   const distinctProductCount = new Set(products.map((product) => product.id)).size
 
+  useEffect(() => {
+    const updateBanner = () => {
+      setHeroBanners(getVisibleStoreBanners())
+      setBannerIndex(0)
+    }
+    window.addEventListener(STORE_BANNERS_UPDATED_EVENT, updateBanner)
+    window.addEventListener('storage', updateBanner)
+    return () => {
+      window.removeEventListener(STORE_BANNERS_UPDATED_EVENT, updateBanner)
+      window.removeEventListener('storage', updateBanner)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (selectedCategory || heroBanners.length < 2 || carouselPaused || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined
+    const timer = window.setInterval(() => {
+      if (!document.hidden) setBannerIndex((index) => (index + 1) % heroBanners.length)
+    }, 5000)
+    return () => window.clearInterval(timer)
+  }, [heroBanners.length, selectedCategory, carouselPaused])
+
+  const bannerImage = heroBanner?.desktop || remeraFrente
+  const mobileBannerImage = heroBanner?.mobile || bannerImage
+  const desktopZoom = (heroBanner?.desktopZoom ?? 120) / 100
+  const mobileZoom = (heroBanner?.mobileZoom ?? 120) / 100
+  const desktopFocusX = heroBanner?.desktopFocusX ?? heroBanner?.focus ?? 50
+  const desktopFocusY = heroBanner?.desktopFocusY ?? 50
+  const mobileFocusX = heroBanner?.mobileFocusX ?? heroBanner?.focus ?? 50
+  const mobileFocusY = heroBanner?.mobileFocusY ?? 50
+  const desktopImageStyle = {
+    left: `${(50 - desktopFocusX) * (desktopZoom - 1)}%`,
+    top: `${(50 - desktopFocusY) * (desktopZoom - 1)}%`,
+    transform: `scale(${desktopZoom})`,
+    transformOrigin: 'center',
+    objectPosition: `${desktopFocusX}% ${desktopFocusY}%`,
+  }
+  const mobileImageStyle = {
+    left: `${(50 - mobileFocusX) * (mobileZoom - 1)}%`,
+    top: `${(50 - mobileFocusY) * (mobileZoom - 1)}%`,
+    transform: `scale(${mobileZoom})`,
+    transformOrigin: 'center',
+    objectPosition: `${mobileFocusX}% ${mobileFocusY}%`,
+  }
+  const bannerPosition = heroBanner?.position === 'Izquierda'
+    ? 'items-center justify-start text-left'
+    : heroBanner?.position === 'Derecha'
+      ? 'items-center justify-end text-right'
+      : heroBanner?.position === 'Abajo'
+        ? 'items-end justify-center text-center'
+        : 'items-center justify-center text-center'
+
   return (
     <StoreLayout>
-      {!selectedCategory && (
-        <div className="mt-10 h-[400px] w-full overflow-hidden">
-          <img
-            src={remeraFrente}
-            alt="Remera de Olla Vegana"
-            className="h-full w-full object-cover"
-          />
+      {!selectedCategory && heroBanners.length > 0 && (
+        <div
+          role={heroBanners.length > 1 ? 'region' : undefined}
+          aria-roledescription={heroBanners.length > 1 ? 'carrusel' : undefined}
+          aria-label={heroBanners.length > 1 ? 'Banners de la tienda' : undefined}
+          onMouseEnter={() => setCarouselPaused(true)}
+          onMouseLeave={(event) => { if (!event.currentTarget.contains(document.activeElement)) setCarouselPaused(false) }}
+          onFocusCapture={() => setCarouselPaused(true)}
+          onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setCarouselPaused(false) }}
+          className="relative mt-10 aspect-square w-full overflow-hidden bg-[#466729] sm:aspect-[3/1]"
+        >
+          <img key={`${heroBanner?.id}-desktop`} src={bannerImage} alt="" aria-hidden="true" className={`absolute hidden h-full w-full object-cover sm:block ${heroBanners.length > 1 ? 'store-banner-slide' : ''}`} style={desktopImageStyle} />
+          <img key={`${heroBanner?.id}-mobile`} src={mobileBannerImage} alt={heroBanner?.title || 'Remera de Olla Vegana'} className={`absolute h-full w-full object-cover sm:hidden ${heroBanners.length > 1 ? 'store-banner-slide' : ''}`} style={mobileImageStyle} />
+          {(heroBanner?.title || heroBanner?.subtitle || heroBanner?.buttonText) && (
+            <div key={`${heroBanner?.id}-copy`} className={`absolute inset-0 flex bg-gradient-to-r from-black/45 via-black/15 to-transparent px-8 py-8 text-white sm:px-14 ${bannerPosition} ${heroBanners.length > 1 ? 'store-banner-slide' : ''}`}>
+              <div className="max-w-[620px]">
+                {heroBanner.title && <h1 className="font-poppins text-2xl font-semibold sm:text-4xl">{heroBanner.title}</h1>}
+                {heroBanner.subtitle && <p className="mt-3 font-poppins text-sm leading-6 text-white/90 sm:text-base">{heroBanner.subtitle}</p>}
+                {heroBanner.buttonText && <a href={heroBanner.href || '/tienda'} className="mt-5 inline-flex min-h-11 items-center rounded-full bg-[#AF71DD] px-5 font-poppins text-sm font-semibold text-white transition-colors hover:bg-[#9b58cc]">{heroBanner.buttonText}</a>}
+              </div>
+            </div>
+          )}
+          {heroBanners.length > 1 && (
+            <>
+              <button type="button" aria-label="Ver banner anterior" onClick={() => setBannerIndex((index) => (index - 1 + heroBanners.length) % heroBanners.length)} className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/95 text-[#466729] shadow-lg transition-transform hover:scale-105 sm:left-5 sm:h-14 sm:w-14">
+                <ArrowLeft size={23} aria-hidden="true" />
+              </button>
+              <span aria-label={`Banner ${bannerIndex + 1} de ${heroBanners.length}`} className="absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 font-poppins text-[10px] text-white">
+                {bannerIndex + 1} / {heroBanners.length}
+              </span>
+              <button type="button" aria-label="Ver banner siguiente" onClick={() => setBannerIndex((index) => (index + 1) % heroBanners.length)} className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/95 text-[#466729] shadow-lg transition-transform hover:scale-105 sm:right-5 sm:h-14 sm:w-14">
+                <ArrowRight size={23} aria-hidden="true" />
+              </button>
+            </>
+          )}
         </div>
       )}
       {!selectedCategory && (

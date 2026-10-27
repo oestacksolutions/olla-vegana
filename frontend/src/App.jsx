@@ -15,6 +15,7 @@ import AllProductsPage from './pages/tienda/AllProductsPage'
 import CheckoutPage from './pages/tienda/CheckoutPage'
 import OrderStatusPage from './pages/tienda/OrderStatusPage'
 import OrderTrackingPage from './pages/tienda/OrderTrackingPage'
+import AdminApp from './admin/AdminApp'
 
 function App() {
   useEffect(() => {
@@ -37,6 +38,10 @@ function App() {
   }
 
   const pathname = window.location.pathname.replace(/\/$/, '')
+
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    return <AdminApp />
+  }
 
   if (pathname === '/tienda') {
     return <HomeTienda />
