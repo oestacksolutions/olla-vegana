@@ -54,16 +54,38 @@ function CheckoutPage() {
   }
 
   const confirmOrder = async () => {
-    const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
-    if (!form.name.trim() || !validEmail || !form.phone.trim() || !payment || !pickup) {
-      setFormError('Para confirmar, completá tus datos y elegí un método de pago y un punto de retiro.')
+    const customer = {
+      ...form,
+      name: form.name.trim(),
+      email: form.email.trim(),
+      phone: form.phone.replace(/\D/g, ''),
+      instagram: form.instagram.trim(),
+    }
+    const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)
+    if (!customer.name || !validEmail || !customer.phone) {
+      setStep(0)
+      setFormError(!customer.name
+        ? 'Completá tu nombre y apellido.'
+        : !validEmail
+          ? 'Revisá el email: debe tener un formato válido, por ejemplo nombre@email.com.'
+          : 'Completá tu número de teléfono.')
+      return
+    }
+    if (!payment) {
+      setStep(1)
+      setFormError('Elegí un método de pago para continuar.')
+      return
+    }
+    if (!pickup) {
+      setStep(2)
+      setFormError('Elegí un punto de retiro para confirmar el pedido.')
       return
     }
     setFormError('')
     setSubmitting(true)
     try {
       const order = await createStoreOrder({
-        customer: form,
+        customer,
         items: cartItems,
         total,
         payment,
