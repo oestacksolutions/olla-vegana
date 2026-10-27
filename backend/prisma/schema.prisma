@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id       String @id @default(uuid())
+  email    String @unique
+  password String
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  name        String
+  description String      @db.Text
+  category    String      
+  price       Decimal     @db.Decimal(10, 2)
+  stock       Int         @default(0)
+  imageUrl    String?
+  isActive    Boolean     @default(true)
+  orderItems  OrderItem[]
+  createdAt   DateTime    @default(now())
+}
+
+model Order {
+  id             String         @id @default(uuid())
+  customerName   String
+  customerEmail  String
+  customerPhone  String
+  customerInsta  String?        
+  paymentMethod  PaymentMethod
+  pickupLocation PickupLocation
+  total          Decimal        @db.Decimal(10, 2)
+  status         OrderStatus    @default(PENDING)
+  mpPreferenceId String?        
+  items          OrderItem[]
+  createdAt      DateTime       @default(now())
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Decimal @db.Decimal(10, 2)
+  variant   String? 
+}
+
+enum PaymentMethod {
+  MERCADO_PAGO
+  TRANSFERENCIA
+}
+
+enum PickupLocation {
+  MORENO
+  MORON
+  VEGANPALOOZZA
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  READY_FOR_PICKUP
+  DELIVERED
+  CANCELLED
+}
