@@ -7,66 +7,253 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Administradores del panel
 model Admin {
-  id       String @id @default(uuid())
-  email    String @unique
-  password String
+  id         String @id @default(uuid())
+  correo     String @unique
+  contrasena String
 }
 
-model Product {
+// Categorías, con subcategorías opcionales
+model Categoria {
   id          String      @id @default(uuid())
-  name        String
-  description String      @db.Text
-  category    String      
-  price       Decimal     @db.Decimal(10, 2)
-  stock       Int         @default(0)
-  imageUrl    String?
-  isActive    Boolean     @default(true)
-  orderItems  OrderItem[]
-  createdAt   DateTime    @default(now())
+  nombre      String
+  slug        String      @unique
+  descripcion String?     @db.Text
+  activa      Boolean     @default(true)
+  padreId     String?
+  padre       Categoria?  @relation("Subcategorias", fields: [padreId], references: [id])
+  hijas       Categoria[] @relation("Subcategorias")
+  productos   Producto[]
+
+  @@index([padreId])
 }
 
-model Order {
-  id             String         @id @default(uuid())
-  customerName   String
-  customerEmail  String
-  customerPhone  String
-  customerInsta  String?        
-  paymentMethod  PaymentMethod
-  pickupLocation PickupLocation
-  total          Decimal        @db.Decimal(10, 2)
-  status         OrderStatus    @default(PENDING)
-  mpPreferenceId String?        
-  items          OrderItem[]
-  createdAt      DateTime       @default(now())
+// Productos
+model Producto {
+  id            String           @id @default(uuid())
+  nombre        String
+  slug          String           @unique
+  descripcion   String           @db.Text
+  precioBase    Decimal          @db.Decimal(10, 2)
+  activo        Boolean          @default(true)
+  destacado     Boolean          @default(false)
+  categoriaId   String
+  categoria     Categoria        @relation(fields: [categoriaId], references: [id])
+  variantes     Variante[]
+  imagenes      ImagenProducto[]
+  itemsPedido   ItemPedido[]
+  creadoEn      DateTime         @default(now())
+  actualizadoEn DateTime         @updatedAt
+
+  @@index([categoriaId])
 }
 
-model OrderItem {
-  id        String  @id @default(uuid())
-  orderId   String
-  order     Order   @relation(fields: [orderId], references: [id])
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
-  quantity  Int
-  price     Decimal @db.Decimal(10, 2)
-  variant   String? 
+// Variantes de un producto (por ejemplo: gorra negra, gorra blanca)
+model Variante {
+  id          String            @id @default(uuid())
+  productoId  String
+  producto    Producto          @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  precio      Decimal?          @db.Decimal(10, 2)
+  stock       Int               @default(0)
+  activa      Boolean           @default(true)
+  valores     ValorVariante[]
+  imagenes    ImagenProducto[]
+  movimientos MovimientoStock[]
+  itemsPedido ItemPedido[]
+
+  @@index([productoId])
 }
 
-enum PaymentMethod {
+// Imágenes de productos o de una variante en particular
+model ImagenProducto {
+  id         String    @id @default(uuid())
+  url        String
+  posicion   Int       @default(0)
+  productoId String
+  producto   Producto  @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  varianteId String?
+  variante   Variante? @relation(fields: [varianteId], references: [id], onDelete: SetNull)
+
+  @@index([productoId])
+  @@index([varianteId])
+}
+
+// Atributos reutilizables: Color, Talle, Estampado, Material
+model Atributo {
+  id      String          @id @default(uuid())
+  nombre  String          @unique
+  valores ValorAtributo[]
+}
+
+// Valores de cada atributo: Negro, Blanco, L, Flores
+model ValorAtributo {
+  id         String          @id @default(uuid())
+  valor      String
+  atributoId String
+  atributo   Atributo        @relation(fields: [atributoId], references: [id], onDelete: Cascade)
+  variantes  ValorVariante[]
+
+  @@unique([atributoId, valor])
+}
+
+// Une cada variante con sus valores de atributo
+model ValorVariante {
+  varianteId      String
+  variante        Variante      @relation(fields: [varianteId], references: [id], onDelete: Cascade)
+  valorAtributoId String
+  valorAtributo   ValorAtributo @relation(fields: [valorAtributoId], references: [id])
+
+  @@id([varianteId, valorAtributoId])
+  @@index([valorAtributoId])
+}
+
+// Historial de movimientos de stock (cantidad positiva suma, negativa resta)
+model MovimientoStock {
+  id         String              @id @default(uuid())
+  varianteId String
+  variante   Variante            @relation(fields: [varianteId], references: [id])
+  tipo       TipoMovimientoStock
+  cantidad   Int
+  motivo     String?
+  creadoEn   DateTime            @default(now())
+
+  @@index([varianteId])
+}
+
+// Puntos de retiro
+model PuntoRetiro {
+  id        String   @id @default(uuid())
+  nombre    String   @unique
+  direccion String
+  horarios  String   @db.Text
+  activo    Boolean  @default(true)
+  pedidos   Pedido[]
+}
+
+// Pedidos
+model Pedido {
+  id               String                  @id @default(uuid())
+  numero           Int                     @unique @default(autoincrement())
+  nombre           String
+  apellido         String
+  correo           String
+  telefono         String?
+  metodoPago       MetodoPago
+  estadoPago       EstadoPago              @default(PENDIENTE)
+  estado           EstadoPedido            @default(NUEVO)
+  total            Decimal                 @db.Decimal(10, 2)
+  puntoRetiroId    String
+  puntoRetiro      PuntoRetiro             @relation(fields: [puntoRetiroId], references: [id])
+  mpPreferenciaId  String?
+  mpPagoId         String?
+  notaPago         String?                 @db.Text
+  pagoVerificadoEn DateTime?
+  pagadoEn         DateTime?
+  retiradoEn       DateTime?
+  venceEn          DateTime?
+  items            ItemPedido[]
+  historialEstados HistorialEstadoPedido[]
+  creadoEn         DateTime                @default(now())
+
+  @@index([correo])
+  @@index([estado])
+  @@index([estadoPago])
+  @@index([creadoEn])
+}
+
+// Productos dentro de un pedido (nombre y precio copiados al momento de comprar)
+model ItemPedido {
+  id              String    @id @default(uuid())
+  pedidoId        String
+  pedido          Pedido    @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  productoId      String
+  producto        Producto  @relation(fields: [productoId], references: [id])
+  varianteId      String?
+  variante        Variante? @relation(fields: [varianteId], references: [id], onDelete: SetNull)
+  nombreProducto  String
+  detalleVariante String?
+  cantidad        Int
+  precio          Decimal   @db.Decimal(10, 2)
+
+  @@index([pedidoId])
+}
+
+// Historial de cambios de estado de un pedido
+model HistorialEstadoPedido {
+  id             String        @id @default(uuid())
+  pedidoId       String
+  pedido         Pedido        @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  estadoAnterior EstadoPedido?
+  estadoNuevo    EstadoPedido
+  nota           String?
+  adminId        String?
+  creadoEn       DateTime      @default(now())
+
+  @@index([pedidoId])
+}
+
+// Avisos recibidos de proveedores de pago (Mercado Pago), para auditar y no procesar dos veces
+model EventoPago {
+  id          String    @id @default(uuid())
+  proveedor   String
+  idExterno   String
+  tipo        String
+  contenido   Json
+  pedidoId    String?
+  procesadoEn DateTime?
+  creadoEn    DateTime  @default(now())
+
+  @@index([idExterno])
+  @@index([pedidoId])
+}
+
+// Banners del inicio de la tienda
+model Banner {
+  id             String            @id @default(uuid())
+  imagenUrl      String
+  dispositivo    DispositivoBanner
+  posicion       Int               @default(0)
+  posicionImagen String            @default("center")
+  terminaEn      DateTime?
+  activo         Boolean           @default(true)
+}
+
+// Configuraciones sueltas de la tienda
+model Configuracion {
+  clave         String   @id
+  valor         String   @db.Text
+  actualizadoEn DateTime @updatedAt
+}
+
+enum MetodoPago {
   MERCADO_PAGO
   TRANSFERENCIA
 }
 
-enum PickupLocation {
-  MORENO
-  MORON
-  VEGANPALOOZZA
+enum EstadoPago {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+  REEMBOLSADO
 }
 
-enum OrderStatus {
-  PENDING
-  PAID
-  READY_FOR_PICKUP
-  DELIVERED
-  CANCELLED
+enum EstadoPedido {
+  NUEVO
+  EN_PREPARACION
+  LISTO_PARA_RETIRAR
+  RETIRADO
+  CANCELADO
+}
+
+enum TipoMovimientoStock {
+  INGRESO
+  AJUSTE
+  VENTA
+  DEVOLUCION
+}
+
+enum DispositivoBanner {
+  ESCRITORIO
+  CELULAR
 }

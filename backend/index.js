@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
-require('dotenv').config();
+const env = require('./src/config/env');
 
 const prisma = new PrismaClient();
 const app = express();
@@ -35,7 +35,7 @@ app.get('/', (req, res) => {
 // ==========================================
 // INICIAR SERVIDOR
 // ==========================================
-const PORT = process.env.PORT || 3001;
+const PORT = env.PORT;
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor de Olla Vegana corriendo en: http://localhost:${PORT}`);

@@ -1,7 +1,15 @@
 node_modules/
+
+# Variables de entorno y secretos
 .env
-info.md
-.agents/
-.claude/
-.cursor/
-.devin/
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+Desktop.ini
