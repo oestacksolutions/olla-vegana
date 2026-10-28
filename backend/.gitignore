@@ -1,2 +1,7 @@
 node_modules/
 .env
+info.md
+.agents/
+.claude/
+.cursor/
+.devin/
