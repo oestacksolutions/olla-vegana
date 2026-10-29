@@ -6,13 +6,14 @@ import { directCardVariant } from '../../utils/catalogUi'
 
 function ProductCard({ id, slug, name, price, image, localImage, localAlt, alt, agotado, varianteDirecta, animationIndex = 0 }) {
   const [added, setAdded] = useState(false)
+  const [addFailed, setAddFailed] = useState(false)
   const href = `/tienda/${encodeURIComponent(slug || id)}`
   const directVariant = directCardVariant({ varianteDirecta, price })
   const outOfStock = agotado === true || (varianteDirecta && varianteDirecta.agotada === true)
 
   const addSingleVariant = () => {
     if (!directVariant || !id || !slug || outOfStock) return
-    addStoreCartItem({
+    const result = addStoreCartItem({
       productId: id,
       productSlug: slug,
       variantId: directVariant.id,
@@ -20,8 +21,16 @@ function ProductCard({ id, slug, name, price, image, localImage, localAlt, alt, 
       price: directVariant.price,
       quantity: 1,
       variant: 'Única',
+      attributes: [],
+      stockDisponible: directVariant.stockDisponible,
       image: image || fallbackImage,
     })
+    if (!result.ok) {
+      setAddFailed(true)
+      window.setTimeout(() => setAddFailed(false), 2600)
+      return
+    }
+    setAddFailed(false)
     setAdded(true)
     window.setTimeout(() => setAdded(false), 2200)
   }
@@ -61,14 +70,14 @@ function ProductCard({ id, slug, name, price, image, localImage, localAlt, alt, 
         </button>
       ) : directVariant ? (
         <button type="button" onClick={addSingleVariant} className="mt-4 inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[10px] bg-[#AF71DD] px-3 font-poppins text-[13px] font-light text-[#FFF8E9] transition-colors hover:bg-[#AF71DD]/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#466729]">
-          <ShoppingCart aria-hidden="true" className="h-4 w-4 shrink-0" /><span>{added ? 'Añadido al carrito' : 'Añadir al carrito'}</span>
+          <ShoppingCart aria-hidden="true" className="h-4 w-4 shrink-0" /><span>{added ? 'Añadido al carrito' : addFailed ? 'No se pudo agregar' : 'Añadir al carrito'}</span>
         </button>
       ) : (
         <a href={href} className="mt-4 inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[10px] bg-[#AF71DD] px-3 font-poppins text-[13px] font-light text-[#FFF8E9] transition-colors hover:bg-[#AF71DD]/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#466729]">
           <ShoppingCart aria-hidden="true" className="h-4 w-4 shrink-0" /><span>Añadir al carrito</span>
         </a>
       )}
-      {added && <span role="status" className="sr-only">{name} agregado al carrito</span>}
+      {(added || addFailed) && <span role="status" className="sr-only">{added ? `${name} agregado al carrito` : `No se pudo agregar ${name} al carrito`}</span>}
       <div aria-hidden="true" className="mt-4 h-6" />
     </article>
   )

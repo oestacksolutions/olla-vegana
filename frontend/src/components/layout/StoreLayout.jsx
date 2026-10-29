@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { Menu, Search, ShoppingCart, Trash2, X } from 'lucide-react'
+import { Menu, Minus, Plus, Search, ShoppingCart, Trash2, X } from 'lucide-react'
 import BtnAction from '../disenio/btn-action'
 import StoreFooter from './StoreFooter'
 import logoOllaVegana from '../../assets/png/logo_olla_vegana.png'
-import { storeProducts } from '../../data/storeProducts'
-import { CART_UPDATED_EVENT, getStoreCart, removeStoreCartItem } from '../../data/storeCart'
+import { CART_UPDATED_EVENT, adjustStoreCartItemQuantity, getStoreCart, getStoreCartItemCount, getStoreCartItemSubtotal, getStoreCartTotal, removeStoreCartItem, setStoreCartAvailability } from '../../data/storeCart'
 import { getCategories } from '../../services/catalog'
+import { getProduct } from '../../services/api'
 import { CATALOG_FILTERS_UPDATED_EVENT, catalogListingUrl, parseCatalogFilters } from '../../utils/catalogUi'
 
 function StoreLayout({ children }) {
@@ -15,10 +15,16 @@ function StoreLayout({ children }) {
   const [categories, setCategories] = useState([])
   const [categoryStatus, setCategoryStatus] = useState('loading')
   const [searchTerm, setSearchTerm] = useState(() => new URLSearchParams(window.location.search).get('buscar') || '')
+  const [cartRefreshToken, setCartRefreshToken] = useState(0)
+  const cartItemsRef = useRef(cartItems)
   const cartPanelRef = useRef(null)
   const cartCloseButtonRef = useRef(null)
   const previouslyFocusedRef = useRef(null)
-  const cartTotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
+  const lastCartRefreshRef = useRef('')
+  const cartTotal = getStoreCartTotal()
+  const cartCount = getStoreCartItemCount()
+  cartItemsRef.current = cartItems
+  const cartIdentity = [...new Set(cartItems.map((item) => `${item.productSlug || ''}:${item.variantId || ''}`))].sort().join('|')
   const selectedCategory = new URLSearchParams(window.location.search).get('categoria')
   const activeCategory = window.location.pathname.replace(/\/$/, '') === '/tienda'
     ? selectedCategory
@@ -33,6 +39,44 @@ function StoreLayout({ children }) {
       window.removeEventListener('storage', updateCart)
     }
   }, [])
+
+  useEffect(() => {
+    if (!isCartOpen || !cartIdentity) return undefined
+    const requestKey = `${cartRefreshToken}:${cartIdentity}`
+    if (lastCartRefreshRef.current === requestKey) return undefined
+    lastCartRefreshRef.current = requestKey
+    let active = true
+    const grouped = new Map()
+    for (const item of cartItemsRef.current) {
+      if (item.productSlug) {
+        grouped.set(item.productSlug, [...(grouped.get(item.productSlug) || []), item])
+        if (item.variantId) setStoreCartAvailability(item.productSlug, item.variantId, 'unknown')
+      }
+      else setStoreCartAvailability('', item.variantId, 'unknown')
+    }
+    Promise.all([...grouped].map(async ([slug, items]) => {
+      try {
+        const product = await getProduct(slug)
+        if (!active) return
+        for (const item of items) {
+          if (!item.variantId) {
+            continue
+          }
+          const variant = (product.variantes || []).find((entry) => String(entry.id) === String(item.variantId))
+          const stock = variant?.stockDisponible
+          if (!variant || variant.activa === false) setStoreCartAvailability(slug, item.variantId, 'unavailable', 0)
+          else if (!Number.isSafeInteger(stock) || stock < 0 || typeof variant.agotada !== 'boolean' || variant.agotada !== (stock === 0)) {
+            setStoreCartAvailability(slug, item.variantId, 'unknown')
+          } else setStoreCartAvailability(slug, item.variantId, stock > 0 ? 'available' : 'out-of-stock', stock)
+        }
+      } catch (error) {
+        if (!active) return
+        const status = error.status === 404 ? 'unavailable' : 'unknown'
+        for (const item of items) setStoreCartAvailability(slug, item.variantId, status, status === 'unavailable' ? 0 : null)
+      }
+    }))
+    return () => { active = false }
+  }, [isCartOpen, cartIdentity, cartRefreshToken])
 
   useEffect(() => {
     let active = true
@@ -85,6 +129,7 @@ function StoreLayout({ children }) {
   const openCart = () => {
     previouslyFocusedRef.current = document.activeElement
     setIsCartOpen(true)
+    setCartRefreshToken((token) => token + 1)
   }
 
   const submitSearch = (event) => {
@@ -93,9 +138,9 @@ function StoreLayout({ children }) {
   }
 
   const cartSummary = (
-    <button type="button" onClick={openCart} aria-label={`Abrir carrito${cartTotal > 0 ? `, total $${cartTotal.toLocaleString('es-AR')}` : ''}`} aria-expanded={isCartOpen} aria-controls="store-cart-panel" className="relative ml-auto flex min-w-[44px] flex-col items-center pt-6 font-poppins text-[11px] text-[#466729] sm:min-w-[76px] sm:pt-8 sm:text-[14px] sm:ml-0">
+    <button type="button" onClick={openCart} aria-label={`Abrir carrito, ${cartCount} ${cartCount === 1 ? 'artículo' : 'artículos'}, total $${cartTotal.toLocaleString('es-AR')}`} aria-expanded={isCartOpen} aria-controls="store-cart-panel" className="relative ml-auto flex min-w-[44px] flex-col items-center pt-6 font-poppins text-[11px] text-[#466729] sm:min-w-[76px] sm:pt-8 sm:text-[14px] sm:ml-0">
       <ShoppingCart aria-hidden="true" className="absolute left-1/2 top-0 h-6 w-6 -translate-x-1/2 sm:h-8 sm:w-8" />
-      {cartTotal > 0 && <div className="mt-1 flex min-h-5 items-center justify-center sm:min-h-6">${cartTotal.toLocaleString('es-AR')}</div>}
+      {cartCount > 0 && <><span aria-hidden="true" className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#F13107] px-1 text-[10px] font-semibold text-white">{cartCount}</span><div className="mt-1 flex min-h-5 items-center justify-center sm:min-h-6">${cartTotal.toLocaleString('es-AR')}</div></>}
     </button>
   )
 
@@ -138,7 +183,7 @@ function StoreLayout({ children }) {
           <button type="button" aria-label="Cerrar carrito" onClick={() => setIsCartOpen(false)} className="fixed inset-0 z-40 cursor-default bg-black/30" />
           <aside ref={cartPanelRef} id="store-cart-panel" role="dialog" aria-modal="true" aria-labelledby="store-cart-title" className="fixed inset-y-0 right-0 z-50 flex h-dvh w-full max-w-[390px] flex-col bg-[#FFF8E9] p-6 shadow-2xl sm:p-8">
             <div className="flex items-center justify-between border-b border-[#AF71DD]/30 pb-5">
-              <h2 id="store-cart-title" className="font-poppins text-xl font-medium text-[#466729]">Tu carrito</h2>
+              <h2 id="store-cart-title" className="font-poppins text-xl font-medium text-[#466729]">Tu carrito <span className="text-sm font-normal">({cartCount})</span></h2>
               <button ref={cartCloseButtonRef} type="button" aria-label="Cerrar carrito" onClick={() => setIsCartOpen(false)} className="rounded-full p-2 text-[#466729] transition-colors hover:bg-[#AF71DD]/15"><X aria-hidden="true" className="h-5 w-5" /></button>
             </div>
 
@@ -148,18 +193,33 @@ function StoreLayout({ children }) {
               <div className="flex-1 overflow-y-auto py-5">
                 <ul className="flex flex-col gap-5">
                   {cartItems.map((item) => {
-                    const product = storeProducts.find(({ id }) => id === item.productId)
-                    const option = product?.colorVariants?.find(({ label }) => label === item.variant)
-                      || product?.models?.find(({ label }) => label === item.variant)
-                      const image = item.image || option?.image || product?.image
+                    const image = item.image || logoOllaVegana
+                    const subtotal = getStoreCartItemSubtotal(item)
+                    const statusMessage = item.availabilityStatus === 'out-of-stock'
+                      ? 'Sin stock. Podés quitarlo del carrito.'
+                      : item.availabilityStatus === 'unavailable'
+                        ? 'Esta variante ya no está disponible. Podés quitarla del carrito.'
+                        : item.availabilityStatus === 'unknown'
+                          ? !item.variantId
+                            ? 'Esta línea guardada no tiene una variante verificable. Quitala y volvé a agregarla desde el catálogo.'
+                            : 'No pudimos verificar la disponibilidad. Volvé a intentarlo más tarde.'
+                          : Number.isSafeInteger(item.stockDisponible) && item.quantity > item.stockDisponible
+                            ? `Solo hay ${item.stockDisponible} unidades disponibles. Reducí la cantidad para continuar.`
+                            : ''
                     return (
                       <li key={`${item.productId}-${item.variantId || item.size || ''}-${item.variant || ''}`} className="flex gap-4 border-b border-[#466729]/15 pb-5">
-                        {image && <img src={image} alt="" className="h-[82px] w-[64px] rounded-[10px] bg-white object-contain" />}
+                        <img src={image} alt={item.image ? `Imagen de ${item.name}` : 'Logo de Olla Vegana'} onError={(event) => { event.currentTarget.src = logoOllaVegana }} className="h-[82px] w-[64px] rounded-[10px] bg-white object-contain" />
                         <div className="min-w-0 flex-1 font-poppins text-sm text-black/75">
                           <p className="font-medium text-black/80">{item.name}</p>
-                          {(item.size || item.variant) && <p className="mt-1 text-xs text-black/60">{[item.size && `Talle ${item.size}`, item.variant].filter(Boolean).join(' · ')}</p>}
-                          <p className="mt-2">{item.quantity} × ${item.price.toLocaleString('es-AR')}</p>
-                          <p className="mt-1 font-medium text-[#466729]">${(item.quantity * item.price).toLocaleString('es-AR')}</p>
+                          {(item.attributes?.length > 0 || item.size || item.variant) && <p className="mt-1 text-xs text-black/60">{item.attributes?.length ? item.attributes.map(({ atributo, valor }) => `${atributo}: ${valor}`).join(' · ') : [item.size && `Talle ${item.size}`, item.variant].filter(Boolean).join(' · ')}</p>}
+                          <p className="mt-2">${Number(item.price).toLocaleString('es-AR')} c/u</p>
+                          <div className="mt-2 flex items-center gap-2">
+                            <button type="button" aria-label={`Disminuir cantidad de ${item.name}`} disabled={!item.variantId || item.quantity <= 1} onClick={() => adjustStoreCartItemQuantity(item.productId, item.variantId, -1)} className="flex h-8 w-8 items-center justify-center rounded-full border border-[#466729]/30 text-[#466729] disabled:cursor-not-allowed disabled:opacity-40"><Minus aria-hidden="true" size={14} /></button>
+                            <span aria-live="polite" className="min-w-6 text-center">{item.quantity}</span>
+                            <button type="button" aria-label={`Aumentar cantidad de ${item.name}`} disabled={item.availabilityStatus !== 'available' || !Number.isSafeInteger(item.stockDisponible) || item.quantity >= item.stockDisponible} onClick={() => adjustStoreCartItemQuantity(item.productId, item.variantId, 1)} className="flex h-8 w-8 items-center justify-center rounded-full border border-[#466729]/30 text-[#466729] disabled:cursor-not-allowed disabled:opacity-40"><Plus aria-hidden="true" size={14} /></button>
+                          </div>
+                          <p className="mt-1 font-medium text-[#466729]">${subtotal.toLocaleString('es-AR')}</p>
+                          {statusMessage && <p role="status" className="mt-2 text-xs leading-5 text-[#9A3C25]">{statusMessage}</p>}
                         </div>
                         <button type="button" aria-label={`Quitar ${item.name} del carrito`} onClick={() => removeStoreCartItem(item.productId, item.size, item.variant, item.variantId)} className="self-start rounded-full p-2 text-[#466729] transition-colors hover:bg-[#AF71DD]/15 hover:text-[#F13107]"><Trash2 aria-hidden="true" className="h-4 w-4" /></button>
                       </li>

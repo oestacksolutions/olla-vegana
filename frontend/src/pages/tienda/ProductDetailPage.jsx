@@ -96,16 +96,24 @@ function ProductDetailPage({ productId }) {
     const cartImage = specificImage?.url
       || product.imagenes.find((image) => String(image.id) === String(visibleImageId))?.url
       || primary?.url
-    addStoreCartItem({
+    const result = addStoreCartItem({
       productId: product.id,
       productSlug: product.slug,
       variantId: selectedVariant.id,
       name: product.nombre,
       price,
       variant: variantLabel(selectedVariant),
+      attributes: (selectedVariant.valores || []).map(({ atributo, valor }) => ({ atributo, valor })),
       quantity,
+      stockDisponible: selectedStock,
       image: cartImage,
     })
+    if (!result.ok) {
+      setCartConfirmation(result.reason === 'insufficient-stock'
+        ? 'No hay unidades suficientes para agregar esa cantidad.'
+        : 'No pudimos agregarlo. Volvé a verificar la disponibilidad e intentá nuevamente.')
+      return
+    }
     setCartConfirmation(`${quantity} ${quantity === 1 ? 'unidad agregada' : 'unidades agregadas'} al carrito.`)
     window.setTimeout(() => setCartConfirmation(''), 2200)
   }
