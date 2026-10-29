@@ -2,10 +2,10 @@ const express = require('express');
 const { createAdminProductService } = require('../services/adminProductService');
 const { createAdminProductController } = require('../controllers/adminProductController');
 
-// No montar en app.js hasta contar con autenticacion y autorizacion administrativa.
-function createAdminProductRoutes(prisma) {
+// No montar en app.js hasta contar con autenticación y autorización administrativas.
+function createAdminProductRoutes(models) {
   const router = express.Router();
-  const service = createAdminProductService(prisma);
+  const service = createAdminProductService(models);
   const controller = createAdminProductController(service);
 
   router.get('/', controller.list);

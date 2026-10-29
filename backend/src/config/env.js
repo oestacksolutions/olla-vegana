@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const required = ['DATABASE_URL', 'JWT_SECRET'];
+const required = ['MONGODB_URI', 'JWT_SECRET'];
 for (const name of required) {
   if (!process.env[name]) {
     console.error(`Falta la variable obligatoria ${name} en backend/.env.`);
@@ -33,7 +33,7 @@ for (const name of optionalIntegrations) {
 }
 
 module.exports = {
-  DATABASE_URL: process.env.DATABASE_URL,
+  MONGODB_URI: process.env.MONGODB_URI,
   PORT: process.env.PORT || 3001,
   NODE_ENV: process.env.NODE_ENV || 'development',
   FRONTEND_URL: process.env.FRONTEND_URL,
