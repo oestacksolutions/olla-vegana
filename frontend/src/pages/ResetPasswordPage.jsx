@@ -21,8 +21,8 @@ function ResetPasswordPage() {
     }
     setIsSubmitting(true)
     try {
-      const result = await resetAdminPassword(token, contrasena)
-      setMessage(result.message)
+      await resetAdminPassword(token, contrasena)
+      window.location.assign('/login?reset=success')
     } catch (resetError) {
       setError(resetError.message)
     } finally {

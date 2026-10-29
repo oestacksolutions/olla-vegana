@@ -67,7 +67,7 @@ export async function requestPasswordReset(correo) {
 }
 
 export async function resetAdminPassword(token, contrasena) {
-  return postAuth('reset-password', { token, contrasena })
+  return postAuth('reset-password', { token, nuevaContrasena: contrasena })
 }
 
 export function getAdminAuth() {
