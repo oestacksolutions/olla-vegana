@@ -4,10 +4,11 @@ const Producto = require('./models/Producto');
 const Categoria = require('./models/Categoria');
 const ImagenProducto = require('./models/ImagenProducto');
 const Variante = require('./models/Variante');
+const MovimientoStock = require('./models/MovimientoStock');
+const ReservaStock = require('./models/ReservaStock');
 const ValorVariante = require('./models/ValorVariante');
 const ValorAtributo = require('./models/ValorAtributo');
 const Atributo = require('./models/Atributo');
-const ReservaStock = require('./models/ReservaStock');
 const PuntoRetiro = require('./models/PuntoRetiro');
 const RetiroEspecial = require('./models/RetiroEspecial');
 const { createCatalogService } = require('./services/catalogService');
@@ -17,6 +18,7 @@ const createAuthController = require('./controllers/authController');
 const createCatalogRoutes = require('./routes/catalogRoutes');
 const createAuthRoutes = require('./routes/authRoutes');
 const createAdminProductRoutes = require('./routes/adminProductRoutes');
+const createAdminStockRoutes = require('./routes/adminStockRoutes');
 const { createAuthMiddleware } = require('./middlewares/auth');
 const createPickupRoutes = require('./routes/pickupRoutes');
 const notFound = require('./middlewares/notFound');
@@ -48,6 +50,12 @@ app.use(
   createAdminProductRoutes({
     Producto, Categoria, Variante, ValorVariante, ValorAtributo, Atributo, ImagenProducto
   })
+);
+app.use(
+  '/api/admin/stock',
+  authenticate,
+  authorizeAdmin,
+  createAdminStockRoutes({ Producto, Variante, MovimientoStock, ReservaStock, ValorVariante, ValorAtributo, Atributo })
 );
 app.use('/api/pickup-options', createPickupRoutes({ PuntoRetiro, RetiroEspecial }));
 

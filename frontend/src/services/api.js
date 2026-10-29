@@ -38,7 +38,11 @@ export async function apiRequest(path, options = {}) {
       throw new Error('El servidor devolvió una respuesta inválida.')
     }
   }
-  if (!response.ok) throw new Error(data?.error || 'No pudimos completar la solicitud.')
+  if (!response.ok) {
+    const error = new Error(data?.error || 'No pudimos completar la solicitud.')
+    error.status = response.status
+    throw error
+  }
   return data
 }
 

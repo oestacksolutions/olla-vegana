@@ -1,14 +1,8 @@
 const AppError = require('../utils/AppError');
+const { calculateStockAvailability, logStockInconsistency } = require('../utils/stockAvailability');
 
 function calculateAvailableStock(stockFisico, reservas, ahora = new Date()) {
-  const stock = Number.isFinite(Number(stockFisico)) ? Math.max(0, Number(stockFisico)) : 0;
-  const reserved = (reservas || []).reduce((total, reserva) => {
-    const expiresAt = new Date(reserva.venceEn);
-    const quantity = Number(reserva.cantidad);
-    if (reserva.estado !== 'ACTIVA' || Number.isNaN(expiresAt.getTime()) || expiresAt <= ahora || !Number.isFinite(quantity) || quantity <= 0) return total;
-    return total + quantity;
-  }, 0);
-  return Math.max(0, stock - reserved);
+  return calculateStockAvailability(stockFisico, reservas, ahora).stockDisponible;
 }
 
 function valueOf(record, field) {
@@ -35,14 +29,80 @@ function createCatalogService(models, { ahora = () => new Date() } = {}) {
     const products = await query(Producto.find({ activo: true, categoriaId: { $in: filteredCategories.map((c) => c._id) } }), {
       sort: { destacado: -1, createdAt: -1, creadoEn: -1 }
     });
+    if (products.length === 0) return [];
+
+    const productIds = products.map((product) => product._id);
+    const [images, variants] = await Promise.all([
+      query(ImagenProducto.find({
+        productoId: { $in: productIds },
+        $or: [{ estadoAlmacenamiento: 'ACTIVA' }, { estadoAlmacenamiento: { $exists: false } }]
+      }), { sort: { esPrincipal: -1, posicion: 1, _id: 1 } }),
+      query(Variante.find({ productoId: { $in: productIds }, activa: true }))
+    ]);
+    const variantIds = variants.map((variant) => variant._id);
+    const [reservations, valueLinks] = variantIds.length
+      ? await Promise.all([
+        query(ReservaStock.find({ varianteId: { $in: variantIds }, estado: 'ACTIVA' })),
+        query(ValorVariante.find({ varianteId: { $in: variantIds } }))
+      ])
+      : [[], []];
+
     const categoryById = new Map(filteredCategories.map((c) => [String(c._id), c]));
-    return products.map((product) => ({
-      id: String(product._id), nombre: product.nombre, slug: product.slug,
-      precioBase: valueOf(product, 'precioBase'), destacado: product.destacado,
-      categoria: categoryById.get(String(product.categoriaId))
-        ? { nombre: categoryById.get(String(product.categoriaId)).nombre, slug: categoryById.get(String(product.categoriaId)).slug }
-        : null
-    })).filter((product) => product.categoria);
+    const imagesByProduct = new Map();
+    for (const image of images) {
+      const key = String(image.productoId);
+      if (!imagesByProduct.has(key)) imagesByProduct.set(key, image);
+    }
+    const reservationsByVariant = new Map();
+    for (const reservation of reservations) {
+      const key = String(reservation.varianteId);
+      reservationsByVariant.set(key, [...(reservationsByVariant.get(key) || []), reservation]);
+    }
+    const variantsByProduct = new Map();
+    for (const variant of variants) {
+      const key = String(variant.productoId);
+      variantsByProduct.set(key, [...(variantsByProduct.get(key) || []), variant]);
+    }
+    const variantsWithAttributes = new Set(valueLinks.map((link) => String(link.varianteId)));
+
+    const moment = ahora();
+    return products.map((product) => {
+      const category = categoryById.get(String(product.categoriaId));
+      if (!category) return null;
+      const image = imagesByProduct.get(String(product._id));
+      const productVariants = variantsByProduct.get(String(product._id)) || [];
+      const availabilityByVariant = new Map();
+      const stockDisponible = productVariants.reduce((total, variant) => {
+        const availability = calculateStockAvailability(variant.stock, reservationsByVariant.get(String(variant._id)), moment);
+        availabilityByVariant.set(String(variant._id), availability);
+        logStockInconsistency(variant._id, availability);
+        return total + availability.stockDisponible;
+      }, 0);
+      let varianteDirecta = null;
+      if (productVariants.length === 1 && !variantsWithAttributes.has(String(productVariants[0]._id))) {
+        const variant = productVariants[0];
+        const availability = availabilityByVariant.get(String(variant._id));
+        if (!availability.inconsistente) {
+          varianteDirecta = {
+            id: String(variant._id),
+            precio: valueOf(variant, 'precio'),
+            stockDisponible: availability.stockDisponible,
+            agotada: availability.stockDisponible === 0
+          };
+        }
+      }
+      return {
+        id: String(product._id), nombre: product.nombre, slug: product.slug,
+        precioBase: valueOf(product, 'precioBase'), descripcion: product.descripcion, destacado: product.destacado,
+        categoria: { nombre: category.nombre, slug: category.slug },
+        imagenPrincipal: image ? {
+          url: image.url,
+          textoAlternativo: image.textoAlternativo || ''
+        } : null,
+        disponibilidad: { stockDisponible, agotado: stockDisponible === 0 },
+        varianteDirecta
+      };
+    }).filter(Boolean);
   }
 
   async function getProductBySlug(slug) {
@@ -72,7 +132,7 @@ function createCatalogService(models, { ahora = () => new Date() } = {}) {
     const valueById = new Map(attributeValues.map((value) => [String(value._id), value]));
     const attributeById = new Map(attributes.map((attribute) => [String(attribute._id), attribute]));
     const reservations = variantIds.length
-      ? await query(ReservaStock.find({ varianteId: { $in: variantIds }, estado: 'ACTIVA', venceEn: { $gt: moment } }))
+      ? await query(ReservaStock.find({ varianteId: { $in: variantIds }, estado: 'ACTIVA' }))
       : [];
     const linksByVariant = new Map();
     for (const link of valueLinks) {
@@ -96,7 +156,9 @@ function createCatalogService(models, { ahora = () => new Date() } = {}) {
       })),
       variantes: variants.map((variant) => {
         const id = String(variant._id);
-        const available = calculateAvailableStock(variant.stock, reservationsByVariant.get(id), moment);
+        const availability = calculateStockAvailability(variant.stock, reservationsByVariant.get(id), moment);
+        logStockInconsistency(id, availability);
+        const available = availability.stockDisponible;
         return {
           id, precio: valueOf(variant, 'precio'), stockDisponible: available, agotada: available === 0,
           valores: (linksByVariant.get(id) || []).map((link) => valueById.get(String(link.valorAtributoId)))

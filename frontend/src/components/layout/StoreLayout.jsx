@@ -3,15 +3,18 @@ import { Menu, Search, ShoppingCart, Trash2, X } from 'lucide-react'
 import BtnAction from '../disenio/btn-action'
 import StoreFooter from './StoreFooter'
 import logoOllaVegana from '../../assets/png/logo_olla_vegana.png'
-import { storeCategories, storeProducts } from '../../data/storeProducts'
+import { storeProducts } from '../../data/storeProducts'
 import { CART_UPDATED_EVENT, getStoreCart, removeStoreCartItem } from '../../data/storeCart'
 import { getCategories } from '../../services/catalog'
+import { CATALOG_FILTERS_UPDATED_EVENT, catalogListingUrl, parseCatalogFilters } from '../../utils/catalogUi'
 
 function StoreLayout({ children }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [cartItems, setCartItems] = useState(() => getStoreCart())
   const [isCartOpen, setIsCartOpen] = useState(false)
-  const [categories, setCategories] = useState(storeCategories)
+  const [categories, setCategories] = useState([])
+  const [categoryStatus, setCategoryStatus] = useState('loading')
+  const [searchTerm, setSearchTerm] = useState(() => new URLSearchParams(window.location.search).get('buscar') || '')
   const cartPanelRef = useRef(null)
   const cartCloseButtonRef = useRef(null)
   const previouslyFocusedRef = useRef(null)
@@ -34,9 +37,21 @@ function StoreLayout({ children }) {
   useEffect(() => {
     let active = true
     getCategories().then((items) => {
-      if (active && items.length) setCategories(items.map(({ nombre, slug }) => [nombre, `/tienda?categoria=${slug}`, slug]))
-    }).catch(() => {})
+      if (!active) return
+      setCategories(items.map(({ nombre, slug }) => [nombre, `/tienda?categoria=${encodeURIComponent(slug)}`, slug]))
+      setCategoryStatus(items.length ? 'loaded' : 'empty')
+    }).catch(() => { if (active) setCategoryStatus('error') })
     return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    const syncSearch = () => setSearchTerm(new URLSearchParams(window.location.search).get('buscar') || '')
+    window.addEventListener('popstate', syncSearch)
+    window.addEventListener(CATALOG_FILTERS_UPDATED_EVENT, syncSearch)
+    return () => {
+      window.removeEventListener('popstate', syncSearch)
+      window.removeEventListener(CATALOG_FILTERS_UPDATED_EVENT, syncSearch)
+    }
   }, [])
 
   useEffect(() => {
@@ -72,6 +87,11 @@ function StoreLayout({ children }) {
     setIsCartOpen(true)
   }
 
+  const submitSearch = (event) => {
+    event.preventDefault()
+    window.location.assign(catalogListingUrl(parseCatalogFilters(window.location.search), { buscar: searchTerm }))
+  }
+
   const cartSummary = (
     <button type="button" onClick={openCart} aria-label={`Abrir carrito${cartTotal > 0 ? `, total $${cartTotal.toLocaleString('es-AR')}` : ''}`} aria-expanded={isCartOpen} aria-controls="store-cart-panel" className="relative ml-auto flex min-w-[44px] flex-col items-center pt-6 font-poppins text-[11px] text-[#466729] sm:min-w-[76px] sm:pt-8 sm:text-[14px] sm:ml-0">
       <ShoppingCart aria-hidden="true" className="absolute left-1/2 top-0 h-6 w-6 -translate-x-1/2 sm:h-8 sm:w-8" />
@@ -87,9 +107,11 @@ function StoreLayout({ children }) {
             <a href="/tienda" aria-label="Ver todos los productos" className="shrink-0 lg:ml-36">
               <img src={logoOllaVegana} alt="Olla Vegana" className="h-[70px] w-[70px] object-contain sm:h-[82px] sm:w-[82px] lg:h-[118px] lg:w-[118px]" />
             </a>
-            <form role="search" onSubmit={(event) => event.preventDefault()} className="hidden h-[42px] min-w-0 flex-1 items-center gap-2 rounded-[20px] border border-[#AF71DD] bg-white px-3 text-[#AF71DD] sm:ml-auto sm:flex sm:h-[46px] sm:max-w-[280px] lg:max-w-[360px]">
+            <form role="search" onSubmit={submitSearch} className="hidden h-[42px] min-w-0 flex-1 items-center gap-2 rounded-[20px] border border-[#AF71DD] bg-white px-3 text-[#AF71DD] sm:ml-auto sm:flex sm:h-[46px] sm:max-w-[280px] lg:max-w-[360px]">
               <Search aria-hidden="true" className="h-5 w-5 shrink-0" />
-              <input type="search" name="productos" aria-label="Buscar productos" placeholder="Buscar productos" className="min-w-0 flex-1 bg-transparent font-poppins text-sm text-[#292621] outline-none placeholder:text-[#AF71DD]/70" />
+              <input type="search" name="productos" aria-label="Buscar productos" placeholder="Buscar productos" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="min-w-0 flex-1 bg-transparent font-poppins text-sm text-[#292621] outline-none placeholder:text-[#AF71DD]/70" />
+              {searchTerm && <button type="button" aria-label="Limpiar búsqueda" onClick={() => window.location.assign(catalogListingUrl(parseCatalogFilters(window.location.search), { buscar: '' }))} className="rounded-full px-1 font-poppins text-sm text-[#466729]">×</button>}
+              <button type="submit" aria-label="Buscar" className="rounded-full p-1 text-[#466729] transition-colors hover:bg-[#466729]/10"><Search aria-hidden="true" className="h-5 w-5" /></button>
             </form>
             <div className="hidden shrink-0 items-center gap-3 sm:flex">
               {cartSummary}
@@ -101,11 +123,14 @@ function StoreLayout({ children }) {
           </button>
         </div>
         <div className="absolute right-4 top-[60px] sm:hidden">{cartSummary}</div>
-        {isMenuOpen && <nav id="menu-categorias-tienda" aria-label="Categorías de la tienda" className="border-t border-[#AF71DD]/20 px-4 py-3 sm:hidden"><ul className="flex flex-col gap-3">{categories.map(([label, href]) => <li key={href}><a href={href} onClick={() => setIsMenuOpen(false)} className="block font-scripter text-[18px] text-black/80 transition-colors hover:text-[#F13107]">{label}</a></li>)}<li><a href="/login" onClick={() => setIsMenuOpen(false)} className="block font-poppins text-sm font-semibold text-[#466729]">Administrar tienda</a></li></ul></nav>}
+        {isMenuOpen && <nav id="menu-categorias-tienda" aria-label="Categorías de la tienda" className="border-t border-[#AF71DD]/20 px-4 py-3 sm:hidden"><ul className="flex flex-col gap-3">{categories.map(([label, href]) => <li key={href}><a href={href} onClick={() => setIsMenuOpen(false)} className="block font-scripter text-[18px] text-black/80 transition-colors hover:text-[#F13107]">{label}</a></li>)}{categoryStatus === 'loading' && <li role="status" className="font-scripter text-[18px] text-black/50">Cargando categorías…</li>}{categoryStatus === 'empty' && <li className="font-scripter text-[18px] text-black/50">No hay categorías disponibles.</li>}{categoryStatus === 'error' && <li role="status" className="font-scripter text-[18px] text-black/50">No pudimos cargar las categorías.</li>}<li><a href="/login" onClick={() => setIsMenuOpen(false)} className="block font-poppins text-sm font-semibold text-[#466729]">Administrar tienda</a></li></ul></nav>}
       </header>
       <div className="sticky top-0 z-30 mt-8 hidden h-[48px] w-full bg-[#FFF8E9] shadow-sm sm:block">
         <nav aria-label="Categorías de la tienda" className="flex h-full w-full items-center justify-center gap-8 border-b border-[#AF71DD]/15 sm:gap-12">
           {categories.map(([label, href, category]) => <a key={label} href={href} aria-current={activeCategory === category ? 'page' : undefined} className={`inline-flex h-full items-center px-2 font-scripter text-[20px] transition-colors hover:text-[#F13107] ${activeCategory === category ? 'text-[#F13107]' : 'text-black/80'}`}>{label}</a>)}
+          {categoryStatus === 'loading' && <span role="status" className="font-scripter text-[18px] text-black/50">Cargando categorías…</span>}
+          {categoryStatus === 'empty' && <span className="font-scripter text-[18px] text-black/50">No hay categorías disponibles.</span>}
+          {categoryStatus === 'error' && <span role="status" className="font-scripter text-[18px] text-black/50">No pudimos cargar las categorías.</span>}
         </nav>
       </div>
       {isCartOpen && (
@@ -126,9 +151,9 @@ function StoreLayout({ children }) {
                     const product = storeProducts.find(({ id }) => id === item.productId)
                     const option = product?.colorVariants?.find(({ label }) => label === item.variant)
                       || product?.models?.find(({ label }) => label === item.variant)
-                    const image = option?.image || product?.image
+                      const image = item.image || option?.image || product?.image
                     return (
-                      <li key={`${item.productId}-${item.size || ''}-${item.variant || ''}`} className="flex gap-4 border-b border-[#466729]/15 pb-5">
+                      <li key={`${item.productId}-${item.variantId || item.size || ''}-${item.variant || ''}`} className="flex gap-4 border-b border-[#466729]/15 pb-5">
                         {image && <img src={image} alt="" className="h-[82px] w-[64px] rounded-[10px] bg-white object-contain" />}
                         <div className="min-w-0 flex-1 font-poppins text-sm text-black/75">
                           <p className="font-medium text-black/80">{item.name}</p>
@@ -136,7 +161,7 @@ function StoreLayout({ children }) {
                           <p className="mt-2">{item.quantity} × ${item.price.toLocaleString('es-AR')}</p>
                           <p className="mt-1 font-medium text-[#466729]">${(item.quantity * item.price).toLocaleString('es-AR')}</p>
                         </div>
-                        <button type="button" aria-label={`Quitar ${item.name} del carrito`} onClick={() => removeStoreCartItem(item.productId, item.size, item.variant)} className="self-start rounded-full p-2 text-[#466729] transition-colors hover:bg-[#AF71DD]/15 hover:text-[#F13107]"><Trash2 aria-hidden="true" className="h-4 w-4" /></button>
+                        <button type="button" aria-label={`Quitar ${item.name} del carrito`} onClick={() => removeStoreCartItem(item.productId, item.size, item.variant, item.variantId)} className="self-start rounded-full p-2 text-[#466729] transition-colors hover:bg-[#AF71DD]/15 hover:text-[#F13107]"><Trash2 aria-hidden="true" className="h-4 w-4" /></button>
                       </li>
                     )
                   })}
