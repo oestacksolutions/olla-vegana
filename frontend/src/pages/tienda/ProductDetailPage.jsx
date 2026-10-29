@@ -1,20 +1,51 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowLeft, ShoppingCart } from 'lucide-react'
 import BtnAction from '../../components/disenio/btn-action'
 import StoreLayout from '../../components/layout/StoreLayout'
-import { storeProducts } from '../../data/storeProducts'
+import { getProduct } from '../../services/api'
 import { addStoreCartItem } from '../../data/storeCart'
 
 const instagramUrl = 'https://www.instagram.com/olla.vegana/'
 
 function ProductDetailPage({ productId }) {
-  const product = storeProducts.find(({ id }) => id === productId)
+  const [product, setProduct] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  useEffect(() => {
+    let active = true
+    setIsLoading(true)
+    getProduct(productId)
+      .then((data) => {
+        if (!active) return
+        setProduct({
+          id: data.slug,
+          name: data.nombre,
+          price: Number(data.precioBase || data.variantes?.[0]?.precio || 0),
+          image: data.imagenes?.[0]?.url,
+          alt: data.nombre,
+          description: data.descripcion ? [data.descripcion] : [],
+          variants: data.variantes,
+          colorVariants: data.variantes?.map((variant) => ({
+            label: variant.valores?.map(({ valor }) => valor).join(' · ') || 'Variante',
+            image: data.imagenes?.find(({ varianteId }) => varianteId === variant.id)?.url || data.imagenes?.[0]?.url,
+            stock: variant.stockDisponible,
+          })) || [],
+        })
+      })
+      .catch(() => { if (active) setLoadError('No pudimos cargar ese producto.') })
+      .finally(() => { if (active) setIsLoading(false) })
+    return () => { active = false }
+  }, [productId])
   const options = product?.colorVariants || product?.models || []
   const [selectedVariant, setSelectedVariant] = useState(options[0])
   const [selectedSize, setSelectedSize] = useState(product?.sizes?.find((size) => !product.outOfStockSizes?.includes(size)))
   const [cartConfirmation, setCartConfirmation] = useState(false)
 
-  if (!product) {
+  if (isLoading) {
+    return <StoreLayout><section className="mx-auto flex w-full max-w-[1000px] flex-1 items-center justify-center px-6 py-20"><p className="font-poppins text-sm text-black/55">Cargando producto…</p></section></StoreLayout>
+  }
+
+  if (!product || loadError) {
     return (
       <StoreLayout>
         <section className="mx-auto flex w-full max-w-[1000px] flex-1 flex-col items-center justify-center px-6 py-20 text-center">

@@ -3,19 +3,27 @@ import { ArrowLeft, ArrowRight } from 'lucide-react'
 import StoreLayout from '../../components/layout/StoreLayout'
 import ProductCard from '../../components/tienda/ProductCard'
 import remeraFrente from '../../assets/jpg/remera-frente.jpg'
-import { storeProducts as products } from '../../data/storeProducts'
+import { fetchStoreProducts } from '../../services/catalog'
 import { getVisibleStoreBanners, STORE_BANNERS_UPDATED_EVENT } from '../../data/storeBanners'
 
 function HomeTienda() {
   const [heroBanners, setHeroBanners] = useState(() => getVisibleStoreBanners())
   const [bannerIndex, setBannerIndex] = useState(0)
   const [carouselPaused, setCarouselPaused] = useState(false)
+  const [products, setProducts] = useState([])
+  const [catalogError, setCatalogError] = useState('')
   const heroBanner = heroBanners[bannerIndex] || null
   const selectedCategory = new URLSearchParams(window.location.search).get('categoria')
-  const filteredProducts = selectedCategory
-    ? products.filter((product) => product.category === selectedCategory)
-    : products
+  const filteredProducts = products
   const distinctProductCount = new Set(products.map((product) => product.id)).size
+
+  useEffect(() => {
+    let active = true
+    fetchStoreProducts(selectedCategory)
+      .then((items) => { if (active) setProducts(items) })
+      .catch(() => { if (active) setCatalogError('No pudimos cargar los productos. Intentá nuevamente.') })
+    return () => { active = false }
+  }, [selectedCategory])
 
   useEffect(() => {
     const updateBanner = () => {
@@ -115,6 +123,8 @@ function HomeTienda() {
         </div>
       )}
       <section id="productos" aria-label="Productos" className={`w-full px-6 pb-16 sm:px-8 ${selectedCategory ? 'pt-12' : ''}`}>
+        {catalogError && <p role="alert" className="mx-auto max-w-[960px] rounded-xl bg-red-50 p-4 text-center font-poppins text-sm text-red-800">{catalogError}</p>}
+        {!catalogError && products.length === 0 && <p role="status" className="py-12 text-center font-poppins text-sm text-black/55">Cargando productos…</p>}
         {selectedCategory && (
           <a href="/tienda/productos" className="mx-auto mb-8 flex w-full max-w-[960px] items-center gap-2 font-poppins text-sm text-[#466729] transition-colors hover:text-[#F13107]">
             <ArrowLeft aria-hidden="true" className="h-4 w-4" />

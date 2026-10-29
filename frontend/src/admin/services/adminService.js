@@ -1,51 +1,94 @@
-import { mockOrders, mockProducts } from '../data/mockAdminData'
+import { createAdminProduct, getAdminProducts, getCategories, setAdminProductVisibility, updateAdminProduct } from '../../services/api'
+import { mockOrders } from '../data/mockAdminData'
 
-const STORAGE_KEY = 'olla-vegana-admin-mock'
+let currentProducts = []
 
-function readState() {
-  try {
-    return JSON.parse(window.localStorage.getItem(STORAGE_KEY) || '{}')
-  } catch {
-    return {}
+function mapVariant(variant) {
+  return {
+    label: variant.valores?.map(({ atributo, valor }) => `${atributo}: ${valor}`).join(' · ') || 'Variante',
+    stock: Number(variant.stock ?? variant.stockDisponible ?? 0),
+    id: variant.id,
   }
 }
 
-function writeState(state) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+function mapProduct(product) {
+  const combinations = (product.variantes || []).map(mapVariant)
+  return {
+    id: product.id,
+    name: product.nombre,
+    category: product.categoria?.nombre || 'Sin categoría',
+    price: Number(product.precioBase || product.variantes?.[0]?.precio || 0),
+    stock: combinations.reduce((total, item) => total + item.stock, 0),
+    status: product.activo === false ? 'Oculto' : 'Activo',
+    featured: Boolean(product.destacado),
+    description: product.descripcion || '',
+    images: (product.imagenes || []).map((image) => ({ name: image.id, url: image.url })),
+    combinations,
+    variants: combinations.length,
+    slug: product.slug,
+    categoryId: product.categoriaId,
+  }
 }
 
 export async function getAdminSnapshot() {
-  await Promise.resolve()
-  const saved = readState()
+  const response = await getAdminProducts()
+  currentProducts = (response.productos || []).map(mapProduct)
   return {
-    orders: saved.orders || mockOrders,
-    products: saved.products || mockProducts,
+    orders: mockOrders,
+    products: currentProducts,
     updatedAt: new Date().toISOString(),
   }
 }
 
-export async function updateMockOrder(orderId, updates) {
-  const state = readState()
-  const orders = state.orders || mockOrders
-  const order = orders.find((item) => item.id === orderId)
-  if (!order) throw new Error('No encontramos ese pedido.')
-  const changes = []
-  if (updates.status && updates.status !== order.status) changes.push(`Estado: ${updates.status}`)
-  if (updates.notes !== undefined && updates.notes !== order.notes) changes.push('Observación interna actualizada')
-  const updated = {
-    ...order,
-    ...updates,
-    history: changes.length ? [...(order.history || []), `${changes.join(' · ')} · ${new Date().toLocaleString('es-AR')}`] : order.history,
-    ...(updates.status === 'Retirado' ? { pickedUpAt: new Date().toISOString(), pickedUpBy: 'Administrador de demostración' } : {}),
+function toApiProduct(product, categoryId) {
+  return {
+    nombre: product.name.trim(),
+    descripcion: product.description?.trim() || product.name.trim(),
+    precioBase: String(product.price),
+    categoriaId: categoryId || product.categoryId,
+    destacado: Boolean(product.featured),
   }
-  state.orders = orders.map((item) => item.id === orderId ? updated : item)
-  writeState(state)
-  return updated
 }
 
 export async function saveMockProducts(products) {
-  const state = readState()
-  state.products = products
-  writeState(state)
-  return products
+  const previousById = new Map(currentProducts.map((product) => [product.id, product]))
+  const categories = await getCategories()
+  const saved = []
+
+  for (const product of products) {
+    const previous = previousById.get(product.id)
+    if (!previous) {
+      const category = categories.find(({ nombre }) => nombre.toLowerCase() === product.category.toLowerCase())
+      if (!category) throw new Error('La categoría seleccionada no existe en el catálogo.')
+      const created = await createAdminProduct({
+        ...toApiProduct(product, category.id),
+        slug: product.slug || product.name.toLowerCase().trim().replace(/\s+/g, '-'),
+        activo: product.status !== 'Oculto',
+      })
+      saved.push(mapProduct(created))
+      continue
+    }
+
+    const changed = {}
+    if (product.name !== previous.name) changed.nombre = product.name.trim()
+    if (product.description !== previous.description) changed.descripcion = product.description?.trim() || product.name.trim()
+    if (Number(product.price) !== Number(previous.price)) changed.precioBase = String(product.price)
+    if (Boolean(product.featured) !== Boolean(previous.featured)) changed.destacado = Boolean(product.featured)
+    if (Object.keys(changed).length) await updateAdminProduct(product.id, changed)
+    if ((product.status === 'Oculto') !== (previous.status === 'Oculto')) await setAdminProductVisibility(product.id, product.status !== 'Oculto')
+    saved.push({ ...previous, ...product })
+  }
+
+  currentProducts = saved
+  return saved
+}
+
+export async function updateMockOrder(orderId, updates) {
+  const order = mockOrders.find((item) => item.id === orderId)
+  if (!order) throw new Error('No encontramos ese pedido.')
+  return {
+    ...order,
+    ...updates,
+    history: [...(order.history || []), `Actualizado: ${new Date().toLocaleString('es-AR')}`],
+  }
 }
