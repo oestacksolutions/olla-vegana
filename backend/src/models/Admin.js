@@ -1,6 +1,7 @@
 const { Schema, model } = require('mongoose');
-module.exports = model('Admin', new Schema({
+const schema = new Schema({
   correo: { type: String, required: true, unique: true },
-  contrasena: { type: String, required: true },
+  contrasena: { type: String, required: true, select: false },
   activo: { type: Boolean, default: true }
-}, { timestamps: true }));
+}, { timestamps: true });
+module.exports = model('Admin', schema);

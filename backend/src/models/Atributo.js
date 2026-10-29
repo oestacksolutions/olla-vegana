@@ -1,4 +1,5 @@
 const { Schema, model } = require('mongoose');
-module.exports = model('Atributo', new Schema({
+const schema = new Schema({
   nombre: { type: String, required: true, unique: true }
-}, { timestamps: true }));
+}, { timestamps: true });
+module.exports = model('Atributo', schema);
