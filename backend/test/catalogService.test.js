@@ -43,17 +43,19 @@ test('categorías públicas excluyen inactivas', async () => {
 
 test('detalle usa referencias Mongo, muestra atributos e imágenes y calcula stock vigente', async () => {
   const product = { _id: 'p1', nombre: 'Remera', slug: 'remera', descripcion: 'Detalle', precioBase: '45000.00', destacado: false, categoriaId: 'c1' };
+  let variantFilter;
   const service = createCatalogService(models({
     Producto: { findOne: async () => product },
     Categoria: { findOne: async () => ({ _id: 'c1', nombre: 'Remeras', slug: 'remeras', activa: true }) },
     ImagenProducto: { find: async () => [{ _id: 'i1', url: '/real.jpg', posicion: 0 }] },
-    Variante: { find: async () => [{ _id: 'v1', stock: 5, activa: true, precio: null }] },
+    Variante: { find: async (filter) => { variantFilter = filter; return [{ _id: 'v1', stock: 5, activa: true, precio: null }]; } },
     ValorVariante: { find: async () => [{ varianteId: 'v1', valorAtributoId: 'va1' }] },
     ValorAtributo: { find: async () => [{ _id: 'va1', atributoId: 'a1', valor: 'L' }] },
     Atributo: { find: async () => [{ _id: 'a1', nombre: 'Talle' }] },
     ReservaStock: { find: async () => [{ varianteId: 'v1', cantidad: 2, estado: 'ACTIVA', venceEn: new Date('2026-10-28T13:00:00Z') }] }
   }), { ahora: () => now });
   const result = await service.getProductBySlug('remera');
+  assert.deepEqual(variantFilter, { productoId: 'p1', activa: true });
   assert.equal(result.variantes[0].stockDisponible, 3);
   assert.equal(result.variantes[0].agotada, false);
   assert.deepEqual(result.variantes[0].valores, [{ atributo: 'Talle', valor: 'L' }]);
