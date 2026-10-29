@@ -36,7 +36,7 @@ function makeModels(overrides = {}) {
     precioBase: mongoose.Types.Decimal128.fromString('45000.00'), categoriaId: CATEGORY_ID,
     activo: true, destacado: false, createdAt: new Date('2025-01-01T00:00:00Z')
   };
-  const category = { _id: CATEGORY_ID, nombre: 'Remeras', slug: 'remeras' };
+  const category = { _id: CATEGORY_ID, nombre: 'Remeras', slug: 'remeras', activa: true };
   const variant = { _id: VARIANT_ID, productoId: PRODUCT_ID, stock: 4, activa: true, precio: null };
   return {
     Producto: {
@@ -176,6 +176,17 @@ test('el estado destacado se gestiona con PATCH general, sin endpoint duplicado'
   await service.updateProduct(PRODUCT_ID, { destacado: false });
   assert.deepEqual(update, { destacado: false });
   await assert.rejects(service.updateProduct(PRODUCT_ID, { destacado: 'true' }), (error) => error.statusCode === 400);
+});
+
+test('impide asignar o republicar productos en categorías inactivas', async () => {
+  let updateCalled = false;
+  const service = createAdminProductService(makeModels({
+    Categoria: { findOne: async () => ({ _id: CATEGORY_ID, activa: false }) },
+    Producto: { findByIdAndUpdate: async () => { updateCalled = true; return null; } }
+  }));
+  await assert.rejects(service.createProduct(validProduct), (error) => error.statusCode === 409);
+  await assert.rejects(service.setVisibility(PRODUCT_ID, true), (error) => error.statusCode === 409);
+  assert.equal(updateCalled, false);
 });
 
 test('parsea filtros y paginación, rechaza valores incorrectos', () => {
