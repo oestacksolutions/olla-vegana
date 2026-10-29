@@ -1,35 +1,60 @@
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const { MAX_PAGE_SIZE } = require('../services/adminProductService');
 
-function parseProductFilters(query) {
-  const allowedFields = ['nombre', 'categoriaId', 'activo'];
-  const unexpected = Object.keys(query).filter((field) => !allowedFields.includes(field));
-  if (unexpected.length > 0) {
-    throw AppError.solicitudInvalida('El filtro contiene parametros no permitidos');
+function parseBoolean(value, field) {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  throw AppError.solicitudInvalida(`El filtro ${field} debe ser true o false`);
+}
+
+function parsePage(value, field, fallback, maximum = Number.MAX_SAFE_INTEGER) {
+  if (value === undefined) return fallback;
+  if (typeof value !== 'string' || !/^\d+$/.test(value)) {
+    throw AppError.solicitudInvalida(`El parámetro ${field} debe ser un entero válido`);
   }
+  const number = Number(value);
+  if (!Number.isSafeInteger(number) || number < 1 || number > maximum) {
+    throw AppError.solicitudInvalida(`El parámetro ${field} está fuera de rango`);
+  }
+  return number;
+}
+
+function parseProductQuery(query) {
+  const allowedFields = ['nombre', 'categoriaId', 'activo', 'destacado', 'page', 'limit'];
+  const unexpected = Object.keys(query).filter((field) => !allowedFields.includes(field));
+  if (unexpected.length) throw AppError.solicitudInvalida('La consulta contiene parámetros no permitidos');
 
   const filters = {};
   for (const field of ['nombre', 'categoriaId']) {
     if (query[field] === undefined) continue;
     if (typeof query[field] !== 'string' || !query[field].trim()) {
-      throw AppError.solicitudInvalida(`El filtro ${field} debe ser un texto no vacio`);
+      throw AppError.solicitudInvalida(`El filtro ${field} debe ser un texto no vacío`);
     }
     filters[field] = query[field].trim();
   }
-
-  if (query.activo !== undefined) {
-    if (query.activo === 'true') filters.activo = true;
-    else if (query.activo === 'false') filters.activo = false;
-    else throw AppError.solicitudInvalida('El filtro activo debe ser true o false');
+  for (const field of ['activo', 'destacado']) {
+    if (query[field] !== undefined) filters[field] = parseBoolean(query[field], field);
   }
 
-  return filters;
+  return {
+    filters,
+    pagination: {
+      page: parsePage(query.page, 'page', 1),
+      limit: parsePage(query.limit, 'limit', 20, MAX_PAGE_SIZE)
+    }
+  };
 }
 
 function createAdminProductController(service) {
   return {
     list: asyncHandler(async (req, res) => {
-      res.json(await service.listProducts(parseProductFilters(req.query)));
+      const { filters, pagination } = parseProductQuery(req.query);
+      res.json(await service.listProducts(filters, pagination));
+    }),
+
+    getById: asyncHandler(async (req, res) => {
+      res.json(await service.getProductById(req.params.id));
     }),
 
     create: asyncHandler(async (req, res) => {
@@ -53,4 +78,4 @@ function createAdminProductController(service) {
   };
 }
 
-module.exports = { createAdminProductController, parseProductFilters };
+module.exports = { createAdminProductController, parseProductQuery };
