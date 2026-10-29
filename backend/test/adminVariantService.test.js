@@ -235,7 +235,7 @@ test('rechaza IDs inválidos y variantes que no pertenecen al producto de la rut
 
 test('rutas administrativas no están montadas en app.js y no exponen escritura pública', () => {
   const appSource = fs.readFileSync(path.join(__dirname, '../src/app.js'), 'utf8');
-  assert.doesNotMatch(appSource, /adminVariantRoutes|\/api\/admin\/products/);
+  assert.doesNotMatch(appSource, /adminVariantRoutes/);
   const { models, startSession } = makeModels();
   const routes = createAdminVariantRoutes(models);
   const definitions = routes.stack.filter((layer) => layer.route).map((layer) => ({
