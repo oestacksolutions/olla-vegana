@@ -1,14 +1,8 @@
 const AppError = require('../utils/AppError');
+const { calculateStockAvailability, logStockInconsistency } = require('../utils/stockAvailability');
 
 function calculateAvailableStock(stockFisico, reservas, ahora = new Date()) {
-  const stock = Number.isFinite(Number(stockFisico)) ? Math.max(0, Number(stockFisico)) : 0;
-  const reserved = (reservas || []).reduce((total, reserva) => {
-    const expiresAt = new Date(reserva.venceEn);
-    const quantity = Number(reserva.cantidad);
-    if (reserva.estado !== 'ACTIVA' || Number.isNaN(expiresAt.getTime()) || expiresAt <= ahora || !Number.isFinite(quantity) || quantity <= 0) return total;
-    return total + quantity;
-  }, 0);
-  return Math.max(0, stock - reserved);
+  return calculateStockAvailability(stockFisico, reservas, ahora).stockDisponible;
 }
 
 function valueOf(record, field) {
@@ -72,7 +66,7 @@ function createCatalogService(models, { ahora = () => new Date() } = {}) {
     const valueById = new Map(attributeValues.map((value) => [String(value._id), value]));
     const attributeById = new Map(attributes.map((attribute) => [String(attribute._id), attribute]));
     const reservations = variantIds.length
-      ? await query(ReservaStock.find({ varianteId: { $in: variantIds }, estado: 'ACTIVA', venceEn: { $gt: moment } }))
+      ? await query(ReservaStock.find({ varianteId: { $in: variantIds }, estado: 'ACTIVA' }))
       : [];
     const linksByVariant = new Map();
     for (const link of valueLinks) {
@@ -96,7 +90,9 @@ function createCatalogService(models, { ahora = () => new Date() } = {}) {
       })),
       variantes: variants.map((variant) => {
         const id = String(variant._id);
-        const available = calculateAvailableStock(variant.stock, reservationsByVariant.get(id), moment);
+        const availability = calculateStockAvailability(variant.stock, reservationsByVariant.get(id), moment);
+        logStockInconsistency(id, availability);
+        const available = availability.stockDisponible;
         return {
           id, precio: valueOf(variant, 'precio'), stockDisponible: available, agotada: available === 0,
           valores: (linksByVariant.get(id) || []).map((link) => valueById.get(String(link.valorAtributoId)))

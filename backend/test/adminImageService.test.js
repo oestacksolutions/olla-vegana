@@ -404,7 +404,8 @@ test('el middleware traduce límites multipart a respuestas 413 sin datos intern
 
 test('rutas de imágenes no están montadas públicamente y definen lectura, carga, edición y borrado', () => {
   const appSource = fs.readFileSync(path.join(__dirname, '../src/app.js'), 'utf8');
-  assert.doesNotMatch(appSource, /adminImageRoutes|\/api\/admin\/products/);
+  assert.doesNotMatch(appSource, /adminImageRoutes/);
+  assert.match(appSource, /app\.use\(\s*'\/api\/admin\/products',\s*authenticate,\s*authorizeAdmin,/s);
   const setup = makeSetup();
   const router = createAdminImageRoutes(setup.models, { storage: setup.storage, startSession: async () => ({ withTransaction: async (fn) => fn(), endSession: async () => {} }) });
   const routes = router.stack.filter((layer) => layer.route).map((layer) => ({
