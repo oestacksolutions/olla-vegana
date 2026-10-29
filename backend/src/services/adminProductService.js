@@ -118,6 +118,7 @@ function createAdminProductService(models) {
         precio: decimalString(variant.precio),
         stock: variant.stock,
         activa: variant.activa,
+        imagen: images.find((image) => String(image.varianteId) === String(variant._id))?.url || null,
         valores: (linksByVariant.get(String(variant._id)) || [])
           .map((link) => valueById.get(String(link.valorAtributoId)))
           .filter(Boolean)
@@ -169,7 +170,7 @@ function createAdminProductService(models) {
       Producto.countDocuments(where)
     ]);
     return {
-      productos: await Promise.all(products.map((product) => hydrateProduct(product))),
+      productos: await Promise.all(products.map((product) => hydrateProduct(product, { includeImages: true }))),
       paginacion: { pagina: page, limite: limit, total, paginas: Math.ceil(total / limit) }
     };
   }
