@@ -3,60 +3,56 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
-// Administradores del panel
 model Admin {
-  id                 String                  @id @default(uuid())
+  id                 String                  @id @default(auto()) @map("_id") @db.ObjectId
   correo             String                  @unique
   contrasena         String
   activo             Boolean                 @default(true)
   historialesEstados HistorialEstadoPedido[]
 }
 
-// Categorías, con subcategorías opcionales
 model Categoria {
-  id          String      @id @default(uuid())
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
   nombre      String
   slug        String      @unique
-  descripcion String?     @db.Text
+  descripcion String?
   activa      Boolean     @default(true)
-  padreId     String?
-  padre       Categoria?  @relation("Subcategorias", fields: [padreId], references: [id])
+  padreId     String?     @db.ObjectId
+  padre       Categoria?  @relation("Subcategorias", fields: [padreId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   hijas       Categoria[] @relation("Subcategorias")
   productos   Producto[]
 
   @@index([padreId])
 }
 
-// Productos
 model Producto {
-  id            String           @id @default(uuid())
+  id            String           @id @default(auto()) @map("_id") @db.ObjectId
   nombre        String
   slug          String           @unique
-  descripcion   String           @db.Text
-  precioBase    Decimal          @db.Decimal(10, 2)
+  descripcion   String
+  precioBase    Float
   activo        Boolean          @default(true)
   destacado     Boolean          @default(false)
-  categoriaId   String
+  categoriaId   String           @db.ObjectId
   categoria     Categoria        @relation(fields: [categoriaId], references: [id])
   variantes     Variante[]
   imagenes      ImagenProducto[]
   itemsPedido   ItemPedido[]
   creadoEn      DateTime         @default(now())
-  actualizadoEn DateTime         @updatedAt
+  updatedAt     DateTime         @updatedAt
 
   @@index([categoriaId])
 }
 
-// Variantes de un producto (por ejemplo: gorra negra, gorra blanca)
 model Variante {
-  id          String            @id @default(uuid())
-  productoId  String
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  productoId  String            @db.ObjectId
   producto    Producto          @relation(fields: [productoId], references: [id], onDelete: Restrict)
-  precio      Decimal?          @db.Decimal(10, 2)
+  precio      Float?
   stock       Int               @default(0)
   activa      Boolean           @default(true)
   valores     ValorVariante[]
@@ -68,53 +64,49 @@ model Variante {
   @@index([productoId])
 }
 
-// Imágenes de productos o de una variante en particular
 model ImagenProducto {
-  id         String    @id @default(uuid())
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
   url        String
   posicion   Int       @default(0)
-  productoId String
+  productoId String    @db.ObjectId
   producto   Producto  @relation(fields: [productoId], references: [id], onDelete: Cascade)
-  varianteId String?
+  varianteId String?   @db.ObjectId
   variante   Variante? @relation(fields: [varianteId], references: [id], onDelete: SetNull)
 
   @@index([productoId])
   @@index([varianteId])
 }
 
-// Atributos reutilizables: Color, Talle, Estampado, Material
 model Atributo {
-  id      String          @id @default(uuid())
+  id      String          @id @default(auto()) @map("_id") @db.ObjectId
   nombre  String          @unique
   valores ValorAtributo[]
 }
 
-// Valores de cada atributo: Negro, Blanco, L, Flores
 model ValorAtributo {
-  id         String          @id @default(uuid())
+  id         String          @id @default(auto()) @map("_id") @db.ObjectId
   valor      String
-  atributoId String
+  atributoId String          @db.ObjectId
   atributo   Atributo        @relation(fields: [atributoId], references: [id], onDelete: Cascade)
   variantes  ValorVariante[]
 
   @@unique([atributoId, valor])
 }
 
-// Une cada variante con sus valores de atributo
 model ValorVariante {
-  varianteId      String
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  varianteId      String        @db.ObjectId
   variante        Variante      @relation(fields: [varianteId], references: [id], onDelete: Cascade)
-  valorAtributoId String
+  valorAtributoId String        @db.ObjectId
   valorAtributo   ValorAtributo @relation(fields: [valorAtributoId], references: [id])
 
-  @@id([varianteId, valorAtributoId])
+  @@unique([varianteId, valorAtributoId])
   @@index([valorAtributoId])
 }
 
-// Historial de movimientos de stock (cantidad positiva suma, negativa resta)
 model MovimientoStock {
-  id         String              @id @default(uuid())
-  varianteId String
+  id         String              @id @default(auto()) @map("_id") @db.ObjectId
+  varianteId String              @db.ObjectId
   variante   Variante            @relation(fields: [varianteId], references: [id], onDelete: Restrict)
   tipo       TipoMovimientoStock
   cantidad   Int
@@ -124,20 +116,18 @@ model MovimientoStock {
   @@index([varianteId])
 }
 
-// Puntos de retiro
 model PuntoRetiro {
-  id        String   @id @default(uuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   nombre    String   @unique
   direccion String
-  horarios  String   @db.Text
+  horarios  String
   activo    Boolean  @default(true)
   pedidos   Pedido[]
 }
 
-// Pedidos
 model Pedido {
-  id               String                  @id @default(uuid())
-  numero           Int                     @unique @default(autoincrement())
+  id               String                  @id @default(auto()) @map("_id") @db.ObjectId
+  numero           Int                     @unique
   nombre           String
   apellido         String
   correo           String
@@ -145,12 +135,12 @@ model Pedido {
   metodoPago       MetodoPago
   estadoPago       EstadoPago              @default(PENDIENTE)
   estado           EstadoPedido            @default(NUEVO)
-  total            Decimal                 @db.Decimal(10, 2)
-  puntoRetiroId    String
+  total            Float
+  puntoRetiroId    String                  @db.ObjectId
   puntoRetiro      PuntoRetiro             @relation(fields: [puntoRetiroId], references: [id])
   mpPreferenciaId  String?
   mpPagoId         String?
-  notaPago         String?                 @db.Text
+  notaPago         String?
   pagoVerificadoEn DateTime?
   pagadoEn         DateTime?
   retiradoEn       DateTime?
@@ -167,12 +157,11 @@ model Pedido {
   @@index([creadoEn])
 }
 
-// Unidades de una variante reservadas temporalmente por un pedido
 model ReservaStock {
-  id           String        @id @default(uuid())
-  pedidoId     String
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  pedidoId     String        @db.ObjectId
   pedido       Pedido        @relation(fields: [pedidoId], references: [id], onDelete: Restrict)
-  varianteId   String
+  varianteId   String        @db.ObjectId
   variante     Variante      @relation(fields: [varianteId], references: [id], onDelete: Restrict)
   cantidad     Int
   estado       EstadoReserva @default(ACTIVA)
@@ -186,47 +175,43 @@ model ReservaStock {
   @@index([varianteId])
 }
 
-// Productos dentro de un pedido (nombre y precio copiados al momento de comprar)
 model ItemPedido {
-  id              String    @id @default(uuid())
-  pedidoId        String
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  pedidoId        String    @db.ObjectId
   pedido          Pedido    @relation(fields: [pedidoId], references: [id], onDelete: Restrict)
-  productoId      String
+  productoId      String    @db.ObjectId
   producto        Producto  @relation(fields: [productoId], references: [id], onDelete: Restrict)
-  varianteId      String?
+  varianteId      String?   @db.ObjectId
   variante        Variante? @relation(fields: [varianteId], references: [id], onDelete: SetNull)
   nombreProducto  String
   detalleVariante String?
   cantidad        Int
-  precio          Decimal   @db.Decimal(10, 2)
+  precio          Float
 
   @@index([pedidoId])
 }
 
-// Historial de cambios de estado de un pedido
 model HistorialEstadoPedido {
-  id             String        @id @default(uuid())
-  pedidoId       String
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  pedidoId       String        @db.ObjectId
   pedido         Pedido        @relation(fields: [pedidoId], references: [id], onDelete: Restrict)
   estadoAnterior EstadoPedido?
   estadoNuevo    EstadoPedido
   nota           String?
-  adminId        String?
+  adminId        String?       @db.ObjectId
   admin          Admin?        @relation(fields: [adminId], references: [id], onDelete: SetNull)
   creadoEn       DateTime      @default(now())
 
   @@index([pedidoId])
 }
 
-// Avisos recibidos de proveedores de pago (Mercado Pago).
-// idExterno no es único hasta confirmar que identifica una notificación, no un pago.
 model EventoPago {
-  id          String    @id @default(uuid())
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
   proveedor   String
   idExterno   String
   tipo        String
   contenido   Json
-  pedidoId    String?
+  pedidoId    String?   @db.ObjectId
   pedido      Pedido?   @relation(fields: [pedidoId], references: [id], onDelete: SetNull)
   procesadoEn DateTime?
   creadoEn    DateTime  @default(now())
@@ -235,9 +220,8 @@ model EventoPago {
   @@index([pedidoId])
 }
 
-// Banners del inicio de la tienda
 model Banner {
-  id             String            @id @default(uuid())
+  id             String            @id @default(auto()) @map("_id") @db.ObjectId
   imagenUrl      String
   dispositivo    DispositivoBanner
   posicion       Int               @default(0)
@@ -246,11 +230,10 @@ model Banner {
   activo         Boolean           @default(true)
 }
 
-// Configuraciones sueltas de la tienda
 model Configuracion {
-  clave         String   @id
-  valor         String   @db.Text
-  actualizadoEn DateTime @updatedAt
+  clave         String   @id @map("_id")
+  valor         String
+  updatedAt     DateTime @updatedAt
 }
 
 enum MetodoPago {

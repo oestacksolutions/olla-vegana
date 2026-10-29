@@ -20,14 +20,13 @@ const products = [
   {
     nombre: 'Remera \u201cNadie se salva solx\u201d',
     slug: 'remera-nadie-se-salva-solx',
-    precioBase: '45000.00',
+    precioBase: 45000.00,
     categoriaSlug: 'remeras',
     descripcion: 'Frente: Logo Olla Vegana \u201cEst. 2019\u201d (estilo pocket, 6 \u00d7 7 cm). Espalda: Estampa \u201cNadie se salva solx\u201d + info de donaciones. Tela: 100% algod\u00f3n peinado de primera calidad. Una prenda urbana, c\u00f3moda y con prop\u00f3sito. Todo lo recaudado se destina a financiar las acciones de Olla Vegana.',
     variantes: [
-      { id: '00000000-0000-4000-8000-000000000001', stock: 0, valores: [['Talle', 'S']] },
-      { id: '00000000-0000-4000-8000-000000000002', stock: 0, valores: [['Talle', 'M']] },
+      { stock: 0, valores: [['Talle', 'S']] },
+      { stock: 0, valores: [['Talle', 'M']] },
       {
-        id: '00000000-0000-4000-8000-000000000003',
         stock: 10,
         valores: [
           ['Talle', 'L'],
@@ -39,70 +38,26 @@ const products = [
   {
     nombre: 'Gorra Olla Vegana',
     slug: 'gorra-olla-vegana',
-    precioBase: '27000.00',
+    precioBase: 27000.00,
     categoriaSlug: 'gorras',
     descripcion: 'Complet\u00e1 tu look y sumate a la causa con nuestras gorras de gabardina. Disponibles en dos versiones para que elijas la que mejor va con tu estilo: color negro con nuestro logo en un trazo minimalista, o color beige con nuestra cl\u00e1sica vaquita a todo color. Ideales para el d\u00eda a d\u00eda, de visera curva y calce ajustable.',
     variantes: [
-      { id: '00000000-0000-4000-8000-000000000004', stock: 10, valores: [['Color', 'Negro']] },
-      { id: '00000000-0000-4000-8000-000000000005', stock: 10, valores: [['Color', 'Beige']] }
+      { stock: 10, valores: [['Color', 'Negro']] },
+      { stock: 10, valores: [['Color', 'Beige']] }
     ]
   },
   {
     nombre: 'Tote oficial Olla Vegana',
     slug: 'tote-oficial-olla-vegana',
-    precioBase: '27000.00',
+    precioBase: 27000.00,
     categoriaSlug: 'tote-bags',
     descripcion: 'Cambi\u00e1 las bolsas de pl\u00e1stico por una opci\u00f3n que adem\u00e1s de cuidar el planeta, ayuda a sostener un proyecto autogestivo. Confeccionadas en gabardina resistente, pod\u00e9s llevarla con nuestro logo principal o con el detalle de las flores. Cada vez que us\u00e1s esta tote bag, no solo est\u00e1s llevando un dise\u00f1o hermoso, sino que est\u00e1s difundiendo nuestras redes y formas de donaci\u00f3n.',
     variantes: [
-      { id: '00000000-0000-4000-8000-000000000006', stock: 10, valores: [['Estampado', 'Logo']] },
-      { id: '00000000-0000-4000-8000-000000000007', stock: 10, valores: [['Estampado', 'Flores']] }
+      { stock: 10, valores: [['Estampado', 'Logo']] },
+      { stock: 10, valores: [['Estampado', 'Flores']] }
     ]
   }
 ];
-
-async function upsertVariant(tx, productoId, spec, valueIds) {
-  const expectedValueIds = [...valueIds].sort();
-  const existingVariants = await tx.variante.findMany({
-    where: { productoId },
-    select: {
-      id: true,
-      valores: { select: { valorAtributoId: true } }
-    }
-  });
-
-  const matchingVariant = existingVariants.find((variant) => {
-    const existingValueIds = variant.valores
-      .map((value) => value.valorAtributoId)
-      .sort();
-    return existingValueIds.length === expectedValueIds.length &&
-      existingValueIds.every((id, index) => id === expectedValueIds[index]);
-  });
-  if (matchingVariant) return matchingVariant;
-
-  const idCollision = await tx.variante.findUnique({
-    where: { id: spec.id },
-    select: { id: true, productoId: true }
-  });
-  if (idCollision) {
-    throw new Error(`El ID determinista de la variante ya existe con otra combinacion: ${spec.id}`);
-  }
-
-  return tx.variante.upsert({
-    where: { id: spec.id },
-    update: {},
-    create: {
-      id: spec.id,
-      productoId,
-      stock: spec.stock,
-      activa: true,
-      valores: {
-        create: valueIds.map((valorAtributoId) => ({
-          valorAtributo: { connect: { id: valorAtributoId } }
-        }))
-      }
-    }
-  });
-}
 
 async function seed(tx) {
   const categoriesBySlug = {};
@@ -161,7 +116,33 @@ async function seed(tx) {
         }
         return attributeValue.id;
       });
-      await upsertVariant(tx, product.id, variantSpec, attributeValues);
+
+      // Buscar si ya existe una variante con exactamente los mismos valores para este producto
+      const existingVariants = await tx.variante.findMany({
+        where: { productoId: product.id },
+        include: { valores: true }
+      });
+
+      const targetIds = [...attributeValues].sort();
+      const match = existingVariants.find(v => {
+        const currentIds = v.valores.map(val => val.valorAtributoId).sort();
+        return currentIds.length === targetIds.length && currentIds.every((id, i) => id === targetIds[i]);
+      });
+
+      if (!match) {
+        await tx.variante.create({
+          data: {
+            productoId: product.id,
+            stock: variantSpec.stock,
+            activa: true,
+            valores: {
+              create: attributeValues.map(valorAtributoId => ({
+                valorAtributo: { connect: { id: valorAtributoId } }
+              }))
+            }
+          }
+        });
+      }
     }
   }
 
@@ -181,7 +162,7 @@ async function run() {
     await main();
     console.log('Datos iniciales cargados correctamente.');
   } catch (error) {
-    console.error('No se pudo completar el seed.', error.code || error.name || 'Error');
+    console.error('No se pudo completar el seed.', error);
     process.exitCode = 1;
   } finally {
     try {
@@ -192,9 +173,6 @@ async function run() {
     }
   }
 }
-
-// Puntos de retiro pendientes: Moron, Ramos Mejia y Moreno.
-// Completar direccion y horarios reales antes de crear registros.
 
 if (require.main === module) {
   run();
