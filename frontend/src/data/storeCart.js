@@ -19,9 +19,11 @@ export function clearStoreCart() {
   window.dispatchEvent(new Event(CART_UPDATED_EVENT))
 }
 
-export function removeStoreCartItem(productId, size, variant) {
+export function removeStoreCartItem(productId, size, variant, variantId) {
   const cart = getStoreCart().filter((item) =>
-    !(item.productId === productId && item.size === size && item.variant === variant)
+    !(item.productId === productId && (variantId
+      ? item.variantId === variantId
+      : item.size === size && item.variant === variant))
   )
   window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart))
   window.dispatchEvent(new Event(CART_UPDATED_EVENT))
@@ -29,14 +31,17 @@ export function removeStoreCartItem(productId, size, variant) {
 
 export function addStoreCartItem(item) {
   const cart = getStoreCart()
+  const quantity = Number.isSafeInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1
   const existingItem = cart.find((cartItem) =>
-    cartItem.productId === item.productId && cartItem.size === item.size && cartItem.variant === item.variant
+    cartItem.productId === item.productId && (item.variantId
+      ? cartItem.variantId === item.variantId
+      : !cartItem.variantId && cartItem.size === item.size && cartItem.variant === item.variant)
   )
 
   if (existingItem) {
-    existingItem.quantity += 1
+    existingItem.quantity += quantity
   } else {
-    cart.push({ ...item, quantity: 1 })
+    cart.push({ ...item, quantity })
   }
 
   window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart))

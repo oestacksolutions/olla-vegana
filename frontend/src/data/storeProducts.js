@@ -54,5 +54,5 @@ export const storeProducts = [
 export const storeCategories = [
   ['Remeras', '/tienda?categoria=remeras', 'remeras'],
   ['Gorras', '/tienda?categoria=gorras', 'gorras'],
-  ['Totes', '/tienda?categoria=totes', 'totes'],
+  ['Tote bags', '/tienda?categoria=tote-bags', 'tote-bags'],
 ]

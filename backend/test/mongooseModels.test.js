@@ -26,6 +26,21 @@ test('reservas y movimientos validan cantidades, estados e índices consultables
   await assert.rejects(movement.validate());
   assert.ok(ReservaStock.schema.indexes().some(([keys, options]) => keys.pedidoId && keys.varianteId && options.unique));
   assert.ok(ReservaStock.schema.indexes().some(([keys]) => keys.estado && keys.venceEn));
+  const idempotencyIndex = MovimientoStock.schema.indexes().find(([keys, options]) => keys.idOperacion && options.unique);
+  assert.ok(idempotencyIndex);
+  assert.deepEqual(idempotencyIndex[1].partialFilterExpression, { idOperacion: { $type: 'string' } });
+  assert.equal(MovimientoStock.schema.options.autoIndex, false);
+});
+
+test('movimientos nuevos conservan snapshots, administrador e idempotencia sin exigir esos campos en históricos', async () => {
+  const movement = new MovimientoStock({
+    varianteId: new mongoose.Types.ObjectId(), tipo: 'AJUSTE', cantidad: -2,
+    stockAnterior: 8, stockResultante: 6, adminId: new mongoose.Types.ObjectId(),
+    idOperacion: 'stock-adjust-0001', motivo: 'Corrección de inventario'
+  });
+  await movement.validate();
+  const legacy = new MovimientoStock({ varianteId: new mongoose.Types.ObjectId(), tipo: 'VENTA', cantidad: -1 });
+  await legacy.validate();
 });
 
 test('evento externo no impone unicidad no confirmada y la contraseña no se selecciona por defecto', () => {

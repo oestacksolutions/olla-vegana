@@ -233,17 +233,28 @@ test('rechaza IDs inválidos y variantes que no pertenecen al producto de la rut
   await assert.rejects(service.updateVariant(PRODUCT_ID, VARIANT_B, { activa: false }), (error) => error.statusCode === 404);
 });
 
-test('rutas administrativas no están montadas en app.js y no exponen escritura pública', () => {
+test('rutas administrativas de variantes no están montadas en app.js y no exponen escritura pública', () => {
   const appSource = fs.readFileSync(path.join(__dirname, '../src/app.js'), 'utf8');
+
   assert.doesNotMatch(appSource, /adminVariantRoutes/);
+  assert.match(appSource, /app\.use\(\s*'\/api\/admin\/products',\s*authenticate,\s*authorizeAdmin,/s);
+
   const { models, startSession } = makeModels();
   const routes = createAdminVariantRoutes(models);
-  const definitions = routes.stack.filter((layer) => layer.route).map((layer) => ({
-    path: layer.route.path, method: Object.keys(layer.route.methods)[0]
-  }));
+
+  const definitions = routes.stack
+    .filter((layer) => layer.route)
+    .map((layer) => ({
+      path: layer.route.path,
+      method: Object.keys(layer.route.methods)[0]
+    }));
+
   assert.deepEqual(definitions, [
-    { path: '/', method: 'get' }, { path: '/', method: 'post' }, { path: '/:variantId', method: 'patch' }
+    { path: '/', method: 'get' },
+    { path: '/', method: 'post' },
+    { path: '/:variantId', method: 'patch' }
   ]);
+
   assert.equal(typeof startSession, 'function');
 });
 

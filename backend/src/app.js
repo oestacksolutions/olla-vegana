@@ -4,10 +4,11 @@ const Producto = require('./models/Producto');
 const Categoria = require('./models/Categoria');
 const ImagenProducto = require('./models/ImagenProducto');
 const Variante = require('./models/Variante');
+const MovimientoStock = require('./models/MovimientoStock');
+const ReservaStock = require('./models/ReservaStock');
 const ValorVariante = require('./models/ValorVariante');
 const ValorAtributo = require('./models/ValorAtributo');
 const Atributo = require('./models/Atributo');
-const ReservaStock = require('./models/ReservaStock');
 const PuntoRetiro = require('./models/PuntoRetiro');
 const RetiroEspecial = require('./models/RetiroEspecial');
 const { createCatalogService } = require('./services/catalogService');
@@ -19,6 +20,7 @@ const createAuthRoutes = require('./routes/authRoutes');
 const createAdminProductRoutes = require('./routes/adminProductRoutes');
 const createAdminImageRoutes = require('./routes/adminImageRoutes');
 const { createCloudinaryStorage } = require('./services/cloudinaryStorage');
+const createAdminStockRoutes = require('./routes/adminStockRoutes');
 const { createAuthMiddleware } = require('./middlewares/auth');
 const createPickupRoutes = require('./routes/pickupRoutes');
 const notFound = require('./middlewares/notFound');
@@ -59,6 +61,12 @@ app.use(
     { Producto, Variante, ImagenProducto },
     { storage: createCloudinaryStorage(require('./config/env')) }
   )
+);
+app.use(
+  '/api/admin/stock',
+  authenticate,
+  authorizeAdmin,
+  createAdminStockRoutes({ Producto, Variante, MovimientoStock, ReservaStock, ValorVariante, ValorAtributo, Atributo })
 );
 app.use('/api/pickup-options', createPickupRoutes({ PuntoRetiro, RetiroEspecial }));
 
