@@ -12,6 +12,8 @@ function HomeTienda() {
   const [carouselPaused, setCarouselPaused] = useState(false)
   const [products, setProducts] = useState([])
   const [catalogError, setCatalogError] = useState('')
+  const [catalogState, setCatalogState] = useState('loading')
+  const [retryCount, setRetryCount] = useState(0)
   const heroBanner = heroBanners[bannerIndex] || null
   const selectedCategory = new URLSearchParams(window.location.search).get('categoria')
   const filteredProducts = products
@@ -19,11 +21,14 @@ function HomeTienda() {
 
   useEffect(() => {
     let active = true
+    setCatalogState('loading')
+    setCatalogError('')
+    setProducts([])
     fetchStoreProducts(selectedCategory)
-      .then((items) => { if (active) setProducts(items) })
-      .catch(() => { if (active) setCatalogError('No pudimos cargar los productos. Intentá nuevamente.') })
+      .then((items) => { if (active) { setProducts(items); setCatalogState(items.length ? 'loaded' : 'empty') } })
+      .catch(() => { if (active) { setCatalogError('No pudimos cargar los productos. Revisá tu conexión e intentá nuevamente.'); setCatalogState('error') } })
     return () => { active = false }
-  }, [selectedCategory])
+  }, [selectedCategory, retryCount])
 
   useEffect(() => {
     const updateBanner = () => {
@@ -123,8 +128,9 @@ function HomeTienda() {
         </div>
       )}
       <section id="productos" aria-label="Productos" className={`w-full px-6 pb-16 sm:px-8 ${selectedCategory ? 'pt-12' : ''}`}>
-        {catalogError && <p role="alert" className="mx-auto max-w-[960px] rounded-xl bg-red-50 p-4 text-center font-poppins text-sm text-red-800">{catalogError}</p>}
-        {!catalogError && products.length === 0 && <p role="status" className="py-12 text-center font-poppins text-sm text-black/55">Cargando productos…</p>}
+        {catalogState === 'error' && <div className="mx-auto max-w-[960px] rounded-xl bg-red-50 p-4 text-center"><p role="alert" className="font-poppins text-sm text-red-800">{catalogError}</p><button type="button" onClick={() => setRetryCount((count) => count + 1)} className="mt-3 rounded-full border border-[#466729] px-4 py-2 font-poppins text-xs text-[#466729]">Reintentar</button></div>}
+        {catalogState === 'loading' && <p role="status" className="py-12 text-center font-poppins text-sm text-black/55">Cargando productos…</p>}
+        {catalogState === 'empty' && <p role="status" className="py-12 text-center font-poppins text-sm text-black/55">{selectedCategory ? 'No hay productos disponibles en esta categoría.' : 'Todavía no hay productos disponibles.'}</p>}
         {selectedCategory && (
           <a href="/tienda/productos" className="mx-auto mb-8 flex w-full max-w-[960px] items-center gap-2 font-poppins text-sm text-[#466729] transition-colors hover:text-[#F13107]">
             <ArrowLeft aria-hidden="true" className="h-4 w-4" />
@@ -138,9 +144,9 @@ function HomeTienda() {
             </a>
           </div>
         )}
-        <div className="mx-auto grid w-full max-w-[960px] justify-center gap-14" style={{ gridTemplateColumns: 'repeat(auto-fit, 180px)' }}>
+        {catalogState === 'loaded' && <div className="mx-auto grid w-full max-w-[960px] justify-center gap-14" style={{ gridTemplateColumns: 'repeat(auto-fit, 180px)' }}>
           {filteredProducts.map((product, index) => <ProductCard key={product.id} animationIndex={index} {...product} />)}
-        </div>
+        </div>}
       </section>
       {!selectedCategory && (
         <section aria-label="Información de compra y pago" className="w-full px-6 pb-16 sm:px-8">

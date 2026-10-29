@@ -1,31 +1,23 @@
-import { getCategories, getProduct, getProducts } from './api'
+import { getCategories, getProducts } from './api'
+import fallbackImage from '../assets/png/logo_olla_vegana.png'
 
-function mapProductSummary(product, detail) {
-  const source = detail || product
-  const variants = source.variantes || []
-  const firstVariant = variants[0]
-  const image = source.imagenes?.[0]?.url
+function mapProductSummary(product) {
+  const price = Number(product.precioBase)
   return {
-    id: source.slug || source.id,
-    category: source.categoria?.slug,
-    name: source.nombre,
-    price: Number(source.precioBase || firstVariant?.precio || 0),
-    image,
-    alt: source.nombre,
-    description: source.descripcion ? [source.descripcion] : [],
-    colorVariants: variants.map((variant) => ({
-      label: variant.valores?.map(({ valor }) => valor).join(' · ') || 'Variante',
-      image: source.imagenes?.find(({ varianteId }) => varianteId === variant.id)?.url || image,
-      stock: variant.stockDisponible,
-    })),
-    variants,
+    id: product.slug,
+    category: product.categoria?.slug,
+    name: product.nombre,
+    price: Number.isFinite(price) ? price : 0,
+    image: product.imagenPrincipal?.url || fallbackImage,
+    alt: product.imagenPrincipal?.textoAlternativo || `Imagen de ${product.nombre} no disponible`,
+    stockDisponible: product.disponibilidad?.stockDisponible ?? null,
+    agotado: product.disponibilidad?.agotado ?? null,
   }
 }
 
 export async function fetchStoreProducts(category) {
   const summaries = await getProducts(category)
-  const details = await Promise.all(summaries.map((product) => getProduct(product.slug)))
-  return summaries.map((product, index) => mapProductSummary(product, details[index]))
+  return summaries.map(mapProductSummary)
 }
 
 export { getCategories }

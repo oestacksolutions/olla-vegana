@@ -29,14 +29,59 @@ function createCatalogService(models, { ahora = () => new Date() } = {}) {
     const products = await query(Producto.find({ activo: true, categoriaId: { $in: filteredCategories.map((c) => c._id) } }), {
       sort: { destacado: -1, createdAt: -1, creadoEn: -1 }
     });
+    if (products.length === 0) return [];
+
+    const productIds = products.map((product) => product._id);
+    const [images, variants] = await Promise.all([
+      query(ImagenProducto.find({
+        productoId: { $in: productIds },
+        $or: [{ estadoAlmacenamiento: 'ACTIVA' }, { estadoAlmacenamiento: { $exists: false } }]
+      }), { sort: { esPrincipal: -1, posicion: 1, _id: 1 } }),
+      query(Variante.find({ productoId: { $in: productIds }, activa: true }))
+    ]);
+    const variantIds = variants.map((variant) => variant._id);
+    const reservations = variantIds.length
+      ? await query(ReservaStock.find({ varianteId: { $in: variantIds }, estado: 'ACTIVA' }))
+      : [];
+
     const categoryById = new Map(filteredCategories.map((c) => [String(c._id), c]));
-    return products.map((product) => ({
-      id: String(product._id), nombre: product.nombre, slug: product.slug,
-      precioBase: valueOf(product, 'precioBase'), destacado: product.destacado,
-      categoria: categoryById.get(String(product.categoriaId))
-        ? { nombre: categoryById.get(String(product.categoriaId)).nombre, slug: categoryById.get(String(product.categoriaId)).slug }
-        : null
-    })).filter((product) => product.categoria);
+    const imagesByProduct = new Map();
+    for (const image of images) {
+      const key = String(image.productoId);
+      if (!imagesByProduct.has(key)) imagesByProduct.set(key, image);
+    }
+    const reservationsByVariant = new Map();
+    for (const reservation of reservations) {
+      const key = String(reservation.varianteId);
+      reservationsByVariant.set(key, [...(reservationsByVariant.get(key) || []), reservation]);
+    }
+    const variantsByProduct = new Map();
+    for (const variant of variants) {
+      const key = String(variant.productoId);
+      variantsByProduct.set(key, [...(variantsByProduct.get(key) || []), variant]);
+    }
+
+    const moment = ahora();
+    return products.map((product) => {
+      const category = categoryById.get(String(product.categoriaId));
+      if (!category) return null;
+      const image = imagesByProduct.get(String(product._id));
+      const stockDisponible = (variantsByProduct.get(String(product._id)) || []).reduce((total, variant) => {
+        const availability = calculateStockAvailability(variant.stock, reservationsByVariant.get(String(variant._id)), moment);
+        logStockInconsistency(variant._id, availability);
+        return total + availability.stockDisponible;
+      }, 0);
+      return {
+        id: String(product._id), nombre: product.nombre, slug: product.slug,
+        precioBase: valueOf(product, 'precioBase'), destacado: product.destacado,
+        categoria: { nombre: category.nombre, slug: category.slug },
+        imagenPrincipal: image ? {
+          url: image.url,
+          textoAlternativo: image.textoAlternativo || ''
+        } : null,
+        disponibilidad: { stockDisponible, agotado: stockDisponible === 0 }
+      };
+    }).filter(Boolean);
   }
 
   async function getProductBySlug(slug) {
