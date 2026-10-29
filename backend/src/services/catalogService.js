@@ -40,9 +40,12 @@ function createCatalogService(models, { ahora = () => new Date() } = {}) {
       query(Variante.find({ productoId: { $in: productIds }, activa: true }))
     ]);
     const variantIds = variants.map((variant) => variant._id);
-    const reservations = variantIds.length
-      ? await query(ReservaStock.find({ varianteId: { $in: variantIds }, estado: 'ACTIVA' }))
-      : [];
+    const [reservations, valueLinks] = variantIds.length
+      ? await Promise.all([
+        query(ReservaStock.find({ varianteId: { $in: variantIds }, estado: 'ACTIVA' })),
+        query(ValorVariante.find({ varianteId: { $in: variantIds } }))
+      ])
+      : [[], []];
 
     const categoryById = new Map(filteredCategories.map((c) => [String(c._id), c]));
     const imagesByProduct = new Map();
@@ -60,26 +63,44 @@ function createCatalogService(models, { ahora = () => new Date() } = {}) {
       const key = String(variant.productoId);
       variantsByProduct.set(key, [...(variantsByProduct.get(key) || []), variant]);
     }
+    const variantsWithAttributes = new Set(valueLinks.map((link) => String(link.varianteId)));
 
     const moment = ahora();
     return products.map((product) => {
       const category = categoryById.get(String(product.categoriaId));
       if (!category) return null;
       const image = imagesByProduct.get(String(product._id));
-      const stockDisponible = (variantsByProduct.get(String(product._id)) || []).reduce((total, variant) => {
+      const productVariants = variantsByProduct.get(String(product._id)) || [];
+      const availabilityByVariant = new Map();
+      const stockDisponible = productVariants.reduce((total, variant) => {
         const availability = calculateStockAvailability(variant.stock, reservationsByVariant.get(String(variant._id)), moment);
+        availabilityByVariant.set(String(variant._id), availability);
         logStockInconsistency(variant._id, availability);
         return total + availability.stockDisponible;
       }, 0);
+      let varianteDirecta = null;
+      if (productVariants.length === 1 && !variantsWithAttributes.has(String(productVariants[0]._id))) {
+        const variant = productVariants[0];
+        const availability = availabilityByVariant.get(String(variant._id));
+        if (!availability.inconsistente) {
+          varianteDirecta = {
+            id: String(variant._id),
+            precio: valueOf(variant, 'precio'),
+            stockDisponible: availability.stockDisponible,
+            agotada: availability.stockDisponible === 0
+          };
+        }
+      }
       return {
         id: String(product._id), nombre: product.nombre, slug: product.slug,
-        precioBase: valueOf(product, 'precioBase'), destacado: product.destacado,
+        precioBase: valueOf(product, 'precioBase'), descripcion: product.descripcion, destacado: product.destacado,
         categoria: { nombre: category.nombre, slug: category.slug },
         imagenPrincipal: image ? {
           url: image.url,
           textoAlternativo: image.textoAlternativo || ''
         } : null,
-        disponibilidad: { stockDisponible, agotado: stockDisponible === 0 }
+        disponibilidad: { stockDisponible, agotado: stockDisponible === 0 },
+        varianteDirecta
       };
     }).filter(Boolean);
   }

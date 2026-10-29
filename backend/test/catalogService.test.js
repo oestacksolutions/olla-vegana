@@ -41,7 +41,7 @@ test('listado incluye imagen principal y disponibilidad agregada sin consultar d
     Categoria: { find: async () => [{ _id: 'c1', nombre: 'Remeras', slug: 'remeras' }] },
     Producto: { find: async (filter) => {
       productFilter = filter;
-      return [{ _id: 'p1', nombre: 'Remera', slug: 'remera', precioBase: '45000.00', categoriaId: 'c1' }];
+      return [{ _id: 'p1', nombre: 'Remera', slug: 'remera', descripcion: 'Algodón orgánico', precioBase: '45000.00', categoriaId: 'c1' }];
     } },
     ImagenProducto: { find: async (filter) => {
       imageFilter = filter;
@@ -71,6 +71,30 @@ test('listado incluye imagen principal y disponibilidad agregada sin consultar d
   assert.deepEqual(result[0].imagenPrincipal, { url: '/real.jpg', textoAlternativo: 'Estampa' });
   assert.deepEqual(result[0].disponibilidad, { stockDisponible: 3, agotado: false });
   assert.equal(result[0].precioBase, '45000.00');
+  assert.equal(result[0].descripcion, 'Algodón orgánico');
+  assert.equal(result[0].varianteDirecta, null);
+});
+
+test('listado informa variante directa solo cuando hay una variante activa sin atributos', async () => {
+  const service = createCatalogService(models({
+    Categoria: { find: async () => [{ _id: 'c1', nombre: 'Producto simple', slug: 'simple' }] },
+    Producto: { find: async () => [{ _id: 'p1', nombre: 'Producto simple', slug: 'simple', precioBase: '100', categoriaId: 'c1' }] },
+    Variante: { find: async () => [{ _id: 'v1', productoId: 'p1', stock: 4, precio: '125.50', activa: true }] },
+    ValorVariante: { find: async () => [] },
+    ReservaStock: { find: async () => [{ varianteId: 'v1', cantidad: 1, estado: 'ACTIVA', venceEn: new Date('2026-10-28T13:00:00Z') }] }
+  }), { ahora: () => now });
+
+  assert.deepEqual((await service.listProducts())[0].varianteDirecta, { id: 'v1', precio: '125.50', stockDisponible: 3, agotada: false });
+});
+
+test('listado no ofrece variante directa cuando la única variante requiere seleccionar atributo', async () => {
+  const service = createCatalogService(models({
+    Categoria: { find: async () => [{ _id: 'c1', nombre: 'Producto', slug: 'producto' }] },
+    Producto: { find: async () => [{ _id: 'p1', nombre: 'Producto', slug: 'producto', precioBase: '100', categoriaId: 'c1' }] },
+    Variante: { find: async () => [{ _id: 'v1', productoId: 'p1', stock: 4, activa: true }] },
+    ValorVariante: { find: async () => [{ varianteId: 'v1', valorAtributoId: 'value1' }] }
+  }));
+  assert.equal((await service.listProducts())[0].varianteDirecta, null);
 });
 
 test('categorías públicas excluyen inactivas', async () => {

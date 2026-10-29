@@ -17,7 +17,6 @@ function HomeTienda() {
   const heroBanner = heroBanners[bannerIndex] || null
   const selectedCategory = new URLSearchParams(window.location.search).get('categoria')
   const filteredProducts = products
-  const distinctProductCount = new Set(products.map((product) => product.id)).size
 
   useEffect(() => {
     let active = true
@@ -137,7 +136,7 @@ function HomeTienda() {
             Volver a todos los productos
           </a>
         )}
-        {!selectedCategory && distinctProductCount > 4 && (
+        {!selectedCategory && catalogState === 'loaded' && (
           <div className="mx-auto mb-4 flex w-full max-w-[960px] justify-end">
             <a href="/tienda/productos" className="inline-flex items-center gap-1 font-poppins text-xs text-[#466729] transition-colors hover:text-[#F13107]">
               Ver todos los productos <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
