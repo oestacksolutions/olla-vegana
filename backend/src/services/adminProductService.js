@@ -67,10 +67,11 @@ function decimalString(value) {
 function createAdminProductService(models) {
   const { Producto, Categoria, Variante, ValorVariante, ValorAtributo, Atributo, ImagenProducto } = models;
 
-  async function requireCategory(categoriaId) {
+  async function requireActiveCategory(categoriaId) {
     validateObjectId(categoriaId, 'categoriaId');
     const category = await runQuery(Categoria.findOne({ _id: categoriaId }));
     if (!category) throw AppError.noEncontrado('Categoría no encontrada');
+    if (category.activa !== true) throw AppError.conflicto('No se puede asignar un producto a una categoría inactiva');
     return category;
   }
 
@@ -190,7 +191,7 @@ function createAdminProductService(models) {
       activo: optionalBoolean(input, 'activo', true),
       destacado: optionalBoolean(input, 'destacado', false)
     };
-    await requireCategory(data.categoriaId);
+    await requireActiveCategory(data.categoriaId);
     if (await runQuery(Producto.findOne({ slug: data.slug }))) throw AppError.conflicto('Ya existe un producto con ese slug');
     try {
       const product = await Producto.create(data);
@@ -213,7 +214,7 @@ function createAdminProductService(models) {
     if (Object.hasOwn(input, 'precioBase')) data.precioBase = parsePrice(input.precioBase);
     if (Object.hasOwn(input, 'categoriaId')) {
       data.categoriaId = validateObjectId(requiredText(input.categoriaId, 'categoriaId'), 'categoriaId');
-      await requireCategory(data.categoriaId);
+      await requireActiveCategory(data.categoriaId);
     }
     if (Object.hasOwn(input, 'destacado')) {
       if (typeof input.destacado !== 'boolean') invalid('El campo destacado debe ser booleano');
@@ -228,6 +229,11 @@ function createAdminProductService(models) {
   async function setVisibility(id, activo) {
     validateObjectId(id);
     if (typeof activo !== 'boolean') invalid('El campo activo debe ser booleano');
+    if (activo) {
+      const existing = await runQuery(Producto.findById(id));
+      if (!existing) throw AppError.noEncontrado('Producto no encontrado');
+      await requireActiveCategory(String(existing.categoriaId));
+    }
     const product = await Producto.findByIdAndUpdate(id, { activo }, { new: true, runValidators: true });
     if (!product) throw AppError.noEncontrado('Producto no encontrado');
     return hydrateProduct(product);
