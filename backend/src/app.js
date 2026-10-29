@@ -12,10 +12,12 @@ const Atributo = require('./models/Atributo');
 const PuntoRetiro = require('./models/PuntoRetiro');
 const RetiroEspecial = require('./models/RetiroEspecial');
 const { createCatalogService } = require('./services/catalogService');
+const { createCartValidationService } = require('./services/cartValidationService');
 const { createAuthService } = require('./services/authService');
 const createCatalogController = require('./controllers/catalogController');
 const createAuthController = require('./controllers/authController');
 const createCatalogRoutes = require('./routes/catalogRoutes');
+const createCartRoutes = require('./routes/cartRoutes');
 const createAuthRoutes = require('./routes/authRoutes');
 const createAdminProductRoutes = require('./routes/adminProductRoutes');
 const createAdminImageRoutes = require('./routes/adminImageRoutes');
@@ -40,6 +42,10 @@ const catalogService = createCatalogService({
   Producto, Categoria, ImagenProducto, Variante, ValorVariante, ValorAtributo, Atributo, ReservaStock
 });
 const catalogController = createCatalogController(catalogService);
+const cartValidationService = createCartValidationService({
+  Producto, Variante, Categoria, ValorVariante, ValorAtributo, Atributo, ReservaStock
+});
+const cartController = require('./controllers/cartController')(cartValidationService);
 const authService = createAuthService({ Admin: require('./models/Admin'), env: require('./config/env') });
 const authController = createAuthController(authService);
 const Admin = require('./models/Admin');
@@ -56,6 +62,7 @@ app.use('/api/auth', createAuthRateLimiter(), validateAuthPayload);
 
 // Rutas publicas de consulta del catalogo
 app.use('/api', createCatalogRoutes(catalogController));
+app.use('/api', createCartRoutes(cartController));
 app.use('/api/auth', createAuthRoutes(authController));
 app.use(
   '/api/admin/products',
