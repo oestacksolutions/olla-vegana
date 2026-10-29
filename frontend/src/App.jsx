@@ -20,6 +20,7 @@ import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import { extractStoreProductSlug } from './utils/storeRoutes'
 
 function App() {
   useEffect(() => {
@@ -80,9 +81,9 @@ function App() {
     return <OrderStatusPage orderId={decodeURIComponent(orderMatch[1])} />
   }
 
-  const productMatch = pathname.match(/^\/tienda\/([^/]+)$/)
-  if (productMatch) {
-    return <ProductDetailPage productId={decodeURIComponent(productMatch[1])} />
+  const productSlug = extractStoreProductSlug(pathname)
+  if (productSlug) {
+    return <ProductDetailPage productId={productSlug} />
   }
 
   return (
