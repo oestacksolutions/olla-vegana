@@ -129,7 +129,9 @@ function createAdminProductService(models) {
     };
     if (includeImages) {
       result.imagenes = images.map((image) => ({
-        id: String(image._id), url: image.url, posicion: image.posicion, varianteId: image.varianteId ? String(image.varianteId) : null
+        id: String(image._id), url: image.url, posicion: image.posicion,
+        textoAlternativo: image.textoAlternativo || '', esPrincipal: image.esPrincipal === true,
+        varianteId: image.varianteId ? String(image.varianteId) : null
       }));
     }
     return result;
