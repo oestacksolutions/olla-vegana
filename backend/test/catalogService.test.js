@@ -32,6 +32,47 @@ test('lista solo productos activos, filtra por slug de categoría y devuelve cat
   assert.equal(result[0].categoria.slug, 'remeras');
 });
 
+test('listado incluye imagen principal y disponibilidad agregada sin consultar detalles individuales', async () => {
+  let productFilter;
+  let imageFilter;
+  let variantFilter;
+  let reservationFilter;
+  const service = createCatalogService(models({
+    Categoria: { find: async () => [{ _id: 'c1', nombre: 'Remeras', slug: 'remeras' }] },
+    Producto: { find: async (filter) => {
+      productFilter = filter;
+      return [{ _id: 'p1', nombre: 'Remera', slug: 'remera', precioBase: '45000.00', categoriaId: 'c1' }];
+    } },
+    ImagenProducto: { find: async (filter) => {
+      imageFilter = filter;
+      return [{ _id: 'i1', productoId: 'p1', url: '/real.jpg', textoAlternativo: 'Estampa', esPrincipal: true }];
+    } },
+    Variante: { find: async (filter) => {
+      variantFilter = filter;
+      return [
+        { _id: 'v1', productoId: 'p1', stock: 5, activa: true },
+        { _id: 'v2', productoId: 'p1', stock: 0, activa: true }
+      ];
+    } },
+    ReservaStock: { find: async (filter) => {
+      reservationFilter = filter;
+      return [
+        { varianteId: 'v1', cantidad: 2, estado: 'ACTIVA', venceEn: new Date('2026-10-28T13:00:00Z') },
+        { varianteId: 'v1', cantidad: 20, estado: 'ACTIVA', venceEn: new Date('2026-10-28T11:00:00Z') }
+      ];
+    } }
+  }), { ahora: () => now });
+
+  const result = await service.listProducts();
+  assert.deepEqual(productFilter, { activo: true, categoriaId: { $in: ['c1'] } });
+  assert.deepEqual(imageFilter.productoId, { $in: ['p1'] });
+  assert.deepEqual(variantFilter, { productoId: { $in: ['p1'] }, activa: true });
+  assert.deepEqual(reservationFilter, { varianteId: { $in: ['v1', 'v2'] }, estado: 'ACTIVA' });
+  assert.deepEqual(result[0].imagenPrincipal, { url: '/real.jpg', textoAlternativo: 'Estampa' });
+  assert.deepEqual(result[0].disponibilidad, { stockDisponible: 3, agotado: false });
+  assert.equal(result[0].precioBase, '45000.00');
+});
+
 test('categorías públicas excluyen inactivas', async () => {
   let filter;
   const service = createCatalogService(models({ Categoria: {

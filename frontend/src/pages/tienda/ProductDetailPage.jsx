@@ -4,6 +4,7 @@ import BtnAction from '../../components/disenio/btn-action'
 import StoreLayout from '../../components/layout/StoreLayout'
 import { getProduct } from '../../services/api'
 import { addStoreCartItem } from '../../data/storeCart'
+import fallbackImage from '../../assets/png/logo_olla_vegana.png'
 
 const instagramUrl = 'https://www.instagram.com/olla.vegana/'
 
@@ -17,12 +18,13 @@ function ProductDetailPage({ productId }) {
     getProduct(productId)
       .then((data) => {
         if (!active) return
+        const primaryImage = data.imagenes?.find((image) => image.esPrincipal) || data.imagenes?.[0]
         setProduct({
           id: data.slug,
           name: data.nombre,
           price: Number(data.precioBase || data.variantes?.[0]?.precio || 0),
-          image: data.imagenes?.[0]?.url,
-          alt: data.nombre,
+          image: primaryImage?.url || fallbackImage,
+          alt: primaryImage?.textoAlternativo || data.nombre,
           description: data.descripcion ? [data.descripcion] : [],
           variants: data.variantes,
           colorVariants: data.variantes?.map((variant) => ({
@@ -81,7 +83,14 @@ function ProductDetailPage({ productId }) {
         </a>
         <section className="mx-auto mt-8 grid w-full max-w-[900px] grid-cols-1 items-start gap-8 sm:grid-cols-2 sm:gap-14">
           <div className="mx-auto h-[380px] w-full max-w-[360px] overflow-hidden rounded-[20px] bg-[#FFF8E9] sm:sticky sm:top-8 sm:h-[480px] sm:max-w-none">
-            <img src={image} alt={alt} className={`h-full w-full ${imageFit === 'contain' ? 'object-contain' : 'object-cover'}`} />
+            <img src={image || fallbackImage} alt={alt} onError={(event) => {
+              if (event.currentTarget.dataset.fallbackAttempted) {
+                event.currentTarget.hidden = true
+                return
+              }
+              event.currentTarget.dataset.fallbackAttempted = 'true'
+              event.currentTarget.src = fallbackImage
+            }} className={`h-full w-full ${imageFit === 'contain' ? 'object-contain' : 'object-cover'}`} />
           </div>
           <div className="flex flex-col items-start">
             <h1 className="font-poppins text-[28px] font-medium text-black/80 sm:text-[36px]">{product.name}</h1>
