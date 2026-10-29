@@ -161,6 +161,7 @@ function createCatalogService(models, { ahora = () => new Date() } = {}) {
         const available = availability.stockDisponible;
         return {
           id, precio: valueOf(variant, 'precio'), stockDisponible: available, agotada: available === 0,
+          imagen: images.find((image) => String(image.varianteId) === id)?.url || null,
           valores: (linksByVariant.get(id) || []).map((link) => valueById.get(String(link.valorAtributoId)))
             .filter(Boolean).map((value) => ({ atributo: attributeById.get(String(value.atributoId))?.nombre, valor: value.valor }))
             .filter((item) => item.atributo)
