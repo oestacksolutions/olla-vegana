@@ -32,6 +32,17 @@ for (const name of optionalIntegrations) {
   }
 }
 
+const cloudinaryConfig = {
+  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET
+};
+if (!Object.values(cloudinaryConfig).every(Boolean)) {
+  console.warn('Advertencia: Cloudinary no está configurado por completo; las cargas de imágenes no estarán disponibles.');
+}
+
+const imageMaxSizeBytes = Number(process.env.IMAGE_MAX_SIZE_BYTES);
+
 module.exports = {
   MONGODB_URI: process.env.MONGODB_URI,
   PORT: process.env.PORT || 3001,
@@ -45,5 +56,9 @@ module.exports = {
   SMTP_PORT: process.env.SMTP_PORT,
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASS: process.env.SMTP_PASS,
-  MAIL_FROM: process.env.MAIL_FROM
+  MAIL_FROM: process.env.MAIL_FROM,
+  ...cloudinaryConfig,
+  IMAGE_MAX_SIZE_BYTES: Number.isSafeInteger(imageMaxSizeBytes) && imageMaxSizeBytes > 0 && imageMaxSizeBytes <= 20 * 1024 * 1024
+    ? imageMaxSizeBytes
+    : 5 * 1024 * 1024
 };

@@ -1,5 +1,4 @@
 const AppError = require('../utils/AppError');
-const env = require('../config/env');
 
 module.exports = function errorHandler(error, req, res, next) {
   let statusCode = 500;
@@ -17,6 +16,11 @@ module.exports = function errorHandler(error, req, res, next) {
     statusCode = 400;
     message = 'Los datos enviados no son válidos';
     detalles = Object.keys(error.errors || {}).map((field) => ({ campo: field }));
+  } else if (error && error.name === 'MulterError') {
+    statusCode = error.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+    message = error.code === 'LIMIT_FILE_SIZE'
+      ? 'La imagen supera el tamaño máximo permitido'
+      : 'La carga de imágenes excede los límites permitidos';
   } else if (error && error.name === 'CastError') {
     statusCode = 400;
     message = 'El identificador o formato enviado no es válido';

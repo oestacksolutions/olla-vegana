@@ -53,7 +53,10 @@ function createCatalogService(models, { ahora = () => new Date() } = {}) {
     if (!category) throw AppError.noEncontrado('Producto no encontrado');
 
     const [images, variants] = await Promise.all([
-      query(ImagenProducto.find({ productoId: product._id }), { sort: { posicion: 1, _id: 1 } }),
+      query(ImagenProducto.find({
+        productoId: product._id,
+        $or: [{ estadoAlmacenamiento: 'ACTIVA' }, { estadoAlmacenamiento: { $exists: false } }]
+      }), { sort: { posicion: 1, _id: 1 } }),
       query(Variante.find({ productoId: product._id, activa: true }))
     ]);
     const variantIds = variants.map((variant) => variant._id);
@@ -86,7 +89,11 @@ function createCatalogService(models, { ahora = () => new Date() } = {}) {
       id: String(product._id), nombre: product.nombre, slug: product.slug,
       descripcion: product.descripcion, precioBase: valueOf(product, 'precioBase'), destacado: product.destacado,
       categoria: { nombre: category.nombre, slug: category.slug },
-      imagenes: images.map((image) => ({ id: String(image._id), url: image.url, posicion: image.posicion })),
+      imagenes: images.map((image) => ({
+        id: String(image._id), url: image.url, posicion: image.posicion,
+        textoAlternativo: image.textoAlternativo || '', esPrincipal: image.esPrincipal === true,
+        varianteId: image.varianteId ? String(image.varianteId) : null
+      })),
       variantes: variants.map((variant) => {
         const id = String(variant._id);
         const available = calculateAvailableStock(variant.stock, reservationsByVariant.get(id), moment);
