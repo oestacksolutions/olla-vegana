@@ -19,6 +19,7 @@ import AdminApp from './admin/AdminApp'
 import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
 
 function App() {
   useEffect(() => {
@@ -48,6 +49,10 @@ function App() {
 
   if (pathname === '/login') {
     return <LoginPage />
+  }
+
+  if (pathname === '/forgot-password') {
+    return <ForgotPasswordPage />
   }
 
   if (pathname === '/reset-password') {
