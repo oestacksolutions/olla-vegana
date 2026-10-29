@@ -77,18 +77,21 @@ function StoreLayout({ children }) {
             <a href="/tienda" aria-label="Ver todos los productos" className="shrink-0 lg:ml-36">
               <img src={logoOllaVegana} alt="Olla Vegana" className="h-[70px] w-[70px] object-contain sm:h-[82px] sm:w-[82px] lg:h-[118px] lg:w-[118px]" />
             </a>
-            <form role="search" onSubmit={(event) => event.preventDefault()} className="hidden h-[42px] min-w-0 w-[220px] max-w-full items-center gap-2 rounded-[20px] border border-[#AF71DD] bg-white px-3 text-[#AF71DD] sm:ml-auto sm:flex sm:h-[46px] sm:w-full sm:max-w-[280px]">
+            <form role="search" onSubmit={(event) => event.preventDefault()} className="hidden h-[42px] min-w-0 flex-1 items-center gap-2 rounded-[20px] border border-[#AF71DD] bg-white px-3 text-[#AF71DD] sm:ml-auto sm:flex sm:h-[46px] sm:max-w-[280px] lg:max-w-[360px]">
               <Search aria-hidden="true" className="h-5 w-5 shrink-0" />
               <input type="search" name="productos" aria-label="Buscar productos" placeholder="Buscar productos" className="min-w-0 flex-1 bg-transparent font-poppins text-sm text-[#292621] outline-none placeholder:text-[#AF71DD]/70" />
             </form>
-            <div className="hidden sm:flex">{cartSummary}</div>
+            <div className="hidden shrink-0 items-center gap-3 sm:flex">
+              {cartSummary}
+              <a href="/login" className="inline-flex shrink-0 whitespace-nowrap rounded-full border border-[#466729] px-3 py-2 font-poppins text-xs font-semibold text-[#466729] transition-colors hover:bg-[#466729] hover:text-white lg:px-4">Administrar tienda</a>
+            </div>
           </div>
           <button type="button" aria-label={isMenuOpen ? 'Cerrar categorías' : 'Abrir categorías'} aria-expanded={isMenuOpen} aria-controls="menu-categorias-tienda" onClick={() => setIsMenuOpen((open) => !open)} className="col-start-2 row-start-1 flex h-10 w-10 items-center justify-center rounded-full text-[#466729] transition-colors hover:bg-[#AF71DD]/15 sm:hidden">
             {isMenuOpen ? <X aria-hidden="true" className="h-6 w-6" /> : <Menu aria-hidden="true" className="h-6 w-6" />}
           </button>
         </div>
         <div className="absolute right-4 top-[60px] sm:hidden">{cartSummary}</div>
-        {isMenuOpen && <nav id="menu-categorias-tienda" aria-label="Categorías de la tienda" className="border-t border-[#AF71DD]/20 px-4 py-3 sm:hidden"><ul className="flex flex-col gap-3">{storeCategories.map(([label, href]) => <li key={href}><a href={href} onClick={() => setIsMenuOpen(false)} className="block font-scripter text-[18px] text-black/80 transition-colors hover:text-[#F13107]">{label}</a></li>)}</ul></nav>}
+        {isMenuOpen && <nav id="menu-categorias-tienda" aria-label="Categorías de la tienda" className="border-t border-[#AF71DD]/20 px-4 py-3 sm:hidden"><ul className="flex flex-col gap-3">{storeCategories.map(([label, href]) => <li key={href}><a href={href} onClick={() => setIsMenuOpen(false)} className="block font-scripter text-[18px] text-black/80 transition-colors hover:text-[#F13107]">{label}</a></li>)}<li><a href="/login" onClick={() => setIsMenuOpen(false)} className="block font-poppins text-sm font-semibold text-[#466729]">Administrar tienda</a></li></ul></nav>}
       </header>
       <div className="sticky top-0 z-30 mt-8 hidden h-[48px] w-full bg-[#FFF8E9] shadow-sm sm:block">
         <nav aria-label="Categorías de la tienda" className="flex h-full w-full items-center justify-center gap-8 border-b border-[#AF71DD]/15 sm:gap-12">

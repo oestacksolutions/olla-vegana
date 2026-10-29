@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { adminNavigation } from '../data/mockAdminData'
 import logoOllaVegana from '../../assets/png/logo_olla_vegana.png'
+import { logoutAdmin } from '../../services/auth'
 
 const iconMap = { LayoutDashboard, ShoppingBag, Package, Tags, Boxes, PanelsTopLeft, MapPin, Settings }
 
@@ -36,8 +37,8 @@ function AdminLayout({ activePage, onNavigate, children }) {
       <div className="border-t border-white/10 p-4">
         <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8D4F6] font-poppins text-sm font-semibold text-[#69428A]">OV</span>
-          <span className="min-w-0 flex-1"><strong className="block truncate font-poppins text-xs font-medium text-white">Modo demostración</strong><span className="font-poppins text-[10px] text-white/45">Datos simulados</span></span>
-          <LogOut size={15} className="text-white/35" aria-hidden="true" />
+          <span className="min-w-0 flex-1"><strong className="block truncate font-poppins text-xs font-medium text-white">Sesión iniciada</strong><span className="font-poppins text-[10px] text-white/45">Administración</span></span>
+          <button type="button" aria-label="Cerrar sesión" onClick={() => { logoutAdmin(); window.location.assign('/login') }} className="rounded-lg p-1 text-white/55 transition-colors hover:bg-white/10 hover:text-white"><LogOut size={15} aria-hidden="true" /></button>
         </div>
       </div>
     </>
@@ -53,7 +54,7 @@ function AdminLayout({ activePage, onNavigate, children }) {
           <div className="hidden items-center gap-2 text-xs text-black/40 sm:flex"><span>Panel</span><span aria-hidden="true">/</span><span className="font-medium text-[#466729]">{adminNavigation.find(({ id }) => id === activePage)?.label}</span></div>
           <span className="flex-1" />
           <label className="hidden h-9 w-[220px] items-center gap-2 rounded-xl border border-black/10 px-3 text-black/35 md:flex"><Search size={15} aria-hidden="true" /><input aria-label="Buscar en administración" placeholder="Buscar…" className="min-w-0 flex-1 bg-transparent font-poppins text-xs text-[#292621] outline-none placeholder:text-black/35" /></label>
-          <span className="rounded-full border border-[#AF71DD]/20 bg-[#AF71DD]/10 px-3 py-1.5 font-poppins text-[10px] font-medium text-[#74439A]">DEMO</span>
+          <span className="rounded-full border border-[#AF71DD]/20 bg-[#AF71DD]/10 px-3 py-1.5 font-poppins text-[10px] font-medium text-[#74439A]">ADMIN</span>
           <a href="/tienda" className="font-poppins text-xs text-[#466729] hover:underline">Ver tienda</a>
         </header>
         <main id="admin-main" className="mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-7 sm:py-8">{children}</main>

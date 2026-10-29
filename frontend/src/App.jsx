@@ -16,6 +16,9 @@ import CheckoutPage from './pages/tienda/CheckoutPage'
 import OrderStatusPage from './pages/tienda/OrderStatusPage'
 import OrderTrackingPage from './pages/tienda/OrderTrackingPage'
 import AdminApp from './admin/AdminApp'
+import LoginPage from './pages/LoginPage'
+import ProtectedRoute from './components/auth/ProtectedRoute'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 
 function App() {
   useEffect(() => {
@@ -40,7 +43,15 @@ function App() {
   const pathname = window.location.pathname.replace(/\/$/, '')
 
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {
-    return <AdminApp />
+    return <ProtectedRoute><AdminApp /></ProtectedRoute>
+  }
+
+  if (pathname === '/login') {
+    return <LoginPage />
+  }
+
+  if (pathname === '/reset-password') {
+    return <ResetPasswordPage />
   }
 
   if (pathname === '/tienda') {

@@ -116,7 +116,7 @@ function Navbar() {
             ))}
           </nav>
 
-          <BtnAction href="/donacion" className="hidden xl:inline-flex xl:mr-6">
+          <BtnAction href="/donacion" className="hidden xl:inline-flex">
             ¡Quiero donar!
           </BtnAction>
 
