@@ -11,8 +11,8 @@ function createAuthController(service) {
       res.json(await service.requestPasswordReset(correo));
     }),
     resetPassword: asyncHandler(async (req, res) => {
-      const { token, contrasena } = req.body || {};
-      res.json(await service.resetPassword(token, contrasena));
+      const { token, nuevaContrasena, contrasena } = req.body || {};
+      res.json(await service.resetPassword(token, nuevaContrasena || contrasena));
     })
   };
 }

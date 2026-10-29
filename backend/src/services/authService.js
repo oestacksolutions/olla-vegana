@@ -1,8 +1,10 @@
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const AppError = require('../utils/AppError');
 
 const PASSWORD_HASH_PREFIX = 'scrypt';
+const BCRYPT_ROUNDS = 12;
 const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
 const SESSION_TTL_SECONDS = 8 * 60 * 60;
 
@@ -70,6 +72,10 @@ function validateNewPassword(contrasena) {
   }
 }
 
+function isBcryptHash(value) {
+  return typeof value === 'string' && /^\$2[aby]\$\d{2}\$/.test(value);
+}
+
 function createAuthService({ Admin, env }) {
   return {
     async login(correo, contrasena) {
@@ -79,13 +85,15 @@ function createAuthService({ Admin, env }) {
       }
       const admin = await Admin.findOne({ correo: normalizedEmail, activo: true }).select('+contrasena');
       const validPassword = admin
-        && (await verifyPassword(contrasena, admin.contrasena)
+        && (isBcryptHash(admin.contrasena)
+          ? await bcrypt.compare(contrasena, admin.contrasena)
+          : await verifyPassword(contrasena, admin.contrasena)
           || (admin.contrasena === contrasena && typeof contrasena === 'string'));
 
       if (!validPassword) throw AppError.noAutorizado('El correo o la contraseña no son correctos.');
 
-      if (typeof admin.contrasena !== 'string' || !admin.contrasena.startsWith(`${PASSWORD_HASH_PREFIX}$`)) {
-        admin.contrasena = await hashPassword(contrasena);
+      if (!isBcryptHash(admin.contrasena)) {
+        admin.contrasena = await bcrypt.hash(contrasena, BCRYPT_ROUNDS);
         await admin.save();
       }
 
@@ -102,22 +110,32 @@ function createAuthService({ Admin, env }) {
 
     async requestPasswordReset(correo) {
       const normalizedEmail = normalizeEmail(correo);
-      const admin = await Admin.findOne({ correo: normalizedEmail, activo: true }).select('+resetTokenHash +resetTokenExpiresAt');
+      const admin = normalizedEmail
+        ? await Admin.findOne({ correo: normalizedEmail, activo: true }).select('+resetPasswordToken +resetPasswordExpires')
+        : null;
 
       if (admin) {
-        const rawToken = crypto.randomBytes(32).toString('base64url');
-        admin.resetTokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-        admin.resetTokenExpiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        admin.resetPasswordToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+        admin.resetPasswordExpires = new Date(Date.now() + RESET_TOKEN_TTL_MS);
         await admin.save();
 
-        const transport = createTransport(env);
         const resetUrl = `${env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${encodeURIComponent(rawToken)}`;
-        await transport.sendMail({
-          from: env.MAIL_FROM,
-          to: admin.correo,
-          subject: 'Restablecer acceso a Olla Vegana',
-          text: `Solicitaste restablecer tu contraseña. Abrí este enlace dentro de los próximos 15 minutos: ${resetUrl}\n\nSi no realizaste esta solicitud, ignorá este correo.`
-        });
+        if (env.SMTP_HOST && env.SMTP_PORT && env.SMTP_USER && env.SMTP_PASS && env.MAIL_FROM) {
+          try {
+            const transport = createTransport(env);
+            await transport.sendMail({
+              from: env.MAIL_FROM,
+              to: admin.correo,
+              subject: 'Restablecer acceso a Olla Vegana',
+              text: `Solicitaste restablecer tu contraseña. Abrí este enlace dentro de los próximos 15 minutos: ${resetUrl}\n\nSi no realizaste esta solicitud, ignorá este correo.`
+            });
+          } catch (error) {
+            console.error('[auth] No se pudo enviar el correo de recuperación.', error);
+          }
+        } else if (env.NODE_ENV === 'development') {
+          console.info(`[auth] Enlace de recuperación generado para desarrollo: ${resetUrl}`);
+        }
       }
 
       return { message: 'Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña.' };
@@ -131,16 +149,16 @@ function createAuthService({ Admin, env }) {
 
       const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
       const admin = await Admin.findOne({
-        resetTokenHash: tokenHash,
-        resetTokenExpiresAt: { $gt: new Date() },
+        resetPasswordToken: tokenHash,
+        resetPasswordExpires: { $gt: new Date() },
         activo: true
-      }).select('+contrasena +resetTokenHash +resetTokenExpiresAt');
+      }).select('+contrasena +resetPasswordToken +resetPasswordExpires');
 
       if (!admin) throw AppError.solicitudInvalida('El enlace de recuperación no es válido o ya venció.');
 
-      admin.contrasena = await hashPassword(contrasena);
-      admin.resetTokenHash = undefined;
-      admin.resetTokenExpiresAt = undefined;
+      admin.contrasena = await bcrypt.hash(contrasena, BCRYPT_ROUNDS);
+      admin.resetPasswordToken = undefined;
+      admin.resetPasswordExpires = undefined;
       await admin.save();
       return { message: 'Contraseña actualizada correctamente.' };
     }
