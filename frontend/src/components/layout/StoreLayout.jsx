@@ -5,11 +5,13 @@ import StoreFooter from './StoreFooter'
 import logoOllaVegana from '../../assets/png/logo_olla_vegana.png'
 import { storeCategories, storeProducts } from '../../data/storeProducts'
 import { CART_UPDATED_EVENT, getStoreCart, removeStoreCartItem } from '../../data/storeCart'
+import { getCategories } from '../../services/catalog'
 
 function StoreLayout({ children }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [cartItems, setCartItems] = useState(() => getStoreCart())
   const [isCartOpen, setIsCartOpen] = useState(false)
+  const [categories, setCategories] = useState(storeCategories)
   const cartPanelRef = useRef(null)
   const cartCloseButtonRef = useRef(null)
   const previouslyFocusedRef = useRef(null)
@@ -27,6 +29,14 @@ function StoreLayout({ children }) {
       window.removeEventListener(CART_UPDATED_EVENT, updateCart)
       window.removeEventListener('storage', updateCart)
     }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    getCategories().then((items) => {
+      if (active && items.length) setCategories(items.map(({ nombre, slug }) => [nombre, `/tienda?categoria=${slug}`, slug]))
+    }).catch(() => {})
+    return () => { active = false }
   }, [])
 
   useEffect(() => {
@@ -91,11 +101,11 @@ function StoreLayout({ children }) {
           </button>
         </div>
         <div className="absolute right-4 top-[60px] sm:hidden">{cartSummary}</div>
-        {isMenuOpen && <nav id="menu-categorias-tienda" aria-label="Categorías de la tienda" className="border-t border-[#AF71DD]/20 px-4 py-3 sm:hidden"><ul className="flex flex-col gap-3">{storeCategories.map(([label, href]) => <li key={href}><a href={href} onClick={() => setIsMenuOpen(false)} className="block font-scripter text-[18px] text-black/80 transition-colors hover:text-[#F13107]">{label}</a></li>)}<li><a href="/login" onClick={() => setIsMenuOpen(false)} className="block font-poppins text-sm font-semibold text-[#466729]">Administrar tienda</a></li></ul></nav>}
+        {isMenuOpen && <nav id="menu-categorias-tienda" aria-label="Categorías de la tienda" className="border-t border-[#AF71DD]/20 px-4 py-3 sm:hidden"><ul className="flex flex-col gap-3">{categories.map(([label, href]) => <li key={href}><a href={href} onClick={() => setIsMenuOpen(false)} className="block font-scripter text-[18px] text-black/80 transition-colors hover:text-[#F13107]">{label}</a></li>)}<li><a href="/login" onClick={() => setIsMenuOpen(false)} className="block font-poppins text-sm font-semibold text-[#466729]">Administrar tienda</a></li></ul></nav>}
       </header>
       <div className="sticky top-0 z-30 mt-8 hidden h-[48px] w-full bg-[#FFF8E9] shadow-sm sm:block">
         <nav aria-label="Categorías de la tienda" className="flex h-full w-full items-center justify-center gap-8 border-b border-[#AF71DD]/15 sm:gap-12">
-          {storeCategories.map(([label, href, category]) => <a key={label} href={href} aria-current={activeCategory === category ? 'page' : undefined} className={`inline-flex h-full items-center px-2 font-scripter text-[20px] transition-colors hover:text-[#F13107] ${activeCategory === category ? 'text-[#F13107]' : 'text-black/80'}`}>{label}</a>)}
+          {categories.map(([label, href, category]) => <a key={label} href={href} aria-current={activeCategory === category ? 'page' : undefined} className={`inline-flex h-full items-center px-2 font-scripter text-[20px] transition-colors hover:text-[#F13107] ${activeCategory === category ? 'text-[#F13107]' : 'text-black/80'}`}>{label}</a>)}
         </nav>
       </div>
       {isCartOpen && (

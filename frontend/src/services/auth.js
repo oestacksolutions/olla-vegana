@@ -26,16 +26,16 @@ async function postAuth(path, body) {
 
 function readAuth() {
   try {
-    const stored = sessionStorage.getItem(AUTH_STORAGE_KEY)
+    const stored = localStorage.getItem(AUTH_STORAGE_KEY)
     if (!stored) return null
     const auth = JSON.parse(stored)
     if (!auth?.token || isTokenExpired(auth.token)) {
-      sessionStorage.removeItem(AUTH_STORAGE_KEY)
+      localStorage.removeItem(AUTH_STORAGE_KEY)
       return null
     }
     return auth
   } catch {
-    sessionStorage.removeItem(AUTH_STORAGE_KEY)
+    localStorage.removeItem(AUTH_STORAGE_KEY)
     return null
   }
 }
@@ -58,7 +58,7 @@ export async function loginAdmin(correo, contrasena) {
   }
 
   const auth = { token, admin: data.admin || data.usuario || null }
-  sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth))
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth))
   return auth
 }
 
@@ -75,5 +75,5 @@ export function getAdminAuth() {
 }
 
 export function logoutAdmin() {
-  sessionStorage.removeItem(AUTH_STORAGE_KEY)
+  localStorage.removeItem(AUTH_STORAGE_KEY)
 }
