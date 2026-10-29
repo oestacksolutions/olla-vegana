@@ -8,11 +8,18 @@ let categoriesRequest
 export function getCategories({ refresh = false } = {}) {
   if (refresh) cachedCategories = undefined
   if (cachedCategories) return Promise.resolve(cachedCategories)
+
   if (!categoriesRequest) {
     categoriesRequest = requestCategories()
-      .then((categories) => { cachedCategories = categories; return categories })
-      .finally(() => { categoriesRequest = undefined })
+      .then((categories) => {
+        cachedCategories = categories
+        return categories
+      })
+      .finally(() => {
+        categoriesRequest = undefined
+      })
   }
+
   return categoriesRequest
 }
 

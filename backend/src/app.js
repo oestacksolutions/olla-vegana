@@ -18,6 +18,8 @@ const createAuthController = require('./controllers/authController');
 const createCatalogRoutes = require('./routes/catalogRoutes');
 const createAuthRoutes = require('./routes/authRoutes');
 const createAdminProductRoutes = require('./routes/adminProductRoutes');
+const createAdminImageRoutes = require('./routes/adminImageRoutes');
+const { createCloudinaryStorage } = require('./services/cloudinaryStorage');
 const createAdminStockRoutes = require('./routes/adminStockRoutes');
 const { createAuthMiddleware } = require('./middlewares/auth');
 const createPickupRoutes = require('./routes/pickupRoutes');
@@ -50,6 +52,15 @@ app.use(
   createAdminProductRoutes({
     Producto, Categoria, Variante, ValorVariante, ValorAtributo, Atributo, ImagenProducto
   })
+);
+app.use(
+  '/api/admin/products/:productId/images',
+  authenticate,
+  authorizeAdmin,
+  createAdminImageRoutes(
+    { Producto, Variante, ImagenProducto },
+    { storage: createCloudinaryStorage(require('./config/env')) }
+  )
 );
 app.use(
   '/api/admin/stock',

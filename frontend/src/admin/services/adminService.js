@@ -8,6 +8,7 @@ function mapVariant(variant) {
     label: variant.valores?.map(({ atributo, valor }) => `${atributo}: ${valor}`).join(' · ') || 'Variante',
     stock: Number(variant.stock ?? variant.stockDisponible ?? 0),
     id: variant.id,
+    image: variant.imagen || null,
   }
 }
 
