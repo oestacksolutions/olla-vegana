@@ -15,7 +15,7 @@ function mapProductSummary(product, detail) {
     description: source.descripcion ? [source.descripcion] : [],
     colorVariants: variants.map((variant) => ({
       label: variant.valores?.map(({ valor }) => valor).join(' · ') || 'Variante',
-      image: source.imagenes?.find(({ varianteId }) => varianteId === variant.id)?.url || image,
+      image: variant.imagen || source.imagenes?.find(({ varianteId }) => varianteId === variant.id)?.url || image,
       stock: variant.stockDisponible,
     })),
     variants,

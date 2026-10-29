@@ -49,3 +49,13 @@ export const getAdminProducts = () => apiRequest('/admin/products?limit=100', { 
 export const createAdminProduct = (product) => apiRequest('/admin/products', { method: 'POST', body: JSON.stringify(product), protected: true })
 export const updateAdminProduct = (id, product) => apiRequest(`/admin/products/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(product), protected: true })
 export const setAdminProductVisibility = (id, activo) => apiRequest(`/admin/products/${encodeURIComponent(id)}/visibility`, { method: 'PATCH', body: JSON.stringify({ activo }), protected: true })
+export const uploadAdminProductImages = (productId, files, variantIds = []) => {
+  const body = new FormData()
+  files.forEach((file) => body.append('imagenes', file))
+  body.append('varianteIds', JSON.stringify(variantIds))
+  return apiRequest(`/admin/products/${encodeURIComponent(productId)}/images`, { method: 'POST', body, protected: true })
+}
+export const assignAdminProductImage = (productId, imageId, varianteId) => apiRequest(
+  `/admin/products/${encodeURIComponent(productId)}/images/${encodeURIComponent(imageId)}`,
+  { method: 'PATCH', body: JSON.stringify({ varianteId }), protected: true }
+)
