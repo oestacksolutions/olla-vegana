@@ -61,6 +61,7 @@ model Variante {
   imagenes    ImagenProducto[]
   movimientos MovimientoStock[]
   itemsPedido ItemPedido[]
+  reservas    ReservaStock[]
 
   @@index([productoId])
 }
@@ -153,6 +154,7 @@ model Pedido {
   retiradoEn       DateTime?
   venceEn          DateTime?
   items            ItemPedido[]
+  reservas         ReservaStock[]
   historialEstados HistorialEstadoPedido[]
   creadoEn         DateTime                @default(now())
 
@@ -160,6 +162,25 @@ model Pedido {
   @@index([estado])
   @@index([estadoPago])
   @@index([creadoEn])
+}
+
+// Unidades de una variante reservadas temporalmente por un pedido
+model ReservaStock {
+  id           String        @id @default(uuid())
+  pedidoId     String
+  pedido       Pedido        @relation(fields: [pedidoId], references: [id])
+  varianteId   String
+  variante     Variante      @relation(fields: [varianteId], references: [id])
+  cantidad     Int
+  estado       EstadoReserva @default(ACTIVA)
+  creadoEn     DateTime      @default(now())
+  venceEn      DateTime
+  confirmadaEn DateTime?
+  liberadaEn   DateTime?
+
+  @@unique([pedidoId, varianteId])
+  @@index([estado, venceEn])
+  @@index([varianteId])
 }
 
 // Productos dentro de un pedido (nombre y precio copiados al momento de comprar)
@@ -244,6 +265,12 @@ enum EstadoPedido {
   LISTO_PARA_RETIRAR
   RETIRADO
   CANCELADO
+}
+
+enum EstadoReserva {
+  ACTIVA
+  CONFIRMADA
+  LIBERADA
 }
 
 enum TipoMovimientoStock {
