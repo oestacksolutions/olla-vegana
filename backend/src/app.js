@@ -22,9 +22,18 @@ const createAdminImageRoutes = require('./routes/adminImageRoutes');
 const { createCloudinaryStorage } = require('./services/cloudinaryStorage');
 const createAdminStockRoutes = require('./routes/adminStockRoutes');
 const { createAuthMiddleware } = require('./middlewares/auth');
+const {
+  createCorsOptions,
+  createApiRateLimiter,
+  createAuthRateLimiter,
+  validateJsonBody,
+  validateAuthPayload,
+  helmetMiddleware
+} = require('./middlewares/security');
 const createPickupRoutes = require('./routes/pickupRoutes');
 const notFound = require('./middlewares/notFound');
 const errorHandler = require('./middlewares/errorHandler');
+const env = require('./config/env');
 
 const app = express();
 const catalogService = createCatalogService({
@@ -39,8 +48,11 @@ const { authenticate, authorizeAdmin } = createAuthMiddleware({
   Admin
 });
 
-app.use(cors());
-app.use(express.json());
+app.use(helmetMiddleware);
+app.use(cors(createCorsOptions(env)));
+app.use(express.json({ limit: '10kb' }));
+app.use('/api', createApiRateLimiter());
+app.use('/api/auth', createAuthRateLimiter(), validateAuthPayload);
 
 // Rutas publicas de consulta del catalogo
 app.use('/api', createCatalogRoutes(catalogController));
@@ -49,6 +61,7 @@ app.use(
   '/api/admin/products',
   authenticate,
   authorizeAdmin,
+  validateJsonBody,
   createAdminProductRoutes({
     Producto, Categoria, Variante, ValorVariante, ValorAtributo, Atributo, ImagenProducto
   })
