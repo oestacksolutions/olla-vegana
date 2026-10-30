@@ -43,8 +43,11 @@ test('movimientos nuevos conservan snapshots, administrador e idempotencia sin e
   await legacy.validate();
 });
 
-test('evento externo no impone unicidad no confirmada y la contraseña no se selecciona por defecto', () => {
-  assert.equal(EventoPago.schema.indexes().some(([, options]) => options.unique), false);
+test('EventoPago no hace único idExterno y deduplica con clave parcial', () => {
+  const eventIndexes = EventoPago.schema.indexes();
+  assert.equal(eventIndexes.some(([keys, options]) => options.unique && keys.idExterno), false);
+  assert.equal(eventIndexes.some(([keys, options]) => options.unique && keys.idempotencia === 1
+    && options.partialFilterExpression?.idempotencia?.$type === 'string'), true);
   assert.equal(Admin.schema.path('contrasena').options.select, false);
 });
 
