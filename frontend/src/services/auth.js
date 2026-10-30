@@ -1,10 +1,12 @@
 const AUTH_STORAGE_KEY = 'olla-vegana-admin-auth'
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const configuredApiUrl = import.meta.env.VITE_API_URL || 'https://api.ollavegana.org'
+const apiOrigin = configuredApiUrl.replace(/\/+$/, '').replace(/\/api$/, '')
+const API_BASE_URL = `${apiOrigin}/api`
 
 async function postAuth(path, body) {
   let response
   try {
-    response = await fetch(`${API_URL}/api/auth/${path}`, {
+    response = await fetch(`${API_BASE_URL}/auth/${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

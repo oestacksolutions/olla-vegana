@@ -1,7 +1,9 @@
 import { logoutAdmin } from './auth'
 import { buildCartValidationPayload } from '../utils/checkout'
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+const configuredApiUrl = import.meta.env.VITE_API_URL || 'https://api.ollavegana.org'
+const apiOrigin = configuredApiUrl.replace(/\/+$/, '').replace(/\/api$/, '')
+export const API_BASE_URL = `${apiOrigin}/api`
 
 export async function apiRequest(path, options = {}) {
   const { protected: requiresAuth = false, ...requestOptions } = options

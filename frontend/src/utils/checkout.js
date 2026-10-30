@@ -1,6 +1,6 @@
 export const CHECKOUT_DRAFT_KEY = 'olla-vegana-checkout-draft'
 export const PAYMENT_METHODS = Object.freeze([
-  { id: 'MERCADO_PAGO', title: 'Mercado Pago', detail: 'La preferencia queda preparada; esta página no inicia ningún cobro.' },
+  { id: 'MERCADO_PAGO', title: 'Mercado Pago', detail: 'Checkout Pro está en preparación y todavía no acepta pagos.' },
   { id: 'TRANSFERENCIA', title: 'Transferencia bancaria', detail: 'La preferencia queda preparada; no se muestran datos bancarios en esta etapa.' },
 ])
 

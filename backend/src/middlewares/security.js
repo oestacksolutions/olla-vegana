@@ -21,15 +21,18 @@ function configuredOrigins(frontendUrl) {
 
 function createCorsOptions(env) {
   const productionOrigins = configuredOrigins(env.FRONTEND_URL);
+
   return {
     origin(origin, callback) {
       if (!origin) {
         callback(null, true);
         return;
       }
+
       const allowed = env.NODE_ENV !== 'production'
         ? LOCAL_ORIGINS.has(origin) || productionOrigins.has(origin)
         : productionOrigins.has(origin);
+
       callback(allowed ? null : new AppError('Origen no permitido.', 403), allowed);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
