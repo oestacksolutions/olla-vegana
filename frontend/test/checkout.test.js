@@ -10,7 +10,9 @@ import {
   CHECKOUT_DRAFT_KEY,
   formatARS,
   formatPickupSchedule,
+  isPickupSelectionAvailable,
   PAYMENT_METHODS,
+  reconcilePickupSelection,
   readCheckoutDraft,
   saveCheckoutDraft,
   validateCheckoutForm,
@@ -117,6 +119,36 @@ test('representa la fecha y franja de un retiro especial sin inventarlas', () =>
 test('no permite continuar sin una opción habilitada seleccionada', () => {
   const errors = validateCheckoutForm(form, { pickupId: '', paymentMethod: 'MERCADO_PAGO', pickupOptions: [] })
   assert.ok(errors.retiro)
+})
+
+test('conserva la selección vigente y limpia una opción retirada o marcada como no seleccionable', () => {
+  assert.equal(isPickupSelectionAvailable(option.seleccionId, [option]), true)
+  assert.deepEqual(reconcilePickupSelection(option.seleccionId, [option]), { pickupId: option.seleccionId, invalidated: false })
+  assert.deepEqual(reconcilePickupSelection(option.seleccionId, []), { pickupId: '', invalidated: true })
+  const nowUnavailable = availablePickupOptions({ puntosRetiro: [{ id: option.id, nombre: 'Morón', disponibleParaSeleccionar: false }] })
+  assert.deepEqual(reconcilePickupSelection(option.seleccionId, nowUnavailable), { pickupId: '', invalidated: true })
+})
+
+test('al limpiar el retiro se persiste el borrador conservando datos y método de pago', () => {
+  const data = new Map()
+  const storage = { getItem: (key) => data.get(key) || null, setItem: (key, value) => data.set(key, value) }
+  const draft = { form, pickupId: option.seleccionId, paymentMethod: 'TRANSFERENCIA' }
+  saveCheckoutDraft(draft, storage)
+  const reconciled = reconcilePickupSelection(draft.pickupId, [])
+  saveCheckoutDraft({ ...draft, pickupId: reconciled.pickupId }, storage)
+  assert.deepEqual(readCheckoutDraft(storage), { ...draft, pickupId: '' })
+  assert.equal(cartFingerprint([{ productId: 'p1', variantId: 'v1', quantity: 1 }]), cartFingerprint([{ productId: 'p1', variantId: 'v1', quantity: 1 }]))
+})
+
+test('el checkout reconcilia solo respuestas exitosas, ignora respuestas viejas y no toca el carrito al invalidar', () => {
+  assert.match(checkoutSource, /if \(pickupState !== 'loaded'\) return/)
+  assert.match(checkoutSource, /reconcilePickupSelection\(pickupId, pickupOptions\)/)
+  assert.match(checkoutSource, /\+\+pickupRequestIdRef\.current/)
+  assert.match(checkoutSource, /requestId !== pickupRequestIdRef\.current/)
+  assert.match(checkoutSource, /setPickupState\('error'\)/)
+  assert.match(checkoutSource, /La opción de retiro que habías elegido ya no está disponible/)
+  assert.match(checkoutSource, /saveCheckoutDraft\(\{ form, pickupId, paymentMethod \}\)/)
+  assert.match(checkoutSource, /aria-live="polite"/)
 })
 
 test('el wizard valida los datos y el retiro por etapa, y exige pago en la última etapa', () => {

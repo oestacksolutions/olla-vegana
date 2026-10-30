@@ -11,6 +11,7 @@ import {
   formatPickupSchedule,
   PAYMENT_METHODS,
   readCheckoutDraft,
+  reconcilePickupSelection,
   saveCheckoutDraft,
   validateBuyerFields,
   validatePaymentSelection,
@@ -28,6 +29,7 @@ function CheckoutPage() {
   const [pickupOptions, setPickupOptions] = useState([])
   const [pickupState, setPickupState] = useState('loading')
   const [pickupRetry, setPickupRetry] = useState(0)
+  const [pickupNotice, setPickupNotice] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [serverError, setServerError] = useState('')
   const [serverResult, setServerResult] = useState(null)
@@ -35,24 +37,37 @@ function CheckoutPage() {
   const [stage, setStage] = useState('form')
   const [step, setStep] = useState(0)
   const validationLock = useRef(false)
+  const pickupRequestIdRef = useRef(0)
   const cartSignatureRef = useRef(cartFingerprint(cartItems))
 
   useEffect(() => {
     let active = true
+    const requestId = ++pickupRequestIdRef.current
     setPickupState('loading')
     getPickupOptions()
       .then((response) => {
-        if (!active) return
+        if (!active || requestId !== pickupRequestIdRef.current) return
         setPickupOptions(availablePickupOptions(response))
         setPickupState('loaded')
       })
       .catch(() => {
-        if (!active) return
+        if (!active || requestId !== pickupRequestIdRef.current) return
         setPickupOptions([])
         setPickupState('error')
       })
     return () => { active = false }
   }, [pickupRetry])
+
+  useEffect(() => {
+    if (pickupState !== 'loaded') return
+    const selection = reconcilePickupSelection(pickupId, pickupOptions)
+    if (!selection.invalidated) return
+    setPickupId(selection.pickupId)
+    setFieldErrors((current) => ({ ...current, retiro: undefined }))
+    setPickupNotice('La opción de retiro que habías elegido ya no está disponible. Seleccioná otra para continuar.')
+    setServerResult(null)
+    setStage('form')
+  }, [pickupOptions, pickupState, pickupId])
 
   useEffect(() => {
     // Los datos de contacto se guardan solo en sessionStorage para sobrevivir al regreso al carrito en esta pestaña.
@@ -164,6 +179,7 @@ function CheckoutPage() {
 
   const handlePickupChange = (value) => {
     setPickupId(value)
+    setPickupNotice('')
     setFieldErrors((current) => ({ ...current, retiro: undefined }))
     invalidateCurrentValidation()
   }
@@ -253,6 +269,7 @@ function CheckoutPage() {
                     <fieldset className="mt-8 border-t border-[#466729]/15 pt-6">
                       <legend className="font-poppins text-lg font-semibold text-[#466729]">Opción de retiro</legend>
                       <p className="mt-1 font-poppins text-sm text-black/60">Elegí una sola opción habilitada por la tienda.</p>
+                      {pickupNotice && <p role="status" aria-live="polite" className="mt-4 rounded-[10px] border border-[#AF71DD]/30 bg-[#AF71DD]/5 p-4 font-poppins text-sm text-[#69428A]">{pickupNotice}</p>}
                       {pickupState === 'loading' && <p role="status" className="mt-4 font-poppins text-sm text-black/55">Cargando opciones de retiro…</p>}
                       {pickupState === 'error' && <div className="mt-4 rounded-[10px] bg-[#F2380F]/5 p-4" role="alert"><p className="font-poppins text-sm text-[#8A2817]">No pudimos cargar las opciones de retiro.</p><button type="button" onClick={() => setPickupRetry((value) => value + 1)} className="mt-2 inline-flex min-h-9 items-center gap-2 font-poppins text-sm font-medium text-[#466729] underline"><RotateCw aria-hidden="true" size={15} /> Reintentar</button></div>}
                       {pickupState === 'loaded' && pickupOptions.length === 0 && <p role="status" className="mt-4 rounded-[10px] bg-[#AF71DD]/10 p-4 font-poppins text-sm text-[#69428A]">No hay opciones de retiro habilitadas en este momento.</p>}

@@ -55,6 +55,15 @@ export function formatPickupSchedule(option) {
     : 'Horarios a confirmar'
 }
 
+export function isPickupSelectionAvailable(pickupId, pickupOptions = []) {
+  return Boolean(pickupId && pickupOptions.some((option) => option.seleccionId === pickupId))
+}
+
+export function reconcilePickupSelection(pickupId, pickupOptions = []) {
+  const available = isPickupSelectionAvailable(pickupId, pickupOptions)
+  return { pickupId: available ? pickupId : '', invalidated: Boolean(pickupId && !available) }
+}
+
 export function validateBuyerFields(form) {
   const errors = {}
   const nombre = String(form?.nombre || '').trim()
@@ -80,7 +89,7 @@ export function validateBuyerFields(form) {
 }
 
 export function validatePickupSelection(pickupId, pickupOptions = []) {
-  return pickupId && pickupOptions.some((option) => option.seleccionId === pickupId)
+  return isPickupSelectionAvailable(pickupId, pickupOptions)
     ? {}
     : { retiro: 'Seleccioná una opción de retiro disponible.' }
 }
