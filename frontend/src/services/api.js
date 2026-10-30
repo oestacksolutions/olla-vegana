@@ -1,4 +1,5 @@
 import { logoutAdmin } from './auth'
+import { buildCartValidationPayload } from '../utils/checkout'
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 
@@ -41,6 +42,7 @@ export async function apiRequest(path, options = {}) {
   if (!response.ok) {
     const error = new Error(data?.error || 'No pudimos completar la solicitud.')
     error.status = response.status
+    error.response = data
     throw error
   }
   return data
@@ -49,6 +51,10 @@ export async function apiRequest(path, options = {}) {
 export const getProducts = (category) => apiRequest(`/products${category ? `?categoria=${encodeURIComponent(category)}` : ''}`)
 export const getProduct = (slug) => apiRequest(`/products/${encodeURIComponent(slug)}`)
 export const getCategories = () => apiRequest('/categories')
+export const getPickupOptions = () => apiRequest('/pickup-options')
+export const validateStoreCart = (cartItems) => apiRequest('/cart/validate', {
+  method: 'POST', body: JSON.stringify(buildCartValidationPayload(cartItems))
+})
 export const getAdminProducts = () => apiRequest('/admin/products?limit=100', { protected: true })
 export const createAdminProduct = (product) => apiRequest('/admin/products', { method: 'POST', body: JSON.stringify(product), protected: true })
 export const updateAdminProduct = (id, product) => apiRequest(`/admin/products/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(product), protected: true })

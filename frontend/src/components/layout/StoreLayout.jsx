@@ -41,6 +41,13 @@ function StoreLayout({ children }) {
   }, [])
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (window.location.pathname.replace(/\/$/, '') === '/tienda' && params.get('carrito') === 'abierto') {
+      setIsCartOpen(true)
+    }
+  }, [])
+
+  useEffect(() => {
     if (!isCartOpen || !cartIdentity) return undefined
     const requestKey = `${cartRefreshToken}:${cartIdentity}`
     if (lastCartRefreshRef.current === requestKey) return undefined
