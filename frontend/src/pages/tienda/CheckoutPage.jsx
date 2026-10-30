@@ -342,6 +342,11 @@ function CheckoutPage() {
                     <p role="status" className="mt-6 rounded-[10px] border border-[#AF71DD]/30 bg-[#AF71DD]/5 p-4 font-poppins text-sm leading-6 text-[#69428A]">
                       La disponibilidad es una consulta puntual: no reserva unidades. La creación del pedido y el inicio del pago todavía no están disponibles. No se creó ningún pedido ni se inició ningún cobro.
                     </p>
+                    {paymentMethod === 'MERCADO_PAGO' && <div className="mt-4 rounded-[10px] border border-[#F2380F]/20 bg-[#F2380F]/5 p-4 font-poppins text-sm leading-6 text-[#8A2817]">
+                      <p className="font-semibold">Pagar con Mercado Pago</p>
+                      <p className="mt-1">Checkout Pro está bloqueado hasta verificar pedidos y reservas en una base aislada y habilitar la confirmación segura por webhook. No se iniciará ningún cobro.</p>
+                      <button type="button" disabled aria-disabled="true" className="mt-3 inline-flex min-h-11 cursor-not-allowed items-center justify-center rounded-full bg-black/20 px-5 text-sm font-semibold text-black/55">Pagar con Mercado Pago · No disponible</button>
+                    </div>}
                     <div className="mt-7 flex flex-col-reverse gap-3 border-t border-[#466729]/15 pt-5 sm:flex-row sm:justify-between">
                       <a href={cartLink} className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#AF71DD] px-5 font-poppins text-sm text-[#7A42A7]">Volver al carrito</a>
                       <div className="flex flex-wrap gap-2">
