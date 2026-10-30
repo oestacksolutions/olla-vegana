@@ -1,5 +1,6 @@
-function query(value, { sort } = {}) {
+function query(value, { sort, session } = {}) {
   if (sort && value && typeof value.sort === 'function') value = value.sort(sort);
+  if (session && value && typeof value.session === 'function') value = value.session(session);
   if (value && typeof value.lean === 'function') value = value.lean();
   return value;
 }
@@ -28,12 +29,21 @@ function isSpecialSelectable(pickup, now) {
 }
 
 function createPickupService({ PuntoRetiro, RetiroEspecial }, { ahora = () => new Date() } = {}) {
-  async function listOptions() {
+  async function listOptions({ session } = {}) {
     const now = ahora();
-    const [points, specialPickups] = await Promise.all([
-      query(PuntoRetiro.find({ activo: true }), { sort: { nombre: 1 } }),
-      query(RetiroEspecial.find({ activo: true, habilitadoCheckout: true, fecha: { $gt: now } }), { sort: { fecha: 1 } })
-    ]);
+    let points;
+    let specialPickups;
+    const pointsQuery = PuntoRetiro.find({ activo: true });
+    const specialQuery = RetiroEspecial.find({ activo: true, habilitadoCheckout: true, fecha: { $gt: now } });
+    if (session) {
+      points = await query(pointsQuery, { sort: { nombre: 1 }, session });
+      specialPickups = await query(specialQuery, { sort: { fecha: 1 }, session });
+    } else {
+      [points, specialPickups] = await Promise.all([
+        query(pointsQuery, { sort: { nombre: 1 } }),
+        query(specialQuery, { sort: { fecha: 1 } })
+      ]);
+    }
 
     return {
       puntosRetiro: points.map((point) => ({

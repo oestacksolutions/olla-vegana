@@ -24,8 +24,8 @@ function duplicate(field) {
   return error;
 }
 
-function fixture({ cart, pickups, randoms = [123456], failItems = false } = {}) {
-  const rows = { pedidos: [], items: [], histories: [] };
+function fixture({ cart, pickups, randoms = [123456], failItems = false, failReservation = false } = {}) {
+  const rows = { pedidos: [], items: [], histories: [], reservations: [] };
   let inventoryWrites = 0;
   let nextId = 0;
   const sessions = [];
@@ -88,10 +88,25 @@ function fixture({ cart, pickups, randoms = [123456], failItems = false } = {}) 
     puntosRetiro: [{ id: ids.point, nombre: 'Morón', direccion: 'Dirección oficial 1', horarios: 'Viernes de 16 a 19', horariosHabituales: [], disponibleParaSeleccionar: true }],
     retirosEspeciales: [{ id: ids.special, evento: 'VEGANPALUJA', fecha: new Date('2027-05-16T00:00:00Z'), lugar: 'Plaza confirmada', direccion: 'Dirección oficial 2', horaInicio: '10:00', horaFin: '12:00', disponibleParaSeleccionar: true }]
   }) };
+  const stockReservationService = {
+    assertReservationIndex: async () => {},
+    reserveForOrder: async ({ pedidoId, articulos, creadoEn, venceEn, session }) => {
+      const reservations = articulos.map((item) => ({
+        pedidoId, varianteId: item.varianteId, cantidad: item.cantidad,
+        estado: 'ACTIVA', creadoEn, venceEn
+      }));
+      for (const reservation of reservations) {
+        rows.reservations.push(reservation);
+        session.written.push(['reservations', reservation]);
+      }
+      if (failReservation) throw new Error('simulated reservation write failure');
+      return reservations;
+    }
+  };
   let randomIndex = 0;
   const inventoryWriteGuard = new Proxy({}, { get: () => async () => { inventoryWrites += 1; throw new Error('CAR-05 must not write inventory'); } });
   const service = createOrderService({ Pedido, ItemPedido, HistorialEstadoPedido, Variante: inventoryWriteGuard, ReservaStock: inventoryWriteGuard, MovimientoStock: inventoryWriteGuard }, {
-    cartValidationService, pickupService, ahora: () => new Date('2026-10-29T12:00:00Z'),
+    cartValidationService, pickupService, stockReservationService, ahora: () => new Date('2026-10-29T12:00:00Z'),
     randomSuffix: () => randoms[Math.min(randomIndex++, randoms.length - 1)]
   });
   return { service, rows, sessions, cartValidationService, pickupService, get inventoryWrites() { return inventoryWrites; } };
@@ -131,6 +146,7 @@ test('crea pedido, ítems y estado inicial en transacción con snapshots y preci
   assert.equal(rows.pedidos.length, 1);
   assert.equal(rows.items.length, 1);
   assert.equal(rows.histories.length, 1);
+  assert.equal(rows.reservations.length, 1);
   assert.equal(result.pedido.nombre, 'Ana');
   assert.equal(result.pedido.correo, 'ana@example.test');
   assert.equal(result.pedido.total.toString(), '150.50');
@@ -142,6 +158,9 @@ test('crea pedido, ítems y estado inicial en transacción con snapshots y preci
   assert.equal(rows.items[0].nombreProducto, 'Remera vigente');
   assert.deepEqual(rows.items[0].atributosVariante, [{ atributo: 'Talle', valor: 'L' }]);
   assert.equal(rows.histories[0].estadoNuevo, 'NUEVO');
+  assert.equal(rows.reservations[0].estado, 'ACTIVA');
+  assert.equal(rows.reservations[0].venceEn.toISOString(), '2026-10-30T12:00:00.000Z');
+  assert.equal(rows.reservations[0].venceEn.getTime() - rows.reservations[0].creadoEn.getTime(), 24 * 60 * 60 * 1000);
   assert.equal(sessions[0].ended, true);
   assert.equal(result.repetido, false);
   assert.equal(context.inventoryWrites, 0);
@@ -221,6 +240,23 @@ test('fallo al guardar ítems revierte la escritura transaccional del pedido', a
   assert.equal(rows.pedidos.length, 0);
   assert.equal(rows.items.length, 0);
   assert.equal(rows.histories.length, 0);
+  assert.equal(rows.reservations.length, 0);
+});
+
+test('fallo en la reserva revierte pedido, ítems y estado inicial', async () => {
+  const { service, rows } = fixture({ failReservation: true });
+  await assert.rejects(service.createOrder(baseBody, key), /simulated reservation write failure/);
+  assert.equal(rows.pedidos.length, 0);
+  assert.equal(rows.items.length, 0);
+  assert.equal(rows.histories.length, 0);
+  assert.equal(rows.reservations.length, 0);
+});
+
+test('Mercado Pago sigue deshabilitado hasta definir vencimiento de sus reservas', async () => {
+  const { service, rows } = fixture();
+  await assert.rejects(service.createOrder({ ...baseBody, metodoPago: 'MERCADO_PAGO' }, key), { statusCode: 503 });
+  assert.equal(rows.pedidos.length, 0);
+  assert.equal(rows.reservations.length, 0);
 });
 
 test('estados de pedido y pago tienen transiciones separadas y no habilitan cambios del comprador', () => {

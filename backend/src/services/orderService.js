@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 const mongoose = require('mongoose');
 const AppError = require('../utils/AppError');
 const { parseMoneyToCents, formatCents } = require('./cartValidationService');
+const { TRANSFER_RESERVATION_MS, isTransientConflict } = require('./stockReservationService');
 
 const PAYMENT_METHODS = new Set(['MERCADO_PAGO', 'TRANSFERENCIA']);
 const ALLOWED_KEYS = new Set([
@@ -126,7 +127,7 @@ function optionSnapshot(option) {
 
 function createOrderService(models, dependencies = {}) {
   const { Pedido, ItemPedido, HistorialEstadoPedido } = models;
-  const { cartValidationService, pickupService } = dependencies;
+  const { cartValidationService, pickupService, stockReservationService } = dependencies;
   const now = dependencies.ahora || (() => new Date());
   const randomSuffix = dependencies.randomSuffix || (() => crypto.randomInt(0, 1_000_000));
   const startSession = dependencies.startSession || (() => Pedido.db.startSession());
@@ -148,67 +149,77 @@ function createOrderService(models, dependencies = {}) {
   }
 
   async function createOrder(body, idempotencyKey) {
-    if (!cartValidationService || !pickupService) throw new Error('Faltan servicios requeridos para pedidos');
+    if (!cartValidationService || !pickupService || !stockReservationService) throw new Error('Falta el coordinador transaccional de reservas');
     const input = normalizeRequest(body, idempotencyKey);
+    if (input.metodoPago === 'MERCADO_PAGO') {
+      throw new AppError('Mercado Pago seguirá deshabilitado hasta definir y verificar su política de vencimiento de reservas', 503);
+    }
     const fingerprint = requestFingerprint(input);
     const previous = await existingResult(input, fingerprint);
     if (previous) return previous;
+    await stockReservationService.assertReservationIndex();
 
-    const [cart, pickupData] = await Promise.all([
-      cartValidationService.validateCart({ articulos: input.articulos }),
-      pickupService.listOptions()
-    ]);
-    if (!cart?.valido) {
-      throw new AppError('El carrito cambió o contiene artículos no disponibles', 422, cart?.errores || []);
-    }
-    const options = [
-      ...(pickupData?.puntosRetiro || []).filter((option) => option.disponibleParaSeleccionar).map((option) => ({ ...option, tipo: 'PUNTO', seleccionId: `PUNTO:${option.id}` })),
-      ...(pickupData?.retirosEspeciales || []).filter((option) => option.disponibleParaSeleccionar).map((option) => ({ ...option, tipo: 'ESPECIAL', seleccionId: `ESPECIAL:${option.id}` }))
-    ];
-    const selectedPickup = options.find((option) => option.seleccionId === input.retiroId);
-    if (!selectedPickup) throw AppError.conflicto('La opción de retiro ya no está disponible');
-
-    let computedTotalCents = 0n;
-    const items = cart.articulos.map((line) => {
-      const priceCents = parseMoneyToCents(line.precioUnitario);
-      const subtotalCents = parseMoneyToCents(line.subtotal);
-      if (!line.valido || !mongoose.isObjectIdOrHexString(line.productoId) || !mongoose.isObjectIdOrHexString(line.varianteId)
-        || typeof line.nombre !== 'string' || !line.nombre.trim()
-        || !Number.isSafeInteger(line.cantidad) || line.cantidad < 1 || line.cantidad > MAX_QUANTITY
-        || !Array.isArray(line.variante)
-        || line.variante.some((attribute) => typeof attribute?.atributo !== 'string' || typeof attribute?.valor !== 'string')
-        || priceCents === null || subtotalCents === null || priceCents < 0n || subtotalCents < 0n
-        || subtotalCents !== priceCents * BigInt(line.cantidad)) {
-        throw new AppError('El carrito no devolvió precios oficiales válidos', 422);
+    function buildSnapshot(cart) {
+      if (!cart?.valido) {
+        throw new AppError('El carrito cambió o contiene artículos no disponibles', 422, cart?.errores || []);
       }
-      computedTotalCents += subtotalCents;
-      const attributes = (line.variante || []).map(({ atributo, valor }) => ({ atributo, valor }));
-      return {
-        pedidoId: null,
-        productoId: new mongoose.Types.ObjectId(line.productoId),
-        varianteId: new mongoose.Types.ObjectId(line.varianteId),
-        nombreProducto: line.nombre,
-        slugProducto: line.slug,
-        atributosVariante: attributes,
-        detalleVariante: attributes.length ? attributes.map(({ atributo, valor }) => `${atributo}: ${valor}`).join(' · ') : null,
-        cantidad: line.cantidad,
-        precio: mongoose.Types.Decimal128.fromString(formatCents(priceCents)),
-        subtotal: mongoose.Types.Decimal128.fromString(formatCents(subtotalCents))
-      };
-    });
-    const totalCents = parseMoneyToCents(cart.total);
-    if (totalCents === null || totalCents < 0n || totalCents !== computedTotalCents) {
-      throw new AppError('El carrito no devolvió un total válido', 422);
+      let computedTotalCents = 0n;
+      const items = cart.articulos.map((line) => {
+        const priceCents = parseMoneyToCents(line.precioUnitario);
+        const subtotalCents = parseMoneyToCents(line.subtotal);
+        if (!line.valido || !mongoose.isObjectIdOrHexString(line.productoId) || !mongoose.isObjectIdOrHexString(line.varianteId)
+          || typeof line.nombre !== 'string' || !line.nombre.trim()
+          || !Number.isSafeInteger(line.cantidad) || line.cantidad < 1 || line.cantidad > MAX_QUANTITY
+          || !Array.isArray(line.variante)
+          || line.variante.some((attribute) => typeof attribute?.atributo !== 'string' || typeof attribute?.valor !== 'string')
+          || priceCents === null || subtotalCents === null || priceCents < 0n || subtotalCents < 0n
+          || subtotalCents !== priceCents * BigInt(line.cantidad)) {
+          throw new AppError('El carrito no devolvió precios oficiales válidos', 422);
+        }
+        computedTotalCents += subtotalCents;
+        const attributes = (line.variante || []).map(({ atributo, valor }) => ({ atributo, valor }));
+        return {
+          pedidoId: null,
+          productoId: new mongoose.Types.ObjectId(line.productoId),
+          varianteId: new mongoose.Types.ObjectId(line.varianteId),
+          nombreProducto: line.nombre,
+          slugProducto: line.slug,
+          atributosVariante: attributes,
+          detalleVariante: attributes.length ? attributes.map(({ atributo, valor }) => `${atributo}: ${valor}`).join(' · ') : null,
+          cantidad: line.cantidad,
+          precio: mongoose.Types.Decimal128.fromString(formatCents(priceCents)),
+          subtotal: mongoose.Types.Decimal128.fromString(formatCents(subtotalCents))
+        };
+      });
+      const totalCents = parseMoneyToCents(cart.total);
+      if (totalCents === null || totalCents < 0n || totalCents !== computedTotalCents) {
+        throw new AppError('El carrito no devolvió un total válido', 422);
+      }
+      return { items, totalCents };
     }
-    const pickupReference = optionSnapshot(selectedPickup);
 
     for (let attempt = 0; attempt < MAX_NUMBER_ATTEMPTS; attempt += 1) {
       const session = await startSession();
       let created;
       try {
         await session.withTransaction(async () => {
+          const creadoEn = now();
+          if (!(creadoEn instanceof Date) || !Number.isFinite(creadoEn.getTime())) {
+            throw new TypeError('El reloj del servicio devolvió una fecha inválida');
+          }
+          const venceEn = new Date(creadoEn.getTime() + TRANSFER_RESERVATION_MS);
+          const cart = await cartValidationService.validateCart({ articulos: input.articulos }, { session });
+          const pickupData = await pickupService.listOptions({ session });
+          const options = [
+            ...(pickupData?.puntosRetiro || []).filter((option) => option.disponibleParaSeleccionar).map((option) => ({ ...option, tipo: 'PUNTO', seleccionId: `PUNTO:${option.id}` })),
+            ...(pickupData?.retirosEspeciales || []).filter((option) => option.disponibleParaSeleccionar).map((option) => ({ ...option, tipo: 'ESPECIAL', seleccionId: `ESPECIAL:${option.id}` }))
+          ];
+          const selectedPickup = options.find((option) => option.seleccionId === input.retiroId);
+          if (!selectedPickup) throw AppError.conflicto('La opción de retiro ya no está disponible');
+          const { items, totalCents } = buildSnapshot(cart);
+          const pickupReference = optionSnapshot(selectedPickup);
           const [pedido] = await Pedido.create([{
-            numero: createOrderNumber(now(), randomSuffix),
+            numero: createOrderNumber(creadoEn, randomSuffix),
             nombre: input.nombre,
             apellido: input.apellido,
             correo: input.correo,
@@ -218,10 +229,19 @@ function createOrderService(models, dependencies = {}) {
             estado: 'NUEVO',
             estadoPago: 'PENDIENTE',
             total: mongoose.Types.Decimal128.fromString(formatCents(totalCents)),
+            creadoEn,
+            venceEn,
             ...pickupReference,
             idOperacion: input.idOperacion,
             huellaOperacion: fingerprint
           }], { session });
+          await stockReservationService.reserveForOrder({
+            pedidoId: pedido._id,
+            articulos: items.map((item) => ({ varianteId: item.varianteId, cantidad: item.cantidad })),
+            creadoEn,
+            venceEn,
+            session
+          });
           const itemDocs = await ItemPedido.create(items.map((item) => ({ ...item, pedidoId: pedido._id })), { session });
           const [history] = await HistorialEstadoPedido.create([{
             pedidoId: pedido._id,
@@ -237,6 +257,7 @@ function createOrderService(models, dependencies = {}) {
           const retryResult = await existingResult(input, fingerprint);
           if (retryResult) return retryResult;
         }
+        if (isTransientConflict(error)) continue;
         if (!hasDuplicateKey(error, 'numero')) throw error;
       } finally {
         await session.endSession();

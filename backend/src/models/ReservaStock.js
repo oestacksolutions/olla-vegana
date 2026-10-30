@@ -9,9 +9,9 @@ const schema = new Schema({
   venceEn: { type: Date, required: true },
   confirmadaEn: { type: Date, default: null },
   liberadaEn: { type: Date, default: null }
-}, { timestamps: false });
+}, { timestamps: false, autoIndex: false });
 
-schema.index({ pedidoId: 1, varianteId: 1 }, { unique: true });
-schema.index({ estado: 1, venceEn: 1 });
-schema.index({ varianteId: 1, estado: 1, venceEn: 1 });
+schema.index({ pedidoId: 1, varianteId: 1 }, { unique: true, name: 'uniq_reserva_pedido_variante' });
+schema.index({ estado: 1, venceEn: 1 }, { name: 'idx_reserva_estado_vencimiento' });
+schema.index({ varianteId: 1, estado: 1, venceEn: 1 }, { name: 'idx_reserva_variante_estado_vencimiento' });
 module.exports = model('ReservaStock', schema);
