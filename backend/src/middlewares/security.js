@@ -33,7 +33,7 @@ function createCorsOptions(env) {
       callback(allowed ? null : new AppError('Origen no permitido.', 403), allowed);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
     optionsSuccessStatus: 204
   };
 }
