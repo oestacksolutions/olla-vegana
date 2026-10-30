@@ -23,6 +23,8 @@ import {
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 const checkoutSource = fs.readFileSync(path.join(dirname, '../src/pages/tienda/CheckoutPage.jsx'), 'utf8')
+const appSource = fs.readFileSync(path.join(dirname, '../src/App.jsx'), 'utf8')
+const returnPageSource = fs.readFileSync(path.join(dirname, '../src/pages/tienda/CheckoutReturnPage.jsx'), 'utf8')
 const apiSource = fs.readFileSync(path.join(dirname, '../src/services/api.js'), 'utf8')
 const layoutSource = fs.readFileSync(path.join(dirname, '../src/components/layout/StoreLayout.jsx'), 'utf8')
 const form = {
@@ -242,4 +244,18 @@ test('checkout no crea órdenes, no limpia el carrito ni simula una compra o cob
   assert.doesNotMatch(checkoutSource, /createStoreOrder|clearStoreCart|window\.location\.assign\(.*pedido/)
   assert.match(checkoutSource, /No se creó ningún pedido ni se inició ningún cobro/)
   assert.match(checkoutSource, /no reserva unidades/)
+})
+
+test('PAG-01 prepara las tres rutas de retorno y nunca interpreta query params como acreditación', () => {
+  for (const route of ['/checkout/exito', '/checkout/pendiente', '/checkout/error']) assert.ok(appSource.includes(route))
+  assert.match(returnPageSource, /La redirección no confirma la acreditación/)
+  assert.match(returnPageSource, /Estado no verificado/)
+  assert.doesNotMatch(returnPageSource, /searchParams|URLSearchParams|estadoPago|pagadoEn/)
+})
+
+test('checkout deja visible pero bloqueado el botón de Mercado Pago sin solicitud de pago', () => {
+  assert.match(checkoutSource, /Pagar con Mercado Pago/)
+  assert.match(checkoutSource, /disabled aria-disabled="true"/)
+  assert.match(checkoutSource, /No se iniciar.{1,4} ning/)
+  assert.doesNotMatch(checkoutSource, /createMercadoPago|createPayment|window\.location\.assign/)
 })
