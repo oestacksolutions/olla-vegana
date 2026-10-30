@@ -136,46 +136,59 @@ function createStockReservationService(models, {
     return ReservaStock.create(reservationsToCreate, { session });
   }
 
-  async function updateOrderToCancelled(order, session, note) {
+  async function updateOrderToCancelled(order, session, note, { adminId = null, cancelledAt = null } = {}) {
     if (order.estado === 'CANCELADO') return false;
     if (!isAllowedTransition(ORDER_TRANSITIONS, order.estado, 'CANCELADO')) {
       throw AppError.conflicto('El estado actual del pedido no permite cancelarlo');
     }
     const changed = await Pedido.updateOne(
       { _id: order._id, estado: order.estado, estadoPago: 'PENDIENTE' },
-      { $set: { estado: 'CANCELADO' } }, { session }
+      { $set: {
+        estado: 'CANCELADO',
+        ...(adminId ? { canceladoEn: cancelledAt, canceladoPorAdminId: adminId, cancelacionMotivo: note } : {})
+      } }, { session }
     );
     if ((changed?.modifiedCount ?? changed?.nModified ?? 0) !== 1) throw retryConflict();
     await HistorialEstadoPedido.create([{
-      pedidoId: order._id, estadoAnterior: order.estado, estadoNuevo: 'CANCELADO', nota: note
+      pedidoId: order._id, estadoAnterior: order.estado, estadoNuevo: 'CANCELADO', nota: note,
+      ...(adminId ? { adminId } : {})
     }], { session });
     return true;
   }
 
-  async function releaseOrderReservations(order, session, releasedAt) {
+  async function releaseOrderReservations(order, session, releasedAt, { motivo = null, adminId = null } = {}) {
     const active = await run(ReservaStock.find({ pedidoId: order._id, estado: 'ACTIVA' }), session);
     if (!active.length) return 0;
     const result = await ReservaStock.updateMany(
       { pedidoId: order._id, estado: 'ACTIVA' },
-      { $set: { estado: 'LIBERADA', liberadaEn: releasedAt } }, { session }
+      { $set: {
+        estado: 'LIBERADA', liberadaEn: releasedAt,
+        ...(motivo ? { motivoLiberacion: motivo } : {}),
+        ...(adminId ? { liberadaPorAdminId: adminId } : {})
+      } }, { session }
     );
     return result?.modifiedCount ?? result?.nModified ?? active.length;
   }
 
-  async function cancelOrder(pedidoId, { motivo = 'Pedido cancelado' } = {}) {
+  async function cancelOrder(pedidoId, { motivo = 'Pedido cancelado', adminId = null, session: suppliedSession = null } = {}) {
+    if (typeof motivo !== 'string' || !motivo.trim() || motivo.trim().length > 500) {
+      throw AppError.solicitudInvalida('El motivo de cancelación es obligatorio y debe tener hasta 500 caracteres');
+    }
+    if (adminId && !mongoose.isObjectIdOrHexString(adminId)) throw AppError.prohibido('La sesión administrativa no es válida');
     const cancelledAt = ahora();
-    return transaction(async (session) => {
+    const cancelInSession = async (session) => {
       const order = await run(Pedido.findById(pedidoId), session);
       if (!order) throw AppError.noEncontrado('Pedido no encontrado');
       if (order.estado === 'CANCELADO' && order.estadoPago === 'PENDIENTE') {
-        const liberadas = await releaseOrderReservations(order, session, cancelledAt);
+        const liberadas = await releaseOrderReservations(order, session, cancelledAt, { motivo: motivo.trim(), adminId });
         return { cancelado: false, reservasLiberadas: liberadas, idempotente: true };
       }
       if (order.estadoPago !== 'PENDIENTE') throw AppError.conflicto('No se puede cancelar un pedido cuyo pago ya fue procesado');
-      const changed = await updateOrderToCancelled(order, session, motivo);
-      const liberadas = await releaseOrderReservations(order, session, cancelledAt);
+      const changed = await updateOrderToCancelled(order, session, motivo.trim(), { adminId, cancelledAt });
+      const liberadas = await releaseOrderReservations(order, session, cancelledAt, { motivo: motivo.trim(), adminId });
       return { cancelado: changed, reservasLiberadas: liberadas, idempotente: false };
-    });
+    };
+    return suppliedSession ? cancelInSession(suppliedSession) : transaction(cancelInSession);
   }
 
   async function confirmPayment(pedidoId, authorization, { session: suppliedSession, paymentAudit = null } = {}) {
