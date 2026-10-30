@@ -1,6 +1,6 @@
 const express = require('express');
 
-const DISABLED_MESSAGE = 'La creación de pedidos estará disponible cuando se integre la reserva atómica de stock.';
+const DISABLED_MESSAGE = 'La creación de pedidos permanece deshabilitada hasta verificar transacciones e índices de reserva en un entorno aislado.';
 
 function createOrderRoutes() {
   const router = express.Router();

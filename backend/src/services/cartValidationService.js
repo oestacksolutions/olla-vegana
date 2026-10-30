@@ -11,7 +11,8 @@ function badRequest(message, detalles) {
   throw AppError.solicitudInvalida(message, detalles);
 }
 
-function execute(query) {
+function execute(query, session) {
+  if (session && query && typeof query.session === 'function') query = query.session(session);
   if (query && typeof query.lean === 'function') query = query.lean();
   return query && typeof query.exec === 'function' ? query.exec() : Promise.resolve(query);
 }
@@ -103,7 +104,8 @@ function validateRequest(body) {
 function createCartValidationService(models, { ahora = () => new Date(), logger = console.error } = {}) {
   const { Producto, Variante, Categoria, ValorVariante, ValorAtributo, Atributo, ReservaStock } = models;
 
-  async function validateCart(body) {
+  async function validateCart(body, { session } = {}) {
+    const read = (query) => execute(query, session);
     const lines = validateRequest(body);
     if (!lines.length) {
       return {
@@ -116,15 +118,21 @@ function createCartValidationService(models, { ahora = () => new Date(), logger 
 
     const productIds = [...new Set(lines.map((line) => line.productoId))];
     const variantIds = [...new Set(lines.map((line) => line.varianteId))];
-    const [products, variants] = await Promise.all([
-      execute(select(Producto.find({ _id: { $in: productIds } }), '_id nombre slug descripcion precioBase activo categoriaId')),
-      execute(select(Variante.find({ _id: { $in: variantIds } }), '_id productoId precio stock activa'))
-    ]);
+    const productQuery = select(Producto.find({ _id: { $in: productIds } }), '_id nombre slug descripcion precioBase activo categoriaId');
+    const variantQuery = select(Variante.find({ _id: { $in: variantIds } }), '_id productoId precio stock activa');
+    let products;
+    let variants;
+    if (session) {
+      products = await read(productQuery);
+      variants = await read(variantQuery);
+    } else {
+      [products, variants] = await Promise.all([read(productQuery), read(variantQuery)]);
+    }
     const productById = new Map(products.map((product) => [idString(product), product]));
     const variantById = new Map(variants.map((variant) => [idString(variant), variant]));
     const categoryIds = [...new Set(products.map((product) => String(product.categoriaId)).filter(Boolean))];
     const categories = categoryIds.length
-      ? await execute(select(Categoria.find({ _id: { $in: categoryIds } }), '_id nombre slug activa'))
+      ? await read(select(Categoria.find({ _id: { $in: categoryIds } }), '_id nombre slug activa'))
       : [];
     const categoryById = new Map(categories.map((category) => [idString(category), category]));
 
@@ -135,19 +143,25 @@ function createCartValidationService(models, { ahora = () => new Date(), logger 
         && String(variant.productoId) === line.productoId ? variant._id : null;
     }).filter(Boolean);
     const uniqueCandidateVariantIds = [...new Set(candidateVariantIds.map(String))];
-    const [links, reservations] = uniqueCandidateVariantIds.length
-      ? await Promise.all([
-        execute(select(ValorVariante.find({ varianteId: { $in: uniqueCandidateVariantIds } }), '_id varianteId valorAtributoId')),
-        execute(select(ReservaStock.find({ varianteId: { $in: uniqueCandidateVariantIds }, estado: 'ACTIVA' }), '_id varianteId cantidad estado venceEn'))
-      ])
-      : [[], []];
+    let links = [];
+    let reservations = [];
+    if (uniqueCandidateVariantIds.length) {
+      const linkQuery = select(ValorVariante.find({ varianteId: { $in: uniqueCandidateVariantIds } }), '_id varianteId valorAtributoId');
+      const reservationQuery = select(ReservaStock.find({ varianteId: { $in: uniqueCandidateVariantIds }, estado: 'ACTIVA' }), '_id varianteId cantidad estado venceEn');
+      if (session) {
+        links = await read(linkQuery);
+        reservations = await read(reservationQuery);
+      } else {
+        [links, reservations] = await Promise.all([read(linkQuery), read(reservationQuery)]);
+      }
+    }
     const valueIds = [...new Set(links.map((link) => String(link.valorAtributoId)))];
     const values = valueIds.length
-      ? await execute(select(ValorAtributo.find({ _id: { $in: valueIds } }), '_id atributoId valor'))
+      ? await read(select(ValorAtributo.find({ _id: { $in: valueIds } }), '_id atributoId valor'))
       : [];
     const attributeIds = [...new Set(values.map((value) => String(value.atributoId)))];
     const attributes = attributeIds.length
-      ? await execute(select(Atributo.find({ _id: { $in: attributeIds } }), '_id nombre'))
+      ? await read(select(Atributo.find({ _id: { $in: attributeIds } }), '_id nombre'))
       : [];
 
     const valueById = new Map(values.map((value) => [idString(value), value]));

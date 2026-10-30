@@ -71,9 +71,14 @@ test('CAR-05 persistencia, índices, transacciones y concurrencia en MongoDB ais
   const { createCartValidationService } = require('../src/services/cartValidationService');
   const { createPickupService } = require('../src/services/pickupService');
   const { createOrderService } = require('../src/services/orderService');
+  const { createStockReservationService } = require('../src/services/stockReservationService');
   const fixedNow = new Date('2026-10-29T12:00:00.000Z');
   const cartValidationService = createCartValidationService(models, { ahora: () => fixedNow, logger: () => {} });
   const pickupService = createPickupService(models, { ahora: () => fixedNow });
+  const stockReservationService = createStockReservationService(models, {
+    startSession: () => connection.startSession(), ahora: () => fixedNow, logger: () => {},
+    verifyPaymentAuthorization: async ({ authorization }) => authorization === 'authorized-test-payment'
+  });
 
   try {
     assert.equal(connection.name, TEST_DATABASE, 'Conexión fuera de la base de testing rechazada.');
@@ -81,7 +86,10 @@ test('CAR-05 persistencia, índices, transacciones y concurrencia en MongoDB ais
     await Promise.all([
       models.Pedido.createIndexes(),
       models.ItemPedido.createIndexes(),
-      models.HistorialEstadoPedido.createIndexes()
+      models.HistorialEstadoPedido.createIndexes(),
+      models.Variante.createIndexes(),
+      models.ReservaStock.createIndexes(),
+      models.MovimientoStock.createIndexes()
     ]);
 
     const category = await models.Categoria.create({ nombre: `CAR05 ${runId}`, slug: `car05-${runId}`, activa: true });
@@ -90,8 +98,9 @@ test('CAR-05 persistencia, índices, transacciones y concurrencia en MongoDB ais
       precioBase: mongoose.Types.Decimal128.fromString('100.00'), categoriaId: category._id, activo: true
     });
     const variant = await models.Variante.create({
-      productoId: product._id, precio: mongoose.Types.Decimal128.fromString('75.25'), stock: 7, activa: true
+      productoId: product._id, precio: mongoose.Types.Decimal128.fromString('75.25'), stock: 100, activa: true
     });
+    const contestedVariant = await models.Variante.create({ productoId: product._id, stock: 2, activa: true });
     const attribute = await models.Atributo.create({ nombre: `Talle CAR05 ${runId}` });
     const attributeValue = await models.ValorAtributo.create({ atributoId: attribute._id, valor: 'L' });
     await models.ValorVariante.create({ varianteId: variant._id, valorAtributoId: attributeValue._id });
@@ -106,7 +115,7 @@ test('CAR-05 persistencia, índices, transacciones y concurrencia en MongoDB ais
       articulos: [{ productoId: String(product._id), varianteId: String(variant._id), cantidad: 2 }]
     };
     const createService = (randomSuffix) => createOrderService(models, {
-      cartValidationService, pickupService, ahora: () => fixedNow, randomSuffix
+      cartValidationService, pickupService, stockReservationService, ahora: () => fixedNow, randomSuffix
     });
     const numberSequence = [123456, 123456, 123457, 123458, 123459, 123460, 123461, 123462];
     const nextNumber = () => numberSequence.shift() ?? crypto.randomInt(0, 1_000_000);
@@ -115,7 +124,7 @@ test('CAR-05 persistencia, índices, transacciones y concurrencia en MongoDB ais
     await t.test('escritura exitosa persiste pedido, ítem e historial con snapshots y Decimal128', async () => {
       const writes = [];
       const restore = [];
-      for (const name of ['Pedido', 'ItemPedido', 'HistorialEstadoPedido']) {
+      for (const name of ['Pedido', 'ItemPedido', 'HistorialEstadoPedido', 'ReservaStock']) {
         const model = models[name];
         const originalCreate = model.create;
         model.create = function trackedCreate(...args) {
@@ -127,10 +136,11 @@ test('CAR-05 persistencia, índices, transacciones y concurrencia en MongoDB ais
       let result;
       try { result = await service.createOrder(orderBody, `car05-op-${runId}-one`); }
       finally { restore.forEach((restoreMethod) => restoreMethod()); }
-      assert.equal(writes.length, 3);
+      assert.equal(writes.length, 4);
       assert.ok(writes.every((session) => session && session === writes[0]), 'pedido, ítems e historial deben usar la misma sesión MongoDB');
       assert.equal(result.pedido.estado, 'NUEVO');
       assert.equal(result.pedido.estadoPago, 'PENDIENTE');
+      assert.equal(result.pedido.venceEn.toISOString(), '2026-10-30T12:00:00.000Z');
       assert.equal(result.pedido.total.toString(), '150.50');
       assert.ok(result.pedido.creadoEn instanceof Date);
       assert.ok(result.pedido.actualizadoEn instanceof Date);
@@ -144,6 +154,8 @@ test('CAR-05 persistencia, índices, transacciones y concurrencia en MongoDB ais
       assert.equal(await models.Pedido.countDocuments(), 1);
       assert.equal(await models.ItemPedido.countDocuments(), 1);
       assert.equal(await models.HistorialEstadoPedido.countDocuments(), 1);
+      assert.equal(await models.ReservaStock.countDocuments({ pedidoId: result.pedido._id, estado: 'ACTIVA', cantidad: 2 }), 1);
+      assert.equal((await models.Variante.findById(variant._id)).stock, 100, 'reservar no reduce stock físico');
     });
 
     await t.test('índices reales únicos de número e idempotencia existen y rechazan duplicados', async () => {
@@ -182,16 +194,16 @@ test('CAR-05 persistencia, índices, transacciones y concurrencia en MongoDB ais
         create: async () => { throw new Error('failure injected before CAR-05 commit'); }
       };
       const brokenService = createOrderService({ ...models, ItemPedido: brokenItems }, {
-        cartValidationService, pickupService, ahora: () => fixedNow, randomSuffix: nextNumber
+        cartValidationService, pickupService, stockReservationService, ahora: () => fixedNow, randomSuffix: nextNumber
       });
       const before = {
         pedidos: await models.Pedido.countDocuments(), items: await models.ItemPedido.countDocuments(),
-        histories: await models.HistorialEstadoPedido.countDocuments()
+        histories: await models.HistorialEstadoPedido.countDocuments(), reservations: await models.ReservaStock.countDocuments()
       };
       await assert.rejects(brokenService.createOrder(orderBody, `car05-op-${runId}-rollback`), /failure injected/);
       assert.deepEqual({
         pedidos: await models.Pedido.countDocuments(), items: await models.ItemPedido.countDocuments(),
-        histories: await models.HistorialEstadoPedido.countDocuments()
+        histories: await models.HistorialEstadoPedido.countDocuments(), reservations: await models.ReservaStock.countDocuments()
       }, before);
     });
 
@@ -203,16 +215,16 @@ test('CAR-05 persistencia, índices, transacciones y concurrencia en MongoDB ais
         }
       };
       const brokenService = createOrderService({ ...models, HistorialEstadoPedido: brokenHistory }, {
-        cartValidationService, pickupService, ahora: () => fixedNow, randomSuffix: nextNumber
+        cartValidationService, pickupService, stockReservationService, ahora: () => fixedNow, randomSuffix: nextNumber
       });
       const before = {
         pedidos: await models.Pedido.countDocuments(), items: await models.ItemPedido.countDocuments(),
-        histories: await models.HistorialEstadoPedido.countDocuments()
+        histories: await models.HistorialEstadoPedido.countDocuments(), reservations: await models.ReservaStock.countDocuments()
       };
       await assert.rejects(brokenService.createOrder(orderBody, `car05-op-${runId}-rollback-history`), /failure injected after history write/);
       assert.deepEqual({
         pedidos: await models.Pedido.countDocuments(), items: await models.ItemPedido.countDocuments(),
-        histories: await models.HistorialEstadoPedido.countDocuments()
+        histories: await models.HistorialEstadoPedido.countDocuments(), reservations: await models.ReservaStock.countDocuments()
       }, before);
     });
 
@@ -233,15 +245,55 @@ test('CAR-05 persistencia, índices, transacciones y concurrencia en MongoDB ais
       assert.equal(await models.Pedido.countDocuments({ idOperacion: { $in: [`car05-op-${runId}-left`, `car05-op-${runId}-right`] } }), 2);
     });
 
-    await t.test('no reserva ni modifica stock y no crea movimientos o pagos', async () => {
-      assert.equal((await models.Variante.findById(variant._id)).stock, 7);
-      assert.equal(await models.ReservaStock.countDocuments(), 0);
+    await t.test('compradores concurrentes no reservan más unidades que el stock', async () => {
+      const limitedBody = { ...orderBody, articulos: [{ ...orderBody.articulos[0], varianteId: String(contestedVariant._id), cantidad: 2 }] };
+      const outcomes = await Promise.allSettled([
+        service.createOrder(limitedBody, `car06-op-${runId}-race-a`),
+        service.createOrder({ ...limitedBody, correo: `race-${runId}@example.test` }, `car06-op-${runId}-race-b`)
+      ]);
+      assert.equal(outcomes.filter((outcome) => outcome.status === 'fulfilled').length, 1);
+      assert.equal(outcomes.filter((outcome) => outcome.status === 'rejected' && outcome.reason.statusCode === 422).length, 1);
+      const [reserved] = await models.ReservaStock.aggregate([
+        { $match: { varianteId: contestedVariant._id, estado: 'ACTIVA', venceEn: { $gt: fixedNow } } },
+        { $group: { _id: null, cantidad: { $sum: '$cantidad' } } }
+      ]);
+      assert.equal(reserved?.cantidad || 0, 2);
+      assert.equal((await models.Variante.findById(contestedVariant._id)).stock, 2);
+    });
+
+    await t.test('la reserva no modifica stock físico ni crea movimientos o pagos', async () => {
+      assert.equal((await models.Variante.findById(variant._id)).stock, 100);
+      assert.ok(await models.ReservaStock.countDocuments({ estado: 'ACTIVA' }) > 0);
       assert.equal(await models.MovimientoStock.countDocuments(), 0);
       assert.equal(await models.EventoPago.countDocuments(), 0);
       const order = await models.Pedido.findOne({});
       assert.equal(order.estadoPago, 'PENDIENTE');
       assert.equal(order.mpPagoId, null);
       assert.equal(order.mpPreferenciaId, null);
+    });
+
+    await t.test('confirmación autorizada descuenta stock una sola vez en la misma transacción', async () => {
+      const firstOrder = await models.Pedido.findOne({ idOperacion: `car05-op-${runId}-one` });
+      const confirmed = await stockReservationService.confirmPayment(firstOrder._id, 'authorized-test-payment');
+      assert.equal(confirmed.confirmado, true);
+      assert.equal((await models.Pedido.findById(firstOrder._id)).estadoPago, 'APROBADO');
+      assert.equal((await models.Variante.findById(variant._id)).stock, 98);
+      assert.equal(await models.ReservaStock.countDocuments({ pedidoId: firstOrder._id, estado: 'CONFIRMADA' }), 1);
+      assert.equal(await models.MovimientoStock.countDocuments({ idOperacion: `venta:${firstOrder._id}:${variant._id}` }), 1);
+      const repeated = await stockReservationService.confirmPayment(firstOrder._id, 'authorized-test-payment');
+      assert.equal(repeated.idempotente, true);
+      assert.equal((await models.Variante.findById(variant._id)).stock, 98);
+      assert.equal(await models.MovimientoStock.countDocuments({ idOperacion: `venta:${firstOrder._id}:${variant._id}` }), 1);
+    });
+
+    await t.test('worker libera vencimientos pendientes y puede reanudarse tras reinicio', async () => {
+      const expiredAt = new Date(fixedNow.getTime() + 24 * 60 * 60 * 1000);
+      const result = await stockReservationService.expireDueReservations({ hasta: expiredAt, limite: 100 });
+      assert.ok(result.procesados > 0);
+      assert.ok(await models.ReservaStock.countDocuments({ estado: 'LIBERADA', liberadaEn: expiredAt }) > 0);
+      assert.equal((await models.Variante.findById(variant._id)).stock, 98, 'la liberación no aumenta ni reduce stock físico');
+      const repeated = await stockReservationService.expireDueReservations({ hasta: expiredAt, limite: 100 });
+      assert.equal(repeated.procesados, 0);
     });
 
     await t.test('error inyectado requiere transacción soportada por MongoDB', async () => {
