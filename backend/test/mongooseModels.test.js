@@ -98,3 +98,37 @@ test('pedido conserva referencia al punto o a una fecha especial, exactamente un
   order.puntoRetiroId = regularId;
   await assert.rejects(order.validate());
 });
+
+test('pedido admite snapshots de retiro, observaciones e idempotencia sin cambiar estados históricos', async () => {
+  const order = new Pedido({
+    numero: 20261029000001, nombre: 'Persona', apellido: 'Compradora', correo: 'persona@example.test',
+    telefono: '+54 9 11 5555-1234', observaciones: 'Avisar al llegar', metodoPago: 'TRANSFERENCIA',
+    total: '100.00', puntoRetiroId: new mongoose.Types.ObjectId(),
+    puntoRetiroSnapshot: { nombre: 'Morón', direccion: 'Dirección existente', horarios: 'Viernes 16 a 19' },
+    idOperacion: 'checkout-op-0001', huellaOperacion: 'f'.repeat(64)
+  });
+  await order.validate();
+  assert.equal(order.estado, 'NUEVO');
+  assert.equal(order.estadoPago, 'PENDIENTE');
+  assert.equal(Pedido.schema.options.timestamps.updatedAt, 'actualizadoEn');
+  assert.equal(Pedido.schema.options.autoIndex, false);
+  assert.ok(Pedido.schema.indexes().some(([keys, options]) => keys.numero && options.unique));
+  assert.ok(Pedido.schema.indexes().some(([keys, options]) => keys.idOperacion && options.unique && options.partialFilterExpression));
+  const legacy = new Pedido({ numero: 1, nombre: 'Antigua', apellido: 'Compradora', correo: 'old@example.test', metodoPago: 'MERCADO_PAGO', total: '10.00', puntoRetiroId: new mongoose.Types.ObjectId() });
+  await legacy.validate();
+  assert.equal(legacy.observaciones, null);
+});
+
+test('ítem pedido admite snapshot de atributos y subtotal Decimal128 sin exigirlos a registros antiguos', async () => {
+  const historical = new ItemPedido({
+    pedidoId: new mongoose.Types.ObjectId(), productoId: new mongoose.Types.ObjectId(), cantidad: 2,
+    precio: '75.25', subtotal: '150.50', nombreProducto: 'Remera al comprar', slugProducto: 'remera',
+    atributosVariante: [{ atributo: 'Talle', valor: 'L' }]
+  });
+  await historical.validate();
+  assert.equal(historical.subtotal.toString(), '150.50');
+  assert.deepEqual(historical.atributosVariante.map(({ atributo, valor }) => [atributo, valor]), [['Talle', 'L']]);
+  const legacy = new ItemPedido({ pedidoId: new mongoose.Types.ObjectId(), productoId: new mongoose.Types.ObjectId(), cantidad: 1, precio: '10.00', nombreProducto: 'Producto antiguo' });
+  await legacy.validate();
+  assert.equal(legacy.subtotal, null);
+});
