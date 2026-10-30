@@ -15,6 +15,7 @@ import AllProductsPage from './pages/tienda/AllProductsPage'
 import CheckoutPage from './pages/tienda/CheckoutPage'
 import OrderStatusPage from './pages/tienda/OrderStatusPage'
 import OrderTrackingPage from './pages/tienda/OrderTrackingPage'
+import CheckoutReturnPage from './pages/tienda/CheckoutReturnPage'
 import AdminApp from './admin/AdminApp'
 import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './components/auth/ProtectedRoute'
@@ -70,6 +71,10 @@ function App() {
 
   if (pathname === '/tienda/checkout') {
     return <CheckoutPage />
+  }
+
+  if (['/checkout/exito', '/checkout/pendiente', '/checkout/error'].includes(pathname)) {
+    return <CheckoutReturnPage pathname={pathname} />
   }
 
   if (pathname === '/tienda/seguimiento') {
