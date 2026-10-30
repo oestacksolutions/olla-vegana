@@ -2,6 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const mongoose = require('mongoose');
 const { createOrderService, normalizeRequest, requestFingerprint, createOrderNumber } = require('../src/services/orderService');
+const { createOrderAccessTokenService } = require('../src/services/orderAccessToken');
 const { ORDER_TRANSITIONS, PAYMENT_TRANSITIONS, isAllowedTransition } = require('../src/utils/orderStates');
 
 const ids = {
@@ -16,6 +17,7 @@ const baseBody = {
   articulos: [{ productoId: ids.product, varianteId: ids.variant, cantidad: 2 }]
 };
 const key = 'checkout-op-0001';
+const orderAccessTokens = createOrderAccessTokenService('test-secret-for-order-access-only-123456');
 
 function duplicate(field) {
   const error = new Error('duplicate');
@@ -55,7 +57,7 @@ function fixture({ cart, pickups, randoms = [123456], failItems = false, failRes
     create: async ([document], { session }) => {
       if (rows.pedidos.some((row) => row.idOperacion === document.idOperacion)) throw duplicate('idOperacion');
       if (rows.pedidos.some((row) => row.numero === document.numero)) throw duplicate('numero');
-      const created = { ...document, _id: new mongoose.Types.ObjectId(`64b${String(++nextId).padStart(21, '0')}`) };
+      const created = { ...document, _id: document._id || new mongoose.Types.ObjectId(`64b${String(++nextId).padStart(21, '0')}`) };
       rows.pedidos.push(created);
       session.written.push(['pedidos', created]);
       return [created];
@@ -107,7 +109,7 @@ function fixture({ cart, pickups, randoms = [123456], failItems = false, failRes
   const inventoryWriteGuard = new Proxy({}, { get: () => async () => { inventoryWrites += 1; throw new Error('CAR-05 must not write inventory'); } });
   const service = createOrderService({ Pedido, ItemPedido, HistorialEstadoPedido, Variante: inventoryWriteGuard, ReservaStock: inventoryWriteGuard, MovimientoStock: inventoryWriteGuard }, {
     cartValidationService, pickupService, stockReservationService, ahora: () => new Date('2026-10-29T12:00:00Z'),
-    randomSuffix: () => randoms[Math.min(randomIndex++, randoms.length - 1)]
+    randomSuffix: () => randoms[Math.min(randomIndex++, randoms.length - 1)], orderAccessTokens
   });
   return { service, rows, sessions, cartValidationService, pickupService, get inventoryWrites() { return inventoryWrites; } };
 }
@@ -153,6 +155,8 @@ test('crea pedido, ítems y estado inicial en transacción con snapshots y preci
   assert.equal(result.pedido.estado, 'NUEVO');
   assert.equal(result.pedido.estadoPago, 'PENDIENTE');
   assert.equal(result.pedido.puntoRetiroSnapshot.nombre, 'Morón');
+  assert.equal(orderAccessTokens.matches(result.tokenAccesoPedido, result.pedido.accesoPublicoHash), true);
+  assert.equal(result.pedido.accesoPublicoHasta.toISOString(), '2026-11-28T12:00:00.000Z');
   assert.equal(rows.items[0].precio.toString(), '75.25');
   assert.equal(rows.items[0].subtotal.toString(), '150.50');
   assert.equal(rows.items[0].nombreProducto, 'Remera vigente');
@@ -201,6 +205,7 @@ test('reintento idempotente devuelve el mismo pedido histórico aunque cambie el
   assert.equal(retry.pedido._id.toString(), first.pedido._id.toString());
   assert.equal(retry.articulos[0].precio.toString(), '75.25');
   assert.equal(retry.repetido, true);
+  assert.equal(retry.tokenAccesoPedido, first.tokenAccesoPedido);
   assert.equal(rows.pedidos.length, 1);
   assert.equal(rows.items.length, 1);
 });

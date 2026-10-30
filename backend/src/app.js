@@ -10,11 +10,13 @@ const Pedido = require('./models/Pedido');
 const HistorialEstadoPedido = require('./models/HistorialEstadoPedido');
 const IntentoPago = require('./models/IntentoPago');
 const EventoPago = require('./models/EventoPago');
+const ConfirmacionTransferencia = require('./models/ConfirmacionTransferencia');
 const ValorVariante = require('./models/ValorVariante');
 const ValorAtributo = require('./models/ValorAtributo');
 const Atributo = require('./models/Atributo');
 const PuntoRetiro = require('./models/PuntoRetiro');
 const RetiroEspecial = require('./models/RetiroEspecial');
+const Configuracion = require('./models/Configuracion');
 const { createCatalogService } = require('./services/catalogService');
 const { createCartValidationService } = require('./services/cartValidationService');
 const { createAuthService } = require('./services/authService');
@@ -42,17 +44,36 @@ const createMercadoPagoWebhookController = require('./controllers/mercadoPagoWeb
 const { createMercadoPagoOrderClient } = require('./services/mercadoPagoOrderClient');
 const { createMercadoPagoWebhookService } = require('./services/mercadoPagoWebhookService');
 const { createPaymentAuthorization } = require('./services/paymentAuthorization');
+const { createTransferPaymentAuthorization } = require('./services/transferPaymentAuthorization');
+const { createTransferPaymentService } = require('./services/transferPaymentService');
+const createAdminTransferController = require('./controllers/adminTransferController');
+const createAdminTransferRoutes = require('./routes/adminTransferRoutes');
 const { createStockReservationService } = require('./services/stockReservationService');
+const { createOrderAccessTokenService } = require('./services/orderAccessToken');
+const { createTransferInstructionsService } = require('./services/transferInstructionsService');
+const createOrderAccessController = require('./controllers/orderAccessController');
+const createOrderAccessRoutes = require('./routes/orderAccessRoutes');
 const notFound = require('./middlewares/notFound');
 const errorHandler = require('./middlewares/errorHandler');
 const env = require('./config/env');
 
 const app = express();
 const paymentAuthorization = createPaymentAuthorization();
+const transferPaymentAuthorization = createTransferPaymentAuthorization();
 const stockReservationService = createStockReservationService(
   { Pedido, Variante, ReservaStock, MovimientoStock, HistorialEstadoPedido },
-  { verifyPaymentAuthorization: paymentAuthorization.verify }
+  { verifyPaymentAuthorization: async (input) => (await paymentAuthorization.verify(input)) || transferPaymentAuthorization.verify(input) }
 );
+const transferPaymentService = createTransferPaymentService(
+  { Pedido, ReservaStock, ConfirmacionTransferencia },
+  { stockReservationService, transferPaymentAuthorization }
+);
+const orderAccessTokens = createOrderAccessTokenService(env.JWT_SECRET);
+const transferInstructionsService = createTransferInstructionsService(
+  { Configuracion, Pedido, ReservaStock },
+  { orderAccessTokens }
+);
+const orderAccessController = createOrderAccessController(transferInstructionsService);
 const mercadoPagoWebhookService = createMercadoPagoWebhookService(
   { Pedido, IntentoPago, EventoPago },
   {
@@ -89,6 +110,10 @@ app.use('/api/auth', createAuthRateLimiter(), validateAuthPayload);
 app.use('/api', createCatalogRoutes(catalogController));
 app.use('/api', createCartRoutes(cartController));
 app.use('/api/auth', createAuthRoutes(authController));
+// Solo lectura y únicamente mediante token opaco de acceso al pedido; POST /api/orders sigue sin montarse.
+app.use('/api/orders', createOrderAccessRoutes(orderAccessController));
+// Confirmación interna de transferencias, protegida por autenticación y autorización administrativa reales.
+app.use('/api/admin/orders', authenticate, authorizeAdmin, validateJsonBody, createAdminTransferRoutes(createAdminTransferController(transferPaymentService)));
 app.use(
   '/api/admin/products',
   authenticate,

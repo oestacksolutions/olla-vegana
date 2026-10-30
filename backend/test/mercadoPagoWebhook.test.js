@@ -332,10 +332,11 @@ test('un rechazo oficial libera mediante el servicio autorizado y no afecta tran
   assert.equal(f.pedido.estadoPago, 'RECHAZADO');
 });
 
-test('app monta receptor con protección del webhook y no monta POST público de pedidos', () => {
+test('app monta receptor seguro y no monta creación pública de pedidos', () => {
   const app = fs.readFileSync(path.join(__dirname, '../src/app.js'), 'utf8');
   const route = fs.readFileSync(path.join(__dirname, '../src/routes/webhookRoutes.js'), 'utf8');
   assert.match(app, /app\.use\(['"]\/api\/webhooks['"]/);
   assert.match(route, /router\.post\(['"]\/mercadopago['"]/);
-  assert.doesNotMatch(app, /app\.use\(['"]\/api\/orders['"]/);
+  assert.doesNotMatch(app, /createOrderRoutes/);
+  assert.match(app, /createOrderAccessRoutes/);
 });

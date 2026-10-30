@@ -71,6 +71,7 @@ test('CAR-05 persistencia, índices, transacciones y concurrencia en MongoDB ais
   const { createCartValidationService } = require('../src/services/cartValidationService');
   const { createPickupService } = require('../src/services/pickupService');
   const { createOrderService } = require('../src/services/orderService');
+  const { createOrderAccessTokenService } = require('../src/services/orderAccessToken');
   const { createStockReservationService } = require('../src/services/stockReservationService');
   const fixedNow = new Date('2026-10-29T12:00:00.000Z');
   const cartValidationService = createCartValidationService(models, { ahora: () => fixedNow, logger: () => {} });
@@ -115,7 +116,8 @@ test('CAR-05 persistencia, índices, transacciones y concurrencia en MongoDB ais
       articulos: [{ productoId: String(product._id), varianteId: String(variant._id), cantidad: 2 }]
     };
     const createService = (randomSuffix) => createOrderService(models, {
-      cartValidationService, pickupService, stockReservationService, ahora: () => fixedNow, randomSuffix
+      cartValidationService, pickupService, stockReservationService, ahora: () => fixedNow, randomSuffix,
+      orderAccessTokens: createOrderAccessTokenService('isolated-test-order-access-secret-123456789')
     });
     const numberSequence = [123456, 123456, 123457, 123458, 123459, 123460, 123461, 123462];
     const nextNumber = () => numberSequence.shift() ?? crypto.randomInt(0, 1_000_000);
@@ -194,7 +196,8 @@ test('CAR-05 persistencia, índices, transacciones y concurrencia en MongoDB ais
         create: async () => { throw new Error('failure injected before CAR-05 commit'); }
       };
       const brokenService = createOrderService({ ...models, ItemPedido: brokenItems }, {
-        cartValidationService, pickupService, stockReservationService, ahora: () => fixedNow, randomSuffix: nextNumber
+        cartValidationService, pickupService, stockReservationService, ahora: () => fixedNow, randomSuffix: nextNumber,
+        orderAccessTokens: createOrderAccessTokenService('isolated-test-order-access-secret-123456789')
       });
       const before = {
         pedidos: await models.Pedido.countDocuments(), items: await models.ItemPedido.countDocuments(),
@@ -215,7 +218,8 @@ test('CAR-05 persistencia, índices, transacciones y concurrencia en MongoDB ais
         }
       };
       const brokenService = createOrderService({ ...models, HistorialEstadoPedido: brokenHistory }, {
-        cartValidationService, pickupService, stockReservationService, ahora: () => fixedNow, randomSuffix: nextNumber
+        cartValidationService, pickupService, stockReservationService, ahora: () => fixedNow, randomSuffix: nextNumber,
+        orderAccessTokens: createOrderAccessTokenService('isolated-test-order-access-secret-123456789')
       });
       const before = {
         pedidos: await models.Pedido.countDocuments(), items: await models.ItemPedido.countDocuments(),
