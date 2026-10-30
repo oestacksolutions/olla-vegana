@@ -1,0 +1,35 @@
+const ORDER_STATES = Object.freeze({
+  NUEVO: 'NUEVO',
+  EN_PREPARACION: 'EN_PREPARACION',
+  LISTO_PARA_RETIRAR: 'LISTO_PARA_RETIRAR',
+  RETIRADO: 'RETIRADO',
+  CANCELADO: 'CANCELADO'
+});
+
+const PAYMENT_STATES = Object.freeze({
+  PENDIENTE: 'PENDIENTE',
+  APROBADO: 'APROBADO',
+  RECHAZADO: 'RECHAZADO',
+  REEMBOLSADO: 'REEMBOLSADO'
+});
+
+const ORDER_TRANSITIONS = Object.freeze({
+  NUEVO: ['EN_PREPARACION', 'CANCELADO'],
+  EN_PREPARACION: ['LISTO_PARA_RETIRAR', 'CANCELADO'],
+  LISTO_PARA_RETIRAR: ['RETIRADO', 'CANCELADO'],
+  RETIRADO: [],
+  CANCELADO: []
+});
+
+const PAYMENT_TRANSITIONS = Object.freeze({
+  PENDIENTE: ['APROBADO', 'RECHAZADO'],
+  APROBADO: ['REEMBOLSADO'],
+  RECHAZADO: [],
+  REEMBOLSADO: []
+});
+
+function isAllowedTransition(transitions, from, to) {
+  return Boolean(transitions[from]?.includes(to));
+}
+
+module.exports = { ORDER_STATES, PAYMENT_STATES, ORDER_TRANSITIONS, PAYMENT_TRANSITIONS, isAllowedTransition };
