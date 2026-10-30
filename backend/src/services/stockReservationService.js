@@ -178,12 +178,12 @@ function createStockReservationService(models, {
     });
   }
 
-  async function confirmPayment(pedidoId, authorization) {
+  async function confirmPayment(pedidoId, authorization, { session: suppliedSession } = {}) {
     const authorized = await verifyPaymentAuthorization({ pedidoId, authorization });
     if (authorized !== true) throw AppError.prohibido('No existe una acreditación de pago autorizada');
     await requireIndexes({ movements: true });
     const confirmedAt = ahora();
-    return transaction(async (session) => {
+    const confirmInSession = async (session) => {
       const order = await run(Pedido.findById(pedidoId), session);
       if (!order) throw AppError.noEncontrado('Pedido no encontrado');
       const reservations = await run(ReservaStock.find({ pedidoId: order._id }).sort({ varianteId: 1 }), session);
@@ -218,7 +218,41 @@ function createStockReservationService(models, {
       );
       if ((orderUpdate?.modifiedCount ?? orderUpdate?.nModified ?? 0) !== 1) throw retryConflict();
       return { confirmado: true, idempotente: false, pedidoId: String(order._id) };
-    });
+    };
+    return suppliedSession ? confirmInSession(suppliedSession) : transaction(confirmInSession);
+  }
+
+  async function rejectVerifiedMarketplacePayment(pedidoId, authorization, { session: suppliedSession } = {}) {
+    const authorized = await verifyPaymentAuthorization({ pedidoId, authorization });
+    if (authorized !== true || authorization?.provider !== 'MERCADO_PAGO') {
+      throw AppError.prohibido('No existe una verificaciÃ³n de pago autorizada');
+    }
+    await requireIndexes();
+    const rejectInSession = async (session) => {
+      const order = await run(Pedido.findById(pedidoId), session);
+      if (!order) throw AppError.noEncontrado('Pedido no encontrado');
+      if (order.metodoPago !== 'MERCADO_PAGO') throw AppError.conflicto('El pedido no utiliza Mercado Pago');
+      if (order.estadoPago === 'RECHAZADO' && order.estado === 'CANCELADO') {
+        const released = await releaseOrderReservations(order, session, ahora());
+        return { rechazado: true, reservasLiberadas: released, idempotente: true };
+      }
+      if (order.estadoPago !== 'PENDIENTE') throw AppError.conflicto('El pedido no admite este cambio de pago');
+      const previousOrderState = order.estado;
+      const changed = await Pedido.updateOne(
+        { _id: order._id, metodoPago: 'MERCADO_PAGO', estadoPago: 'PENDIENTE', estado: previousOrderState },
+        { $set: { estadoPago: 'RECHAZADO', estado: 'CANCELADO', pagoVerificadoEn: ahora(), notaPago: 'Pago rechazado por Mercado Pago' } },
+        { session }
+      );
+      if ((changed?.modifiedCount ?? changed?.nModified ?? 0) !== 1) throw retryConflict();
+      if (previousOrderState !== 'CANCELADO') {
+        await HistorialEstadoPedido.create([{
+          pedidoId: order._id, estadoAnterior: previousOrderState, estadoNuevo: 'CANCELADO', nota: 'Pago rechazado por Mercado Pago'
+        }], { session });
+      }
+      const released = await releaseOrderReservations(order, session, ahora());
+      return { rechazado: true, reservasLiberadas: released, idempotente: false };
+    };
+    return suppliedSession ? rejectInSession(suppliedSession) : transaction(rejectInSession);
   }
 
   async function expireDueReservations({ hasta = ahora(), limite = 100 } = {}) {
@@ -254,7 +288,7 @@ function createStockReservationService(models, {
 
   async function assertReservationIndex() { return requireIndexes(); }
 
-  return { reserveForOrder, cancelOrder, confirmPayment, expireDueReservations, assertReservationIndex };
+  return { reserveForOrder, cancelOrder, confirmPayment, rejectVerifiedMarketplacePayment, expireDueReservations, assertReservationIndex };
 }
 
 module.exports = {
