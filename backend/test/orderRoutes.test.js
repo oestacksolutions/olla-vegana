@@ -20,7 +20,9 @@ test('ruta de creación permanece deshabilitada por defecto y no invoca persiste
   assert.equal(called, false);
 });
 
-test('app.js no monta una ruta pública de pedidos antes de CAR-06', () => {
+test('app solo monta lectura de instrucciones con token y mantiene bloqueado POST público de pedidos', () => {
   const appSource = fs.readFileSync(path.join(__dirname, '../src/app.js'), 'utf8');
-  assert.doesNotMatch(appSource, /createOrderRoutes|\/api\/orders/);
+  assert.doesNotMatch(appSource, /createOrderRoutes/);
+  assert.match(appSource, /app\.use\('\/api\/orders', createOrderAccessRoutes/);
+  assert.match(appSource, /POST \/api\/orders sigue sin montarse/);
 });

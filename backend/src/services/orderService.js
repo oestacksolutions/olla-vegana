@@ -127,14 +127,14 @@ function optionSnapshot(option) {
 
 function createOrderService(models, dependencies = {}) {
   const { Pedido, ItemPedido, HistorialEstadoPedido } = models;
-  const { cartValidationService, pickupService, stockReservationService } = dependencies;
+  const { cartValidationService, pickupService, stockReservationService, orderAccessTokens } = dependencies;
   const now = dependencies.ahora || (() => new Date());
   const randomSuffix = dependencies.randomSuffix || (() => crypto.randomInt(0, 1_000_000));
   const startSession = dependencies.startSession || (() => Pedido.db.startSession());
 
   async function findByOperation(idOperacion) {
     let query = Pedido.findOne({ idOperacion });
-    if (query && typeof query.select === 'function') query = query.select('+huellaOperacion');
+    if (query && typeof query.select === 'function') query = query.select('+huellaOperacion +accesoPublicoHash');
     return query;
   }
 
@@ -145,11 +145,16 @@ function createOrderService(models, dependencies = {}) {
       throw AppError.conflicto('La clave de operación ya se utilizó con otros datos');
     }
     const items = await ItemPedido.find({ pedidoId: existing._id });
-    return { pedido: existing, articulos: items, repetido: true };
+    const accessToken = orderAccessTokens.issue({ pedidoId: existing._id, idOperacion: input.idOperacion });
+    if (!orderAccessTokens.matches(accessToken, existing.accesoPublicoHash)) {
+      throw new AppError('El acceso seguro a este pedido requiere revisión', 503);
+    }
+    return { pedido: existing, articulos: items, tokenAccesoPedido: accessToken, repetido: true };
   }
 
   async function createOrder(body, idempotencyKey) {
     if (!cartValidationService || !pickupService || !stockReservationService) throw new Error('Falta el coordinador transaccional de reservas');
+    if (!orderAccessTokens) throw new AppError('La creación permanece deshabilitada hasta configurar el acceso seguro al pedido', 503);
     const input = normalizeRequest(body, idempotencyKey);
     if (input.metodoPago === 'MERCADO_PAGO') {
       throw new AppError('Mercado Pago seguirá deshabilitado hasta definir y verificar su política de vencimiento de reservas', 503);
@@ -218,7 +223,10 @@ function createOrderService(models, dependencies = {}) {
           if (!selectedPickup) throw AppError.conflicto('La opción de retiro ya no está disponible');
           const { items, totalCents } = buildSnapshot(cart);
           const pickupReference = optionSnapshot(selectedPickup);
+          const pedidoId = new mongoose.Types.ObjectId();
+          const accessToken = orderAccessTokens.issue({ pedidoId, idOperacion: input.idOperacion });
           const [pedido] = await Pedido.create([{
+            _id: pedidoId,
             numero: createOrderNumber(creadoEn, randomSuffix),
             nombre: input.nombre,
             apellido: input.apellido,
@@ -231,6 +239,8 @@ function createOrderService(models, dependencies = {}) {
             total: mongoose.Types.Decimal128.fromString(formatCents(totalCents)),
             creadoEn,
             venceEn,
+            accesoPublicoHash: orderAccessTokens.hash(accessToken),
+            accesoPublicoHasta: new Date(creadoEn.getTime() + orderAccessTokens.TOKEN_VALIDITY_MS),
             ...pickupReference,
             idOperacion: input.idOperacion,
             huellaOperacion: fingerprint
@@ -249,7 +259,7 @@ function createOrderService(models, dependencies = {}) {
             estadoNuevo: 'NUEVO',
             nota: 'Pedido creado'
           }], { session });
-          created = { pedido, articulos: itemDocs, historial: history };
+          created = { pedido, articulos: itemDocs, historial: history, tokenAccesoPedido: accessToken };
         });
         return { ...created, repetido: false };
       } catch (error) {

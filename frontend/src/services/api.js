@@ -4,17 +4,21 @@ import { buildCartValidationPayload } from '../utils/checkout'
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 
 export async function apiRequest(path, options = {}) {
-  const { protected: requiresAuth = false, ...requestOptions } = options
+  const { protected: requiresAuth = false, accessToken, ...requestOptions } = options
   const headers = new Headers(requestOptions.headers)
   if (requestOptions.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
 
-  const storedAuth = localStorage.getItem('olla-vegana-admin-auth')
-  if (storedAuth) {
-    try {
-      const { token } = JSON.parse(storedAuth)
-      if (token) headers.set('Authorization', ['Bearer', token].join(' '))
-    } catch {
-      if (requiresAuth) logoutAdmin()
+  if (accessToken) {
+    headers.set('Authorization', `Bearer ${accessToken}`)
+  } else {
+    const storedAuth = localStorage.getItem('olla-vegana-admin-auth')
+    if (storedAuth) {
+      try {
+        const { token } = JSON.parse(storedAuth)
+        if (token) headers.set('Authorization', ['Bearer', token].join(' '))
+      } catch {
+        if (requiresAuth) logoutAdmin()
+      }
     }
   }
 
@@ -52,6 +56,10 @@ export const getProducts = (category) => apiRequest(`/products${category ? `?cat
 export const getProduct = (slug) => apiRequest(`/products/${encodeURIComponent(slug)}`)
 export const getCategories = () => apiRequest('/categories')
 export const getPickupOptions = () => apiRequest('/pickup-options')
+export const getTransferInstructions = (orderId, accessToken, options = {}) => apiRequest(
+  `/orders/${encodeURIComponent(orderId)}/transfer-instructions`,
+  { ...options, accessToken }
+)
 export const validateStoreCart = (cartItems) => apiRequest('/cart/validate', {
   method: 'POST', body: JSON.stringify(buildCartValidationPayload(cartItems))
 })

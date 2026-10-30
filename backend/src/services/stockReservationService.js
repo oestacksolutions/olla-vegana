@@ -178,7 +178,7 @@ function createStockReservationService(models, {
     });
   }
 
-  async function confirmPayment(pedidoId, authorization, { session: suppliedSession } = {}) {
+  async function confirmPayment(pedidoId, authorization, { session: suppliedSession, paymentAudit = null } = {}) {
     const authorized = await verifyPaymentAuthorization({ pedidoId, authorization });
     if (authorized !== true) throw AppError.prohibido('No existe una acreditación de pago autorizada');
     await requireIndexes({ movements: true });
@@ -186,6 +186,7 @@ function createStockReservationService(models, {
     const confirmInSession = async (session) => {
       const order = await run(Pedido.findById(pedidoId), session);
       if (!order) throw AppError.noEncontrado('Pedido no encontrado');
+      if (authorization?.provider && authorization.provider !== order.metodoPago) throw AppError.conflicto('La acreditación no corresponde al método de pago del pedido');
       const reservations = await run(ReservaStock.find({ pedidoId: order._id }).sort({ varianteId: 1 }), session);
       if (order.estadoPago === 'APROBADO') {
         if (reservations.length && reservations.every((reservation) => reservation.estado === 'CONFIRMADA')) {
@@ -204,7 +205,8 @@ function createStockReservationService(models, {
         await MovimientoStock.create([{
           varianteId: group.varianteId, tipo: 'VENTA', cantidad: -group.cantidad,
           motivo: `Pedido ${order.numero} confirmado`, stockAnterior: stock,
-          stockResultante: stock - group.cantidad, idOperacion: operationId, creadoEn: confirmedAt
+          stockResultante: stock - group.cantidad, idOperacion: operationId, creadoEn: confirmedAt,
+          ...(paymentAudit?.adminId ? { adminId: paymentAudit.adminId } : {})
         }], { session });
       }
       const reservationUpdate = await ReservaStock.updateMany(
@@ -214,7 +216,11 @@ function createStockReservationService(models, {
       if ((reservationUpdate?.modifiedCount ?? reservationUpdate?.nModified ?? 0) !== reservations.length) throw retryConflict();
       const orderUpdate = await Pedido.updateOne(
         { _id: order._id, estadoPago: 'PENDIENTE', estado: { $ne: 'CANCELADO' } },
-        { $set: { estadoPago: 'APROBADO', pagoVerificadoEn: confirmedAt, pagadoEn: confirmedAt } }, { session }
+        { $set: {
+          estadoPago: 'APROBADO', pagoVerificadoEn: confirmedAt, pagadoEn: confirmedAt,
+          ...(paymentAudit?.adminId ? { pagoConfirmadoPorAdminId: paymentAudit.adminId } : {}),
+          ...(paymentAudit?.referencia ? { transferenciaReferencia: paymentAudit.referencia } : {})
+        } }, { session }
       );
       if ((orderUpdate?.modifiedCount ?? orderUpdate?.nModified ?? 0) !== 1) throw retryConflict();
       return { confirmado: true, idempotente: false, pedidoId: String(order._id) };

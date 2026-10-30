@@ -15,6 +15,8 @@ import AllProductsPage from './pages/tienda/AllProductsPage'
 import CheckoutPage from './pages/tienda/CheckoutPage'
 import OrderStatusPage from './pages/tienda/OrderStatusPage'
 import OrderTrackingPage from './pages/tienda/OrderTrackingPage'
+import TransferInstructionsPage from './pages/tienda/TransferInstructionsPage'
+import TransferInstructionsPreviewPage from './pages/tienda/TransferInstructionsPreviewPage'
 import CheckoutReturnPage from './pages/tienda/CheckoutReturnPage'
 import AdminApp from './admin/AdminApp'
 import LoginPage from './pages/LoginPage'
@@ -22,6 +24,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import { extractStoreProductSlug } from './utils/storeRoutes'
+import { getTransferPreviewStatus } from './utils/transferPreview'
 
 function App() {
   useEffect(() => {
@@ -44,6 +47,13 @@ function App() {
   }
 
   const pathname = window.location.pathname.replace(/\/$/, '')
+
+  if (import.meta.env.DEV) {
+    const transferPreviewStatus = getTransferPreviewStatus(pathname, true)
+    if (transferPreviewStatus) {
+      return <TransferInstructionsPreviewPage initialStatus={transferPreviewStatus} />
+    }
+  }
 
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {
     return <ProtectedRoute><AdminApp /></ProtectedRoute>
@@ -79,6 +89,11 @@ function App() {
 
   if (pathname === '/tienda/seguimiento') {
     return <OrderTrackingPage />
+  }
+
+  const transferInstructionsMatch = pathname.match(/^\/tienda\/pedido\/([^/]+)\/transferencia$/)
+  if (transferInstructionsMatch) {
+    return <TransferInstructionsPage orderId={decodeURIComponent(transferInstructionsMatch[1])} />
   }
 
   const orderMatch = pathname.match(/^\/tienda\/pedido\/([^/]+)$/)
