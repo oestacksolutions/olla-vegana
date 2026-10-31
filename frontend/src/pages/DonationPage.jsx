@@ -90,6 +90,15 @@ function DonationPage() {
         <img src={ondas} alt="" aria-hidden="true" className="donation-art donation-waves" />
         <img src={circulo} alt="" aria-hidden="true" className="donation-art donation-circle" />
 
+        <div className="relative z-[2] mx-auto -mt-2 mb-1 flex w-full max-w-[1120px] justify-center sm:-mt-3 sm:justify-end lg:-translate-y-8 lg:translate-x-16">
+          <BtnAction
+            href="mailto:organizadoresollavegana@gmail.com"
+            fluid
+            className="h-auto min-h-[46px] w-[min(210px,100%)] max-w-full whitespace-normal px-4 py-2 text-center text-[14px] font-semibold sm:min-h-[50px] sm:text-[15px]"
+          >
+            Doná Insumos
+          </BtnAction>
+        </div>
         <h1 className="donation-title-appear">¡Ayudanos a ayudar!</h1>
         <section className="donation-cards" aria-label="Formas de colaborar">
           {/* TARJETA 1 */}
