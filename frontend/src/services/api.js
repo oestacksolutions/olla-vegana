@@ -6,7 +6,8 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:30
 export async function apiRequest(path, options = {}) {
   const { protected: requiresAuth = false, accessToken, ...requestOptions } = options
   const headers = new Headers(requestOptions.headers)
-  if (requestOptions.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
+  const isFormData = typeof FormData !== 'undefined' && requestOptions.body instanceof FormData
+  if (requestOptions.body && !isFormData && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
 
   if (accessToken) {
     headers.set('Authorization', `Bearer ${accessToken}`)
@@ -64,6 +65,14 @@ export async function apiRequest(path, options = {}) {
 export const getProducts = (category) => apiRequest(`/products${category ? `?categoria=${encodeURIComponent(category)}` : ''}`)
 export const getProduct = (slug) => apiRequest(`/products/${encodeURIComponent(slug)}`)
 export const getCategories = () => apiRequest('/categories')
+export const getStoreBanners = () => apiRequest('/banners')
+export const getAdminBanners = () => apiRequest('/admin/banners', { protected: true })
+export const saveAdminBanners = (config, files) => {
+  const body = new FormData()
+  body.append('config', JSON.stringify(config))
+  files.forEach((file) => body.append('imagenes', file))
+  return apiRequest('/admin/banners', { method: 'PUT', body, protected: true })
+}
 export const getPickupOptions = () => apiRequest('/pickup-options')
 export const getTransferInstructions = (orderId, accessToken, options = {}) => apiRequest(
   `/orders/${encodeURIComponent(orderId)}/transfer-instructions`,

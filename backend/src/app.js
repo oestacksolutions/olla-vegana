@@ -19,6 +19,7 @@ const Atributo = require('./models/Atributo');
 const PuntoRetiro = require('./models/PuntoRetiro');
 const RetiroEspecial = require('./models/RetiroEspecial');
 const Configuracion = require('./models/Configuracion');
+const Banner = require('./models/Banner');
 const { createCatalogService } = require('./services/catalogService');
 const { createCartValidationService } = require('./services/cartValidationService');
 const { createAuthService } = require('./services/authService');
@@ -35,6 +36,8 @@ const createAdminAttributeRoutes = require('./routes/adminAttributeRoutes');
 const createAdminVariantRoutes = require('./routes/adminVariantRoutes');
 const createAdminDashboardRoutes = require('./routes/adminDashboardRoutes');
 const createAdminOrderRoutes = require('./routes/adminOrderRoutes');
+const createAdminBannerRoutes = require('./routes/adminBannerRoutes');
+const createBannerRoutes = require('./routes/bannerRoutes');
 const { createAdminOrderService } = require('./services/adminOrderService');
 const { createAdminOrderController } = require('./controllers/adminOrderController');
 const { createAuthMiddleware } = require('./middlewares/auth');
@@ -122,6 +125,7 @@ app.use('/api/auth', createAuthRateLimiter(), validateAuthPayload);
 
 // Rutas publicas de consulta del catalogo
 app.use('/api', createCatalogRoutes(catalogController));
+app.use('/api', createBannerRoutes({ Banner, Configuracion }, { storage: createCloudinaryStorage(env) }));
 app.use('/api', createCartRoutes(cartController));
 app.use('/api/auth', createAuthRoutes(authController));
 // Solo lectura y únicamente mediante token opaco de acceso al pedido; POST /api/orders sigue sin montarse.
@@ -156,6 +160,10 @@ app.use(
   validateJsonBody,
   createAdminAttributeRoutes({ Atributo, ValorAtributo, ValorVariante, ItemPedido, ReservaStock, MovimientoStock })
 );
+app.use('/api/admin/banners', authenticate, authorizeAdmin, createAdminBannerRoutes(
+  { Banner, Configuracion },
+  { storage: createCloudinaryStorage(env) }
+));
 app.use(
   '/api/admin/products/:productId/variants',
   authenticate,
