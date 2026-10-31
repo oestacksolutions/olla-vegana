@@ -34,6 +34,9 @@ const createAdminStockRoutes = require('./routes/adminStockRoutes');
 const createAdminAttributeRoutes = require('./routes/adminAttributeRoutes');
 const createAdminVariantRoutes = require('./routes/adminVariantRoutes');
 const createAdminDashboardRoutes = require('./routes/adminDashboardRoutes');
+const createAdminOrderRoutes = require('./routes/adminOrderRoutes');
+const { createAdminOrderService } = require('./services/adminOrderService');
+const { createAdminOrderController } = require('./controllers/adminOrderController');
 const { createAuthMiddleware } = require('./middlewares/auth');
 const {
   createCorsOptions,
@@ -73,6 +76,14 @@ const transferPaymentService = createTransferPaymentService(
   { Pedido, ReservaStock, ConfirmacionTransferencia },
   { stockReservationService, transferPaymentAuthorization }
 );
+const adminOrderService = createAdminOrderService(
+  { Pedido, ItemPedido, HistorialEstadoPedido, IntentoPago, ConfirmacionTransferencia, Reintegro, ReservaStock },
+  {
+    operationalChangesEnabled: env.ADMIN_ORDER_STATUS_CHANGES_ENABLED,
+    transferConfirmationEnabled: env.ADMIN_TRANSFER_CONFIRMATION_ENABLED
+  }
+);
+const adminOrderController = createAdminOrderController(adminOrderService);
 const orderAccessTokens = createOrderAccessTokenService(env.JWT_SECRET);
 const transferInstructionsService = createTransferInstructionsService(
   { Configuracion, Pedido, ReservaStock },
@@ -116,7 +127,10 @@ app.use('/api/auth', createAuthRoutes(authController));
 // Solo lectura y únicamente mediante token opaco de acceso al pedido; POST /api/orders sigue sin montarse.
 app.use('/api/orders', createOrderAccessRoutes(orderAccessController));
 // Confirmación interna de transferencias, protegida por autenticación y autorización administrativa reales.
-app.use('/api/admin/orders', authenticate, authorizeAdmin, validateJsonBody, createAdminTransferRoutes(createAdminTransferController(transferPaymentService)));
+app.use('/api/admin/orders', authenticate, authorizeAdmin, validateJsonBody, createAdminTransferRoutes(createAdminTransferController(transferPaymentService), {
+  enabled: env.ADMIN_TRANSFER_CONFIRMATION_ENABLED
+}));
+app.use('/api/admin/orders', authenticate, authorizeAdmin, validateJsonBody, createAdminOrderRoutes(adminOrderController));
 app.use(
   '/api/admin/products',
   authenticate,

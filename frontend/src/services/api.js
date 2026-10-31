@@ -96,6 +96,17 @@ export const getAdminDashboardSummary = (period, options = {}) => apiRequest(
   `/admin/dashboard/summary?period=${encodeURIComponent(period)}`,
   { ...options, protected: true }
 )
+export const getAdminOrders = (filters = {}, options = {}) => {
+  const query = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => { if (value !== undefined && value !== null && value !== '') query.set(key, String(value)) })
+  return apiRequest(`/admin/orders${query.size ? `?${query}` : ''}`, { ...options, protected: true })
+}
+export const getAdminOrder = (orderId, options = {}) => apiRequest(`/admin/orders/${encodeURIComponent(orderId)}`, { ...options, protected: true })
+export const updateAdminOrderStatus = (orderId, changes) => apiRequest(`/admin/orders/${encodeURIComponent(orderId)}/status`, { method: 'PATCH', body: JSON.stringify(changes), protected: true })
+export const confirmAdminTransfer = (orderId, confirmation, idempotencyKey) => apiRequest(
+  `/admin/orders/${encodeURIComponent(orderId)}/transfer-confirmation`,
+  { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey }, body: JSON.stringify(confirmation), protected: true }
+)
 export const createAdminProduct = (product) => apiRequest('/admin/products', { method: 'POST', body: JSON.stringify(product), protected: true })
 export const updateAdminProduct = (id, product) => apiRequest(`/admin/products/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(product), protected: true })
 export const setAdminProductVisibility = (id, activo) => apiRequest(`/admin/products/${encodeURIComponent(id)}/visibility`, { method: 'PATCH', body: JSON.stringify({ activo }), protected: true })
