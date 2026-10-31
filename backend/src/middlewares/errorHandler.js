@@ -1,4 +1,16 @@
 const AppError = require('../utils/AppError');
+const logger = require('../utils/observability');
+
+function errorCategory(error, statusCode) {
+  if (error?.name === 'ValidationError' || error?.name === 'CastError' || statusCode === 400) return 'VALIDATION';
+  if (statusCode === 401) return 'AUTHENTICATION';
+  if (statusCode === 403) return 'AUTHORIZATION';
+  if (error?.name?.includes('Mongo') || error?.name?.includes('Mongoose')) return 'DATABASE';
+  if (error?.hasErrorLabel?.('TransientTransactionError') || error?.codeName === 'WriteConflict') return 'TRANSACTION';
+  if (/WEBHOOK|PAYMENT|MERCADO|TRANSFER|EMAIL|SMTP|PROVIDER/i.test(String(error?.code || ''))) return 'INTEGRATION';
+  if (statusCode >= 500) return 'UNEXPECTED';
+  return 'REQUEST';
+}
 
 module.exports = function errorHandler(error, req, res, next) {
   let statusCode = 500;
@@ -35,24 +47,28 @@ module.exports = function errorHandler(error, req, res, next) {
     message = 'Servicio no disponible';
   }
 
-  const logEntry = {
-    fecha: new Date().toISOString(),
-    metodo: req.method,
-    url: req.path,
-    codigo: statusCode,
-    mensaje: statusCode >= 500 ? 'Error de servidor' : message
+  const entry = {
+    requestId: req.requestId || null,
+    method: req.method,
+    path: req.route?.path ? `${req.baseUrl || ''}${req.route.path}` : 'unmatched',
+    status: statusCode,
+    category: errorCategory(error, statusCode),
+    errorCode: typeof error?.code === 'string' || Number.isInteger(error?.code) ? error.code : error?.name || 'ERROR'
   };
-  if (statusCode >= 500) {
-    logEntry.tipo = typeof error?.name === 'string' ? error.name : 'Error';
-    if (Number.isInteger(error?.code)) logEntry.codigoInterno = error.code;
-    if (typeof error?.stack === 'string') {
-      const frames = error.stack.split('\n').slice(1, 6).map((frame) => frame.trim());
-      if (frames.length) logEntry.trazaInterna = frames;
-    }
+  if (statusCode >= 500 && typeof error?.stack === 'string') {
+    entry.stack = error.stack.split('\n').slice(1, 6).map((frame) => frame.trim());
   }
-  console.error(logEntry);
+  if (statusCode >= 500) logger.error('http.error', entry);
+  else if (statusCode >= 400) logger.warn('http.error', entry);
+  if (statusCode >= 500) {
+    void logger.alerts?.dispatch('backend:unexpected-error', 'backend.unexpected_error', {
+      requestId: req.requestId || null, status: statusCode, errorCode: entry.errorCode
+    });
+  }
 
   const response = { error: message };
   if (detalles !== undefined) response.detalles = detalles;
   res.status(statusCode).json(response);
 };
+
+module.exports.errorCategory = errorCategory;

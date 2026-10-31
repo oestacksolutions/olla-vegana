@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const AppError = require('../utils/AppError');
 const { createSmtpTransport } = require('./emailTransport');
+const logger = require('../utils/observability');
 
 const PASSWORD_HASH_PREFIX = 'scrypt';
 const BCRYPT_ROUNDS = 12;
@@ -115,10 +116,10 @@ function createAuthService({ Admin, env, now = () => Date.now() }) {
               text: `Solicitaste restablecer tu contraseña. Abrí este enlace dentro de los próximos 15 minutos: ${resetUrl}\n\nSi no realizaste esta solicitud, ignorá este correo.`
             });
           } catch (error) {
-            console.error('[auth] No se pudo enviar el correo de recuperación.', error);
+            logger.warn('auth.password_reset_email_failed', { errorCode: String(error?.code || error?.name || 'SMTP_ERROR') });
           }
         } else if (env.NODE_ENV === 'development') {
-          console.info(`[auth] Enlace de recuperación generado para desarrollo: ${resetUrl}`);
+          logger.info('auth.password_reset_email_unavailable');
         }
       }
 
