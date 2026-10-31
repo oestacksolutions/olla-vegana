@@ -52,7 +52,6 @@ if (!Object.values(cloudinaryConfig).every(Boolean)) {
 }
 
 const imageMaxSizeBytes = Number(process.env.IMAGE_MAX_SIZE_BYTES);
-
 module.exports = {
   MONGODB_URI: process.env.MONGODB_URI,
   PORT: process.env.PORT || 3001,

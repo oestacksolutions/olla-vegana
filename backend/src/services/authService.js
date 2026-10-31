@@ -5,8 +5,8 @@ const AppError = require('../utils/AppError');
 
 const PASSWORD_HASH_PREFIX = 'scrypt';
 const BCRYPT_ROUNDS = 12;
-const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
 const SESSION_TTL_SECONDS = 8 * 60 * 60;
+const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
 
 function base64Url(value) {
   return Buffer.from(value).toString('base64url');
@@ -76,7 +76,8 @@ function isBcryptHash(value) {
   return typeof value === 'string' && /^\$2[aby]\$\d{2}\$/.test(value);
 }
 
-function createAuthService({ Admin, env }) {
+function createAuthService({ Admin, env, now = () => Date.now() }) {
+  if (!Admin || !env?.JWT_SECRET) throw new TypeError('La autenticación requiere Admin y una clave JWT');
   return {
     async login(correo, contrasena) {
       const normalizedEmail = normalizeEmail(correo);
@@ -87,22 +88,17 @@ function createAuthService({ Admin, env }) {
       const validPassword = admin
         && (isBcryptHash(admin.contrasena)
           ? await bcrypt.compare(contrasena, admin.contrasena)
-          : await verifyPassword(contrasena, admin.contrasena)
-          || (admin.contrasena === contrasena && typeof contrasena === 'string'));
+          : await verifyPassword(contrasena, admin.contrasena));
 
       if (!validPassword) throw AppError.noAutorizado('El correo o la contraseña no son correctos.');
 
-      if (!isBcryptHash(admin.contrasena)) {
-        admin.contrasena = await bcrypt.hash(contrasena, BCRYPT_ROUNDS);
-        await admin.save();
-      }
-
-      const now = Math.floor(Date.now() / 1000);
+      const nowMs = now();
       const token = signToken({
         sub: String(admin._id),
-        correo: admin.correo,
-        iat: now,
-        exp: now + SESSION_TTL_SECONDS
+        adminUpdatedAt: admin.updatedAt instanceof Date ? admin.updatedAt.getTime() : 0,
+        jti: crypto.randomBytes(16).toString('hex'),
+        iat: Math.floor(nowMs / 1000),
+        exp: Math.floor(nowMs / 1000) + SESSION_TTL_SECONDS
       }, env.JWT_SECRET);
 
       return { token, admin: { id: String(admin._id), correo: admin.correo } };
@@ -165,4 +161,4 @@ function createAuthService({ Admin, env }) {
   };
 }
 
-module.exports = { createAuthService };
+module.exports = { createAuthService, hashPassword, verifyPassword, signToken, SESSION_TTL_SECONDS };

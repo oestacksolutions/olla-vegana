@@ -42,6 +42,14 @@ module.exports = function errorHandler(error, req, res, next) {
     codigo: statusCode,
     mensaje: statusCode >= 500 ? 'Error de servidor' : message
   };
+  if (statusCode >= 500) {
+    logEntry.tipo = typeof error?.name === 'string' ? error.name : 'Error';
+    if (Number.isInteger(error?.code)) logEntry.codigoInterno = error.code;
+    if (typeof error?.stack === 'string') {
+      const frames = error.stack.split('\n').slice(1, 6).map((frame) => frame.trim());
+      if (frames.length) logEntry.trazaInterna = frames;
+    }
+  }
   console.error(logEntry);
 
   const response = { error: message };

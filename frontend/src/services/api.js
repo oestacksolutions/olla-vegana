@@ -1,4 +1,4 @@
-import { logoutAdmin } from './auth'
+import { getAdminAuth, logoutAdmin } from './auth'
 import { buildCartValidationPayload } from '../utils/checkout'
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
@@ -10,29 +10,36 @@ export async function apiRequest(path, options = {}) {
 
   if (accessToken) {
     headers.set('Authorization', `Bearer ${accessToken}`)
-  } else {
-    const storedAuth = localStorage.getItem('olla-vegana-admin-auth')
-    if (storedAuth) {
-      try {
-        const { token } = JSON.parse(storedAuth)
-        if (token) headers.set('Authorization', ['Bearer', token].join(' '))
-      } catch {
-        if (requiresAuth) logoutAdmin()
-      }
+  } else if (requiresAuth) {
+    const auth = getAdminAuth()
+    if (!auth) {
+      logoutAdmin()
+      if (window.location.pathname !== '/login') window.location.replace('/login')
+      const error = new Error('Iniciá sesión para continuar.')
+      error.status = 401
+      throw error
     }
+    headers.set('Authorization', `Bearer ${auth.token}`)
   }
 
   let response
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, { ...requestOptions, headers })
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...requestOptions,
+      headers,
+      credentials: 'omit',
+      cache: requiresAuth ? 'no-store' : requestOptions.cache
+    })
   } catch {
     throw new Error('No pudimos conectarnos con el servidor.')
   }
 
-  if ((response.status === 401 || response.status === 403) && requiresAuth) {
+  if (requiresAuth && (response.status === 401 || response.status === 403)) {
     logoutAdmin()
-    window.location.assign('/login')
-    throw new Error('Tu sesión expiró. Volvé a iniciar sesión.')
+    if (window.location.pathname !== '/login') window.location.replace('/login')
+    const error = new Error('Tu sesión venció. Volvé a iniciar sesión.')
+    error.status = 401
+    throw error
   }
 
   let data = null
@@ -44,7 +51,9 @@ export async function apiRequest(path, options = {}) {
     }
   }
   if (!response.ok) {
-    const error = new Error(data?.error || 'No pudimos completar la solicitud.')
+    const error = new Error(response.status === 403
+      ? (data?.error || 'Tu cuenta no tiene permiso para realizar esta operación.')
+      : (data?.error || 'No pudimos completar la solicitud.'))
     error.status = response.status
     error.response = data
     throw error

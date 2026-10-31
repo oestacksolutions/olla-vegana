@@ -88,8 +88,14 @@ function validateJsonBody(req, res, next) {
 }
 
 function validateAuthPayload(req, res, next) {
+  const bodyRequiredPaths = new Set(['/login', '/forgot-password', '/reset-password']);
+  if (req.method !== 'POST' || !bodyRequiredPaths.has(req.path)) {
+    next();
+    return;
+  }
+
   validateJsonBody(req, res, () => {
-    const { correo, contrasena, token, nuevaContrasena } = req.body;
+    const { correo, contrasena, token, nuevaContrasena } = req.body || {};
     if (req.path === '/login'
       && (typeof correo !== 'string' || correo.length > 254 || typeof contrasena !== 'string' || contrasena.length > 1024)) {
       next(AppError.solicitudInvalida('El correo y la contraseña son obligatorios.'));

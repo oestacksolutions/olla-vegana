@@ -4,6 +4,7 @@ function createAuthController(service) {
   return {
     login: asyncHandler(async (req, res) => {
       const { correo, contrasena } = req.body || {};
+      res.set('Cache-Control', 'no-store');
       res.json(await service.login(correo, contrasena));
     }),
     requestPasswordReset: asyncHandler(async (req, res) => {
