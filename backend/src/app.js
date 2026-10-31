@@ -92,13 +92,11 @@ const cartValidationService = createCartValidationService({
   Producto, Variante, Categoria, ValorVariante, ValorAtributo, Atributo, ReservaStock
 });
 const cartController = require('./controllers/cartController')(cartValidationService);
-const authService = createAuthService({ Admin: require('./models/Admin'), env: require('./config/env') });
-const authController = createAuthController(authService);
 const Admin = require('./models/Admin');
-const { authenticate, authorizeAdmin } = createAuthMiddleware({
-  secret: require('./config/env').JWT_SECRET,
-  Admin
-});
+const authService = createAuthService({ Admin, env });
+const authController = createAuthController(authService);
+const authMiddleware = createAuthMiddleware({ secret: env.JWT_SECRET, Admin });
+const { authenticate, authorizeAdmin } = authMiddleware;
 
 app.use(helmetMiddleware);
 app.use(cors(createCorsOptions(env)));
