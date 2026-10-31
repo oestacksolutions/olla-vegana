@@ -52,6 +52,13 @@ if (!Object.values(cloudinaryConfig).every(Boolean)) {
 }
 
 const imageMaxSizeBytes = Number(process.env.IMAGE_MAX_SIZE_BYTES);
+const lowStockThreshold = process.env.ADMIN_LOW_STOCK_THRESHOLD === undefined
+  ? 5
+  : Number(process.env.ADMIN_LOW_STOCK_THRESHOLD);
+if (!Number.isSafeInteger(lowStockThreshold) || lowStockThreshold < 0) {
+  console.error('ADMIN_LOW_STOCK_THRESHOLD debe ser un entero no negativo.');
+  process.exit(1);
+}
 module.exports = {
   MONGODB_URI: process.env.MONGODB_URI,
   PORT: process.env.PORT || 3001,
@@ -79,5 +86,6 @@ module.exports = {
   ...cloudinaryConfig,
   IMAGE_MAX_SIZE_BYTES: Number.isSafeInteger(imageMaxSizeBytes) && imageMaxSizeBytes > 0 && imageMaxSizeBytes <= 20 * 1024 * 1024
     ? imageMaxSizeBytes
-    : 5 * 1024 * 1024
+    : 5 * 1024 * 1024,
+  ADMIN_LOW_STOCK_THRESHOLD: lowStockThreshold
 };

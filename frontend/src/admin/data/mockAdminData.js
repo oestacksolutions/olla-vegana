@@ -1,5 +1,5 @@
 export const adminNavigation = [
-  { id: 'resumen', label: 'Resumen general', icon: 'LayoutDashboard' },
+  { id: 'resumen', label: 'Resumen de la tienda', icon: 'LayoutDashboard' },
   { id: 'pedidos', label: 'Pedidos y ventas', icon: 'ShoppingBag' },
   { id: 'productos', label: 'Productos', icon: 'Package' },
   { id: 'catalogo', label: 'Categorías y variantes', icon: 'Tags' },
