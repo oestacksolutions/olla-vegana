@@ -160,7 +160,10 @@ app.use(helmetMiddleware);
 app.use(cors(createCorsOptions(env)));
 app.use(createHealthRoutes({ mongoose, logger }));
 app.use(express.json({ limit: '10kb' }));
+
+// Rate limiters opcionales para rutas API
 app.use('/api', createApiRateLimiter());
+app.use('/auth', createAuthRateLimiter(), validateAuthPayload);
 app.use('/api/auth', createAuthRateLimiter(), validateAuthPayload);
 
 // Rutas publicas de consulta del catalogo
@@ -237,7 +240,7 @@ app.use('/api/pickup-options', createPickupRoutes({ PuntoRetiro, RetiroEspecial 
 app.use('/api/webhooks', createWebhookRoutes(mercadoPagoWebhookController));
 
 app.get('/', (req, res) => {
-  res.send('\u00a1El backend de Olla Vegana est\u00e1 funcionando perfectamente!');
+  res.send('¡El backend de Olla Vegana está funcionando perfectamente!');
 });
 
 app.use(notFound);

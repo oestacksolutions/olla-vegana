@@ -1,8 +1,8 @@
 const AUTH_STORAGE_KEY = 'olla-vegana-admin-auth'
-const configuredApiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:3001/api'
-const API_URL = configuredApiUrl.replace(/\/$/, '').endsWith('/api')
-  ? configuredApiUrl.replace(/\/$/, '')
-  : `${configuredApiUrl.replace(/\/$/, '')}/api`
+
+const configuredApiUrl = import.meta.env?.VITE_API_URL || 'https://api.ollavegana.org'
+const apiOrigin = configuredApiUrl.replace(/\/+$/, '').replace(/\/api$/, '')
+const API_URL = `${apiOrigin}/api`
 
 function getStorage() {
   try { return globalThis.localStorage || globalThis.window?.localStorage || null }

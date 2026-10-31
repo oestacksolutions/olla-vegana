@@ -1,0 +1,11 @@
+tunnel: REEMPLAZAR_CON_EL_ID_DEL_TUNNEL
+credentials-file: /ruta/segura/al-archivo-de-credenciales.json
+
+ingress:
+  - hostname: api.ollavegana.org
+    service: http://localhost:3001
+  - hostname: ollavegana.org
+    service: http://localhost:80
+  - hostname: www.ollavegana.org
+    service: http://localhost:80
+  - service: http_status:404
