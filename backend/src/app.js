@@ -168,8 +168,16 @@ app.use('/api/auth', createAuthRateLimiter(), validateAuthPayload);
 
 // Rutas publicas de consulta del catalogo
 app.use('/api', createCatalogRoutes(catalogController));
+app.use('/api', createBannerRoutes({ Banner, Configuracion }, { storage: createCloudinaryStorage(env) }));
 app.use('/api', createCartRoutes(cartController));
 app.use('/api/auth', createAuthRoutes(authController));
+// Solo lectura y únicamente mediante token opaco de acceso al pedido; POST /api/orders sigue sin montarse.
+app.use('/api/orders', createOrderAccessRoutes(orderAccessController));
+// Confirmación interna de transferencias, protegida por autenticación y autorización administrativa reales.
+app.use('/api/admin/orders', authenticate, authorizeAdmin, validateJsonBody, createAdminTransferRoutes(createAdminTransferController(transferPaymentService), {
+  enabled: env.ADMIN_TRANSFER_CONFIRMATION_ENABLED
+}));
+app.use('/api/admin/orders', authenticate, authorizeAdmin, validateJsonBody, createAdminOrderRoutes(adminOrderController));
 app.use(
   '/api/admin/products',
   authenticate,
@@ -227,6 +235,9 @@ app.use(
   })
 );
 app.use('/api/pickup-options', createPickupRoutes({ PuntoRetiro, RetiroEspecial }));
+// Mercado Pago no usa JWT; la autenticidad se valida con x-signature.
+// Los efectos financieros permanecen deshabilitados por configuración segura por defecto.
+app.use('/api/webhooks', createWebhookRoutes(mercadoPagoWebhookController));
 
 app.get('/', (req, res) => {
   res.send('¡El backend de Olla Vegana está funcionando perfectamente!');

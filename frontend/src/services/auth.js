@@ -1,4 +1,5 @@
 const AUTH_STORAGE_KEY = 'olla-vegana-admin-auth'
+
 const configuredApiUrl = import.meta.env?.VITE_API_URL || 'https://api.ollavegana.org'
 const apiOrigin = configuredApiUrl.replace(/\/+$/, '').replace(/\/api$/, '')
 const API_URL = `${apiOrigin}/api`
