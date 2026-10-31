@@ -98,6 +98,7 @@ function createMercadoPagoWebhookService(models, {
   orderClient,
   stockReservationService,
   paymentAuthorization,
+  emailOutbox = null,
   startSession = () => mongoose.startSession(),
   ahora = () => new Date(),
   toleranceSeconds = 300
@@ -222,7 +223,7 @@ function createMercadoPagoWebhookService(models, {
           } }, { session });
         }
         if (reason === 'ACREDITACION_SIN_RESERVA' && pedido) {
-          await Pedido.updateOne({ _id: pedido._id, metodoPago: 'MERCADO_PAGO', estadoPago: { $in: ['PENDIENTE', 'APROBADO', 'RECHAZADO'] } }, {
+          const paymentUpdate = await Pedido.updateOne({ _id: pedido._id, metodoPago: 'MERCADO_PAGO', estadoPago: { $in: ['PENDIENTE', 'APROBADO', 'RECHAZADO'] } }, {
             $set: {
               estadoPago: 'APROBADO',
               pagoVerificadoEn: when,
@@ -231,6 +232,9 @@ function createMercadoPagoWebhookService(models, {
               notaPago: 'Acreditación de Mercado Pago verificada; reserva no disponible. Requiere conciliación administrativa.'
             }
           }, { session });
+          if ((paymentUpdate?.modifiedCount ?? paymentUpdate?.nModified ?? 0) === 1 && emailOutbox) {
+            await emailOutbox.enqueue({ pedidoId: pedido._id, tipo: 'PAGO_CONFIRMADO', session });
+          }
         }
         await EventoPago.updateOne({ _id: eventId, estadoProcesamiento: 'RECIBIDO' }, {
           $set: { estadoProcesamiento: 'REVISION', errorCodigo: reason, procesadoEn: when }

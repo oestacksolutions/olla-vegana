@@ -12,6 +12,7 @@ function execute(query) {
 function createOrderCancellationService({ Pedido, IntentoPago, HistorialEstadoPedido }, {
   stockReservationService,
   orderClient,
+  emailOutbox = null,
   env = {},
   ahora = () => new Date()
 } = {}) {
@@ -103,6 +104,7 @@ function createOrderCancellationService({ Pedido, IntentoPago, HistorialEstadoPe
           pedidoId: order._id, estadoAnterior: order.estado, estadoNuevo: 'CANCELADO',
           nota: `Cancelación de pedido pagado: ${motivo.trim()}`, adminId
         }], { session });
+        if (emailOutbox) await emailOutbox.enqueue({ pedidoId: order._id, tipo: 'PEDIDO_CANCELADO', session });
         // No se liberan reservas confirmadas ni se repone stock físico. Un reintegro es un flujo separado.
         result = { cancelado: true, idempotente: false, estadoPago: 'APROBADO', estadoReintegro: 'EN_REVISION' };
       });

@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
-const nodemailer = require('nodemailer');
 const AppError = require('../utils/AppError');
+const { createSmtpTransport } = require('./emailTransport');
 
 const PASSWORD_HASH_PREFIX = 'scrypt';
 const BCRYPT_ROUNDS = 12;
@@ -48,18 +48,6 @@ function signToken(payload, secret) {
   const body = base64Url(JSON.stringify(payload));
   const signature = crypto.createHmac('sha256', secret).update(`${header}.${body}`).digest('base64url');
   return `${header}.${body}.${signature}`;
-}
-
-function createTransport(env) {
-  if (!env.SMTP_HOST || !env.SMTP_PORT || !env.SMTP_USER || !env.SMTP_PASS || !env.MAIL_FROM) {
-    throw new AppError('El servicio de correo no está configurado.', 503);
-  }
-  return nodemailer.createTransport({
-    host: env.SMTP_HOST,
-    port: Number(env.SMTP_PORT),
-    secure: Number(env.SMTP_PORT) === 465,
-    auth: { user: env.SMTP_USER, pass: env.SMTP_PASS }
-  });
 }
 
 function normalizeEmail(correo) {
@@ -119,7 +107,7 @@ function createAuthService({ Admin, env, now = () => Date.now() }) {
         const resetUrl = `${env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${encodeURIComponent(rawToken)}`;
         if (env.SMTP_HOST && env.SMTP_PORT && env.SMTP_USER && env.SMTP_PASS && env.MAIL_FROM) {
           try {
-            const transport = createTransport(env);
+            const transport = createSmtpTransport(env);
             await transport.sendMail({
               from: env.MAIL_FROM,
               to: admin.correo,

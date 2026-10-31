@@ -53,7 +53,8 @@ function createStockReservationService(models, {
   startSession = () => mongoose.startSession(),
   ahora = () => new Date(),
   logger = console.error,
-  verifyPaymentAuthorization = async () => false
+  verifyPaymentAuthorization = async () => false,
+  emailOutbox = null
 } = {}) {
   const { Pedido, Variante, ReservaStock, MovimientoStock, HistorialEstadoPedido } = models;
 
@@ -153,6 +154,7 @@ function createStockReservationService(models, {
       pedidoId: order._id, estadoAnterior: order.estado, estadoNuevo: 'CANCELADO', nota: note,
       ...(adminId ? { adminId } : {})
     }], { session });
+    if (emailOutbox) await emailOutbox.enqueue({ pedidoId: order._id, tipo: 'PEDIDO_CANCELADO', session });
     return true;
   }
 
@@ -236,6 +238,7 @@ function createStockReservationService(models, {
         } }, { session }
       );
       if ((orderUpdate?.modifiedCount ?? orderUpdate?.nModified ?? 0) !== 1) throw retryConflict();
+      if (emailOutbox) await emailOutbox.enqueue({ pedidoId: order._id, tipo: 'PAGO_CONFIRMADO', session });
       return { confirmado: true, idempotente: false, pedidoId: String(order._id) };
     };
     return suppliedSession ? confirmInSession(suppliedSession) : transaction(confirmInSession);
@@ -267,6 +270,7 @@ function createStockReservationService(models, {
         await HistorialEstadoPedido.create([{
           pedidoId: order._id, estadoAnterior: previousOrderState, estadoNuevo: 'CANCELADO', nota: 'Pago rechazado por Mercado Pago'
         }], { session });
+        if (emailOutbox) await emailOutbox.enqueue({ pedidoId: order._id, tipo: 'PEDIDO_CANCELADO', session });
       }
       const released = await releaseOrderReservations(order, session, ahora());
       return { rechazado: true, reservasLiberadas: released, idempotente: false };
