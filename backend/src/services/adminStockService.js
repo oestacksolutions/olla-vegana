@@ -37,6 +37,7 @@ function serializeMovement(movement) {
 function createAdminStockService(models, {
   startSession = () => mongoose.startSession(),
   ahora = () => new Date(),
+  lowStockThreshold = 5,
   logger = console.error
 } = {}) {
   const { Producto, Variante, MovimientoStock, ReservaStock, ValorVariante, ValorAtributo, Atributo } = models;
@@ -194,6 +195,7 @@ function createAdminStockService(models, {
 
     return {
       inventario: await describeVariants(variants),
+      umbralStockBajo: lowStockThreshold,
       paginacion: { pagina: page, limite: limit, total, paginas: Math.ceil(total / limit) }
     };
   }

@@ -25,7 +25,7 @@ function queryResult(data) {
   };
 }
 
-function makeModels({ variants = [], links = [], history = {}, product = { _id: PRODUCT_ID }, withSession, beforeDuplicateRead } = {}) {
+function makeModels({ variants = [], links = [], history = {}, product = { _id: PRODUCT_ID }, withSession, beforeDuplicateRead, combinationIndex = true } = {}) {
   const data = { variants: variants.map((item) => ({ stock: 0, activa: true, ...item })), links: [...links] };
   const session = {
     withTransaction: async (operation) => operation(),
@@ -34,6 +34,11 @@ function makeModels({ variants = [], links = [], history = {}, product = { _id: 
   const models = {
     Producto: { findById: () => queryResult(product) },
     Variante: {
+      collection: { indexes: async () => combinationIndex ? [{
+        name: 'uniq_variante_producto_combinacion_activa', unique: true,
+        key: { productoId: 1, combinacionClave: 1 },
+        partialFilterExpression: { activa: true, combinacionClave: { $type: 'string' } }
+      }] : [] },
       find: (filter = {}) => {
         const rows = data.variants.filter((item) =>
           (!filter.productoId || String(item.productoId) === String(filter.productoId)) &&
@@ -107,6 +112,19 @@ test('crea variante de un atributo, stock inicial del modelo solo se devuelve y 
   await assert.rejects(service.createVariant(PRODUCT_ID, {
     valores: [pair(ATTR_COLOR, VALUE_BEIGE)], stock: 100
   }), (error) => error.statusCode === 400);
+});
+
+test('crea una variante sin atributos cuando el índice único está verificado', async () => {
+  const { models, data, startSession } = makeModels();
+  const result = await createAdminVariantService(models, { startSession }).createVariant(PRODUCT_ID, { valores: [] });
+  assert.equal(result.valores.length, 0);
+  assert.equal(data.variants[0].combinacionClave, 'v1:none');
+});
+
+test('bloquea escrituras si el índice único físico de combinaciones no está provisionado', async () => {
+  const { models, data, startSession } = makeModels({ combinationIndex: false });
+  await assert.rejects(createAdminVariantService(models, { startSession }).createVariant(PRODUCT_ID, { valores: [pair(ATTR_COLOR, VALUE_BLACK)] }), (error) => error.statusCode === 503);
+  assert.equal(data.variants.length, 0);
 });
 
 test('crea variantes con combinaciones de varios atributos sin limitar los nombres', async () => {
@@ -233,11 +251,10 @@ test('rechaza IDs inválidos y variantes que no pertenecen al producto de la rut
   await assert.rejects(service.updateVariant(PRODUCT_ID, VARIANT_B, { activa: false }), (error) => error.statusCode === 404);
 });
 
-test('rutas administrativas de variantes no están montadas en app.js y no exponen escritura pública', () => {
+test('rutas administrativas de variantes están montadas con autenticación y no exponen escritura pública', () => {
   const appSource = fs.readFileSync(path.join(__dirname, '../src/app.js'), 'utf8');
 
-  assert.doesNotMatch(appSource, /adminVariantRoutes/);
-  assert.match(appSource, /app\.use\(\s*'\/api\/admin\/products',\s*authenticate,\s*authorizeAdmin,/s);
+  assert.match(appSource, /app\.use\(\s*'\/api\/admin\/products\/:productId\/variants',\s*authenticate,\s*authorizeAdmin,\s*validateJsonBody,\s*createAdminVariantRoutes/s);
 
   const { models, startSession } = makeModels();
   const routes = createAdminVariantRoutes(models);

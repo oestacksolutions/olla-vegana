@@ -27,6 +27,17 @@ function runQuery(query, { sort } = {}) {
 }
 
 function createAdminAttributeService({ Atributo, ValorAtributo, ValorVariante, ItemPedido, ReservaStock, MovimientoStock }) {
+  async function assertUniqueIndexes() {
+    try {
+      const [attributeIndexes, valueIndexes] = await Promise.all([Atributo.collection.indexes(), ValorAtributo.collection.indexes()]);
+      const attributeIndex = attributeIndexes.some((index) => index.unique === true && index.key?.nombre === 1);
+      const valueIndex = valueIndexes.some((index) => index.unique === true && index.key?.atributoId === 1 && index.key?.valor === 1);
+      if (!attributeIndex || !valueIndex) throw new Error('attribute uniqueness indexes missing');
+    } catch {
+      throw new AppError('La gestión de atributos está deshabilitada hasta verificar sus índices de unicidad', 503);
+    }
+  }
+
   async function getAttributeOr404(id) {
     validateId(id);
     const attribute = await runQuery(Atributo.findById(id));
@@ -80,6 +91,7 @@ function createAdminAttributeService({ Atributo, ValorAtributo, ValorVariante, I
     ensureObject(input);
     rejectUnexpectedFields(input, ['nombre']);
     const data = { nombre: requiredText(input.nombre, 'nombre') };
+    await assertUniqueIndexes();
     if (await runQuery(Atributo.findOne({ nombre: data.nombre }))) throw AppError.conflicto('Ya existe un atributo con ese nombre');
     try {
       const attribute = await Atributo.create(data);
@@ -95,6 +107,7 @@ function createAdminAttributeService({ Atributo, ValorAtributo, ValorVariante, I
     ensureObject(input);
     rejectUnexpectedFields(input, ['nombre']);
     const name = requiredText(input.nombre, 'nombre');
+    await assertUniqueIndexes();
     const attribute = await getAttributeOr404(id);
     if (attribute.nombre !== name) {
       if (await runQuery(Atributo.findOne({ nombre: name, _id: { $ne: id } }))) {
@@ -131,6 +144,7 @@ function createAdminAttributeService({ Atributo, ValorAtributo, ValorVariante, I
     ensureObject(input);
     rejectUnexpectedFields(input, ['valor']);
     const value = requiredText(input.valor, 'valor');
+    await assertUniqueIndexes();
     const attribute = await getAttributeOr404(attributeId);
     const filter = { atributoId: attribute._id, valor: value };
     if (await runQuery(ValorAtributo.findOne(filter))) throw AppError.conflicto('Ese valor ya existe para el atributo');
@@ -148,6 +162,7 @@ function createAdminAttributeService({ Atributo, ValorAtributo, ValorVariante, I
     ensureObject(input);
     rejectUnexpectedFields(input, ['valor']);
     const valueText = requiredText(input.valor, 'valor');
+    await assertUniqueIndexes();
     const value = await getValueOr404(id);
     if (value.valor !== valueText) {
       const duplicate = await runQuery(ValorAtributo.findOne({

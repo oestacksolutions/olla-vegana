@@ -7,6 +7,7 @@ const Variante = require('./models/Variante');
 const MovimientoStock = require('./models/MovimientoStock');
 const ReservaStock = require('./models/ReservaStock');
 const Pedido = require('./models/Pedido');
+const ItemPedido = require('./models/ItemPedido');
 const Reintegro = require('./models/Reintegro');
 const HistorialEstadoPedido = require('./models/HistorialEstadoPedido');
 const IntentoPago = require('./models/IntentoPago');
@@ -30,6 +31,8 @@ const createAdminProductRoutes = require('./routes/adminProductRoutes');
 const createAdminImageRoutes = require('./routes/adminImageRoutes');
 const { createCloudinaryStorage } = require('./services/cloudinaryStorage');
 const createAdminStockRoutes = require('./routes/adminStockRoutes');
+const createAdminAttributeRoutes = require('./routes/adminAttributeRoutes');
+const createAdminVariantRoutes = require('./routes/adminVariantRoutes');
 const createAdminDashboardRoutes = require('./routes/adminDashboardRoutes');
 const { createAuthMiddleware } = require('./middlewares/auth');
 const {
@@ -133,10 +136,26 @@ app.use(
   )
 );
 app.use(
+  '/api/admin',
+  authenticate,
+  authorizeAdmin,
+  validateJsonBody,
+  createAdminAttributeRoutes({ Atributo, ValorAtributo, ValorVariante, ItemPedido, ReservaStock, MovimientoStock })
+);
+app.use(
+  '/api/admin/products/:productId/variants',
+  authenticate,
+  authorizeAdmin,
+  validateJsonBody,
+  createAdminVariantRoutes({ Producto, Variante, Atributo, ValorAtributo, ValorVariante, ItemPedido, ReservaStock, MovimientoStock })
+);
+app.use(
   '/api/admin/stock',
   authenticate,
   authorizeAdmin,
-  createAdminStockRoutes({ Producto, Variante, MovimientoStock, ReservaStock, ValorVariante, ValorAtributo, Atributo })
+  createAdminStockRoutes({ Producto, Variante, MovimientoStock, ReservaStock, ValorVariante, ValorAtributo, Atributo }, {
+    lowStockThreshold: env.ADMIN_LOW_STOCK_THRESHOLD
+  })
 );
 app.use(
   '/api/admin/dashboard',
