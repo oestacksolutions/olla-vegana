@@ -5,9 +5,7 @@ function ProtectedRoute({ children }) {
   const authenticated = Boolean(getAdminAuth())
 
   useEffect(() => {
-    if (!authenticated) {
-      window.location.replace('/login')
-    }
+    if (!authenticated) window.location.replace('/login')
   }, [authenticated])
 
   if (!authenticated) return null

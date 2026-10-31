@@ -5,12 +5,30 @@ import {
 } from 'lucide-react'
 import { adminNavigation } from '../data/mockAdminData'
 import logoOllaVegana from '../../assets/png/logo_olla_vegana.png'
-import { logoutAdmin } from '../../services/auth'
+import { getAdminAuth, logoutAdmin } from '../../services/auth'
+import { clearAdminProductsCache } from '../services/adminService'
 
 const iconMap = { LayoutDashboard, ShoppingBag, Package, Tags, Boxes, PanelsTopLeft, MapPin, Settings }
 
 function AdminLayout({ activePage, onNavigate, children }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
+  const [logoutError, setLogoutError] = useState('')
+  const admin = getAdminAuth()?.admin
+
+  const handleLogout = async () => {
+    if (loggingOut) return
+    setLoggingOut(true)
+    setLogoutError('')
+    try {
+      await logoutAdmin()
+      clearAdminProductsCache()
+      window.location.replace('/login')
+    } catch (error) {
+      setLogoutError(error.message)
+      setLoggingOut(false)
+    }
+  }
   const navigate = (page) => {
     onNavigate(page)
     setMobileOpen(false)
@@ -37,9 +55,10 @@ function AdminLayout({ activePage, onNavigate, children }) {
       <div className="border-t border-white/10 p-4">
         <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8D4F6] font-poppins text-sm font-semibold text-[#69428A]">OV</span>
-          <span className="min-w-0 flex-1"><strong className="block truncate font-poppins text-xs font-medium text-white">Sesión iniciada</strong><span className="font-poppins text-[10px] text-white/45">Administración</span></span>
-          <button type="button" aria-label="Cerrar sesión" onClick={() => { logoutAdmin(); window.location.assign('/login') }} className="rounded-lg p-1 text-white/55 transition-colors hover:bg-white/10 hover:text-white"><LogOut size={15} aria-hidden="true" /></button>
+          <span className="min-w-0 flex-1"><strong className="block truncate font-poppins text-xs font-medium text-white">{admin?.correo || 'Sesión iniciada'}</strong><span className="font-poppins text-[10px] text-white/45">Administración</span></span>
+          <button type="button" aria-label="Cerrar sesión" disabled={loggingOut} onClick={handleLogout} className="rounded-lg p-1 text-white/55 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"><LogOut size={15} aria-hidden="true" /></button>
         </div>
+        {logoutError && <p role="alert" className="mt-2 px-2 font-poppins text-[10px] leading-4 text-red-200">{logoutError}</p>}
       </div>
     </>
   )

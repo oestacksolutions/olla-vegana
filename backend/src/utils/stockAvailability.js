@@ -1,3 +1,5 @@
+const logger = require('./observability');
+
 const INCONSISTENCY_CODES = Object.freeze({
   STOCK_FISICO_INVALIDO: 'STOCK_FISICO_INVALIDO',
   RESERVA_CANTIDAD_INVALIDA: 'RESERVA_CANTIDAD_INVALIDA',
@@ -45,9 +47,9 @@ function calculateStockAvailability(stockFisicoInput, reservations = [], now = n
   };
 }
 
-function logStockInconsistency(variantId, result, logger = console.error) {
+function logStockInconsistency(variantId, result, log = (entry) => logger.warn('inventory.inconsistency', entry)) {
   if (!result?.inconsistente) return;
-  logger({
+  log({
     fecha: new Date().toISOString(),
     tipo: 'INCONSISTENCIA_STOCK',
     varianteId: String(variantId),

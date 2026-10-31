@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const AppError = require('../utils/AppError');
 const { validateObjectId } = require('./adminProductService');
 const { calculateStockAvailability, logStockInconsistency } = require('../utils/stockAvailability');
+const eventLogger = require('../utils/observability');
 
 const MAX_PAGE_SIZE = 100;
 const MOVEMENT_TYPES = ['INGRESO', 'AJUSTE', 'VENTA', 'DEVOLUCION'];
@@ -37,7 +38,9 @@ function serializeMovement(movement) {
 function createAdminStockService(models, {
   startSession = () => mongoose.startSession(),
   ahora = () => new Date(),
-  logger = console.error
+  lowStockThreshold = 5,
+  logger = (entry) => eventLogger.warn('inventory.inconsistency', entry),
+  monitoring = eventLogger
 } = {}) {
   const { Producto, Variante, MovimientoStock, ReservaStock, ValorVariante, ValorAtributo, Atributo } = models;
 
@@ -194,6 +197,7 @@ function createAdminStockService(models, {
 
     return {
       inventario: await describeVariants(variants),
+      umbralStockBajo: lowStockThreshold,
       paginacion: { pagina: page, limite: limit, total, paginas: Math.ceil(total / limit) }
     };
   }
@@ -316,7 +320,15 @@ function createAdminStockService(models, {
         return { movement };
       });
 
-      if (result.duplicate) return idempotentResponse(result.duplicate, command);
+      if (result.duplicate) {
+        monitoring.info('inventory.adjustment.idempotent_replay', { variantId: String(variantId), movementId: String(result.duplicate._id) });
+        return idempotentResponse(result.duplicate, command);
+      }
+      monitoring.info('inventory.adjustment.recorded', {
+        variantId: String(variantId), movementId: String(result.movement._id), type: result.movement.tipo,
+        quantityDelta: result.movement.cantidad, stockResultante: result.movement.stockResultante,
+        adminId: result.movement.adminId ? String(result.movement.adminId) : null
+      });
       return {
         movimiento: serializeMovement(result.movement),
         inventario: await getInventory(variantId),

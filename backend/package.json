@@ -8,6 +8,7 @@
     "dev": "nodemon index.js",
     "test": "node --test",
     "test:integration:orders": "node test/orderIntegration.test.js",
+    "email:outbox": "node scripts/process-email-outbox.js",
     "seed": "node src/seeders/seed.js"
   },
   "keywords": [],

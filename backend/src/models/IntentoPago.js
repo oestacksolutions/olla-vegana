@@ -9,11 +9,23 @@ const schema = new Schema({
   estadoCreacion: { type: String, enum: ['CREANDO', 'INDETERMINADO', 'CREADO', 'FALLIDO'], default: 'CREANDO', required: true },
   orderExternaId: { type: String, default: null },
   checkoutUrl: { type: String, default: null },
+  estadoProveedor: { type: String, default: null },
+  detalleEstadoProveedor: { type: String, default: null },
+  pagoExternoId: { type: String, default: null },
+  moneda: { type: String, default: null },
+  ultimaActualizacionProveedor: { type: Date, default: null },
+  pagoVerificadoEn: { type: Date, default: null },
+  incidencia: { type: String, default: null },
   codigoError: { type: String, default: null },
   respuestaRecibidaEn: { type: Date, default: null }
 }, { timestamps: { createdAt: 'creadoEn', updatedAt: 'actualizadoEn' }, autoIndex: false, autoCreate: false });
 
 schema.index({ proveedor: 1, claveIdempotencia: 1 }, { unique: true, name: 'uniq_intento_pago_idempotencia' });
 schema.index({ pedidoId: 1, creadoEn: -1 }, { name: 'idx_intento_pago_pedido_fecha' });
+schema.index({ orderExternaId: 1 }, {
+  unique: true,
+  name: 'uniq_intento_pago_order_externa',
+  partialFilterExpression: { orderExternaId: { $type: 'string' } }
+});
 
 module.exports = model('IntentoPago', schema);

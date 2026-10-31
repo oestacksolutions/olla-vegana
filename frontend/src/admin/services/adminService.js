@@ -3,6 +3,10 @@ import { mockOrders } from '../data/mockAdminData'
 
 let currentProducts = []
 
+export function clearAdminProductsCache() {
+  currentProducts = []
+}
+
 function mapVariant(variant) {
   return {
     label: variant.valores?.map(({ atributo, valor }) => `${atributo}: ${valor}`).join(' · ') || 'Variante',

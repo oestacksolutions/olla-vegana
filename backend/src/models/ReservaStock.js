@@ -8,7 +8,9 @@ const schema = new Schema({
   creadoEn: { type: Date, default: Date.now },
   venceEn: { type: Date, required: true },
   confirmadaEn: { type: Date, default: null },
-  liberadaEn: { type: Date, default: null }
+  liberadaEn: { type: Date, default: null },
+  motivoLiberacion: { type: String, default: null, maxlength: 500 },
+  liberadaPorAdminId: { type: Schema.Types.ObjectId, ref: 'Admin', default: null }
 }, { timestamps: false, autoIndex: false });
 
 schema.index({ pedidoId: 1, varianteId: 1 }, { unique: true, name: 'uniq_reserva_pedido_variante' });
