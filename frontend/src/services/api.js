@@ -73,6 +73,25 @@ export const validateStoreCart = (cartItems) => apiRequest('/cart/validate', {
   method: 'POST', body: JSON.stringify(buildCartValidationPayload(cartItems))
 })
 export const getAdminProducts = () => apiRequest('/admin/products?limit=100', { protected: true })
+export const getAdminAttributes = () => apiRequest('/admin/attributes', { protected: true })
+export const createAdminAttribute = (input) => apiRequest('/admin/attributes', { method: 'POST', body: JSON.stringify(input), protected: true })
+export const updateAdminAttribute = (id, input) => apiRequest(`/admin/attributes/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input), protected: true })
+export const createAdminAttributeValue = (attributeId, input) => apiRequest(`/admin/attributes/${encodeURIComponent(attributeId)}/values`, { method: 'POST', body: JSON.stringify(input), protected: true })
+export const updateAdminAttributeValue = (id, input) => apiRequest(`/admin/attribute-values/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input), protected: true })
+export const getAdminVariants = (productId) => apiRequest(`/admin/products/${encodeURIComponent(productId)}/variants`, { protected: true })
+export const createAdminVariant = (productId, variant) => apiRequest(`/admin/products/${encodeURIComponent(productId)}/variants`, { method: 'POST', body: JSON.stringify(variant), protected: true })
+export const updateAdminVariant = (productId, variantId, changes) => apiRequest(`/admin/products/${encodeURIComponent(productId)}/variants/${encodeURIComponent(variantId)}`, { method: 'PATCH', body: JSON.stringify(changes), protected: true })
+export const getAdminStock = (filters = {}, options = {}) => {
+  const query = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => { if (value !== undefined && value !== null && value !== '') query.set(key, String(value)) })
+  return apiRequest(`/admin/stock${query.size ? `?${query}` : ''}`, { ...options, protected: true })
+}
+export const adjustAdminStock = (variantId, adjustment) => apiRequest(`/admin/stock/${encodeURIComponent(variantId)}/adjustments`, { method: 'POST', body: JSON.stringify(adjustment), protected: true })
+export const getAdminStockMovements = (variantId, filters = {}) => {
+  const query = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => { if (value !== undefined && value !== null && value !== '') query.set(key, String(value)) })
+  return apiRequest(`/admin/stock/${encodeURIComponent(variantId)}/movements${query.size ? `?${query}` : ''}`, { protected: true })
+}
 export const getAdminDashboardSummary = (period, options = {}) => apiRequest(
   `/admin/dashboard/summary?period=${encodeURIComponent(period)}`,
   { ...options, protected: true }

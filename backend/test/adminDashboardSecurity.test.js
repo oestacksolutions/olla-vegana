@@ -10,3 +10,10 @@ test('endpoint administrativo de resumen está montado detrás de autenticación
   assert.match(routes, /router\.get\('\/summary'/);
   assert.doesNotMatch(routes, /router\.(post|patch|put|delete)\(/);
 });
+
+test('variantes, atributos e inventario solo se montan con autenticación y autorización', () => {
+  const app = fs.readFileSync(path.join(__dirname, '../src/app.js'), 'utf8');
+  assert.match(app, /app\.use\(\s*'\/api\/admin',\s*authenticate,\s*authorizeAdmin,\s*validateJsonBody,\s*createAdminAttributeRoutes/s);
+  assert.match(app, /app\.use\(\s*'\/api\/admin\/products\/:productId\/variants',\s*authenticate,\s*authorizeAdmin,\s*validateJsonBody,\s*createAdminVariantRoutes/s);
+  assert.match(app, /app\.use\(\s*'\/api\/admin\/stock',\s*authenticate,\s*authorizeAdmin,/s);
+});
