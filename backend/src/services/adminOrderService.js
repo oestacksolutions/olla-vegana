@@ -168,7 +168,12 @@ function createAdminOrderService(models, {
       puedeConfirmarTransferencia: order.metodoPago === 'TRANSFERENCIA' && order.estadoPago === 'PENDIENTE'
         && reservations.length > 0 && reservations.every((entry) => entry.estado === 'ACTIVA' && entry.venceEn instanceof Date && entry.venceEn > now())
         && order.estado !== 'CANCELADO',
-      historial: history.map((entry) => ({ estadoAnterior: entry.estadoAnterior, estadoNuevo: entry.estadoNuevo, nota: entry.nota || null, creadoEn: entry.creadoEn, admin: entry.adminId?.correo || null }))
+      retiradoPor: (() => {
+        const retirement = history.find((entry) => entry.estadoNuevo === 'RETIRADO');
+        const admin = retirement?.adminId;
+        return admin ? { id: String(admin._id || admin), correo: admin.correo || null } : null;
+      })(),
+      historial: history.map((entry) => ({ estadoAnterior: entry.estadoAnterior, estadoNuevo: entry.estadoNuevo, nota: entry.nota || null, creadoEn: entry.creadoEn, adminId: entry.adminId?._id ? String(entry.adminId._id) : (entry.adminId ? String(entry.adminId) : null), admin: entry.adminId?.correo || null }))
     };
   }
 
@@ -184,13 +189,20 @@ function createAdminOrderService(models, {
     try {
       let result;
       await session.withTransaction(async () => {
-        const order = await execute(withSession(Pedido.findById(orderId).select('_id numero estado estadoPago'), session));
+        const order = await execute(withSession(Pedido.findById(orderId).select('_id numero estado estadoPago estadoReintegro'), session));
         if (!order) throw AppError.noEncontrado('Pedido no encontrado');
         if (!isAllowedTransition(ORDER_TRANSITIONS, order.estado, input.estado) || input.estado === 'CANCELADO') {
           throw AppError.conflicto('La transición operativa solicitada no está permitida');
         }
         if (input.estado === 'RETIRADO' && order.estadoPago !== 'APROBADO') {
           throw AppError.conflicto('Solo se puede marcar como retirado un pedido con pago confirmado');
+        }
+        if (input.estado === 'RETIRADO') {
+          const refundState = order.estadoReintegro || 'SIN_REINTEGRO';
+          const refund = await execute(withSession(Reintegro?.findOne({ pedidoId: order._id, estado: { $ne: 'FALLIDO' } }), session));
+          if (refundState !== 'SIN_REINTEGRO' || refund) {
+            throw AppError.conflicto('El pedido tiene un reintegro solicitado o registrado y requiere revisión antes de confirmar la entrega');
+          }
         }
         const updated = await execute(Pedido.findOneAndUpdate(
           { _id: order._id, estado: order.estado, estadoPago: order.estadoPago },

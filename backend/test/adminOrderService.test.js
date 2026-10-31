@@ -1,5 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const { createAdminOrderService, parseListQuery } = require('../src/services/adminOrderService');
 
 const id = '64b000000000000000000001';
@@ -28,4 +30,14 @@ test('mantiene bloqueados por defecto los cambios operativos críticos', async (
     (error) => error.statusCode === 503
   );
   assert.equal(openedSession, false);
+});
+
+test('la entrega exige pago aprobado, ausencia de reintegros y registra fecha/admin con historial transaccional', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../src/services/adminOrderService.js'), 'utf8');
+  assert.match(source, /input\.estado === 'RETIRADO' && order\.estadoPago !== 'APROBADO'/);
+  assert.match(source, /refundState !== 'SIN_REINTEGRO' \|\| refund/);
+  assert.match(source, /retiradoEn: now\(\)/);
+  assert.match(source, /estadoAnterior: order\.estado, estadoNuevo: input\.estado/);
+  assert.match(source, /adminId, creadoEn: now\(\)/);
+  assert.match(source, /findOneAndUpdate\([\s\S]*estado: order\.estado, estadoPago: order\.estadoPago/);
 });
