@@ -4,10 +4,11 @@ import StoreLayout from '../../components/layout/StoreLayout'
 import ProductCard from '../../components/tienda/ProductCard'
 import remeraFrente from '../../assets/jpg/remera-frente.jpg'
 import { fetchStoreProducts } from '../../services/catalog'
-import { getVisibleStoreBanners, STORE_BANNERS_UPDATED_EVENT } from '../../data/storeBanners'
+import { defaultStoreBanners } from '../../data/storeBanners'
+import { getStoreBanners } from '../../services/api'
 
 function HomeTienda() {
-  const [heroBanners, setHeroBanners] = useState(() => getVisibleStoreBanners())
+  const [heroBanners, setHeroBanners] = useState(defaultStoreBanners)
   const [bannerIndex, setBannerIndex] = useState(0)
   const [carouselPaused, setCarouselPaused] = useState(false)
   const [products, setProducts] = useState([])
@@ -30,16 +31,20 @@ function HomeTienda() {
   }, [selectedCategory, retryCount])
 
   useEffect(() => {
-    const updateBanner = () => {
-      setHeroBanners(getVisibleStoreBanners())
-      setBannerIndex(0)
-    }
-    window.addEventListener(STORE_BANNERS_UPDATED_EVENT, updateBanner)
-    window.addEventListener('storage', updateBanner)
-    return () => {
-      window.removeEventListener(STORE_BANNERS_UPDATED_EVENT, updateBanner)
-      window.removeEventListener('storage', updateBanner)
-    }
+    let active = true
+    getStoreBanners()
+      .then((result) => {
+        if (!active || result?.administrados !== true) return
+        const mapBuiltin = (image) => image === 'builtin:banner-principal' ? remeraFrente : image
+        setHeroBanners((result.banners || []).map((banner) => ({
+          ...banner,
+          desktop: mapBuiltin(banner.desktop),
+          mobile: mapBuiltin(banner.mobile),
+        })))
+        setBannerIndex(0)
+      })
+      .catch(() => { /* El banner local existente se conserva si el servicio público no responde. */ })
+    return () => { active = false }
   }, [])
 
   useEffect(() => {

@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowDown, ArrowUp, ImagePlus, Plus, Save, Trash2 } from 'lucide-react'
-import { getStoreBanners, saveStoreBanners } from '../../data/storeBanners'
+import storeHeroImage from '../../assets/jpg/remera-frente.jpg'
+import { getAdminBanners, saveAdminBanners } from '../../services/api'
 
 const focusFields = [
   { key: 'desktopFocusX', label: 'Desktop · horizontal', legacy: 'focus' },
@@ -14,16 +15,48 @@ const zoomFields = [
 ]
 
 function AdminBannersPage() {
-  const [banners, setBanners] = useState(getStoreBanners)
-  const [selectedId, setSelectedId] = useState(banners[0]?.id)
+  const [banners, setBanners] = useState([])
+  const [revision, setRevision] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadFailed, setLoadFailed] = useState(false)
+  const [selectedId, setSelectedId] = useState(undefined)
   const [draggingIndex, setDraggingIndex] = useState(null)
   const [hasChanges, setHasChanges] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [lastSaveSucceeded, setLastSaveSucceeded] = useState(false)
   const [notice, setNotice] = useState('')
   const dragRef = useRef(null)
-  const selected = banners.find(({ id }) => id === selectedId)
+  const previewUrls = useRef(new Set())
   const bannerLimitReached = banners.length >= 4
+  const loadBanners = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const result = await getAdminBanners()
+      const loaded = (result.banners || []).map((banner) => ({
+        ...banner,
+        desktopReference: banner.desktop,
+        mobileReference: banner.mobile,
+        desktop: banner.desktop === 'builtin:banner-principal' ? storeHeroImage : banner.desktop,
+        mobile: banner.mobile === 'builtin:banner-principal' ? storeHeroImage : banner.mobile,
+      }))
+      setBanners(loaded)
+      setRevision(result.revision || 0)
+      setLoadFailed(false)
+      setSelectedId((current) => loaded.some(({ id }) => id === current) ? current : loaded[0]?.id)
+      setHasChanges(false)
+      setNotice('')
+    } catch (error) {
+      setLoadFailed(true)
+      setNotice(error.message || 'No pudimos cargar los banners guardados.')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+  useEffect(() => {
+    loadBanners()
+    return () => previewUrls.current.forEach((url) => URL.revokeObjectURL(url))
+  }, [loadBanners])
+  const selected = banners.find(({ id }) => id === selectedId)
   const today = new Date().toLocaleDateString('en-CA')
   const publishableBanners = banners.filter((banner) => banner.active && (!banner.start || banner.start <= today) && (!banner.end || banner.end >= today))
   const publishedRank = publishableBanners.findIndex((banner) => banner.id === selectedId)
@@ -45,9 +78,10 @@ function AdminBannersPage() {
       return
     }
     const banner = {
-      id: `banner-${Date.now()}`,
+      id: `new-${crypto.randomUUID()}`,
       title: '', subtitle: '', buttonText: '', href: '/tienda',
       desktop: '', mobile: '', active: true, position: 'Centro',
+      desktopReference: '', mobileReference: '',
       desktopFocusX: 50, desktopFocusY: 50, desktopZoom: 120,
       mobileFocusX: 50, mobileFocusY: 50, mobileZoom: 120,
       start: '', end: '',
@@ -61,7 +95,39 @@ function AdminBannersPage() {
     setLastSaveSucceeded(false)
     setNotice('')
     try {
-      saveStoreBanners(banners)
+      const selectedIndex = banners.findIndex(({ id }) => id === selectedId)
+      const files = []
+      const configBanners = banners.map((banner) => {
+        const config = { ...banner }
+        delete config.desktopFile
+        delete config.mobileFile
+        delete config.desktopReference
+        delete config.mobileReference
+        delete config.desktopPublicId
+        delete config.mobilePublicId
+        if (banner.desktopFile) {
+          config.desktopFileIndex = files.length
+          files.push(banner.desktopFile)
+        } else config.desktop = banner.desktopReference || banner.desktop
+        if (banner.mobileFile) {
+          config.mobileFileIndex = files.length
+          files.push(banner.mobileFile)
+        } else config.mobile = banner.mobileReference || banner.mobile
+        return config
+      })
+      const result = await saveAdminBanners({ revision, banners: configBanners }, files)
+      const loaded = (result.banners || []).map((banner) => ({
+        ...banner,
+        desktopReference: banner.desktop,
+        mobileReference: banner.mobile,
+        desktop: banner.desktop === 'builtin:banner-principal' ? storeHeroImage : banner.desktop,
+        mobile: banner.mobile === 'builtin:banner-principal' ? storeHeroImage : banner.mobile,
+      }))
+      setBanners(loaded)
+      setSelectedId(loaded[selectedIndex]?.id)
+      setRevision(result.revision || revision + 1)
+      previewUrls.current.forEach((url) => URL.revokeObjectURL(url))
+      previewUrls.current.clear()
       setHasChanges(false)
       setLastSaveSucceeded(true)
       if (publishedRank < 0) {
@@ -71,8 +137,8 @@ function AdminBannersPage() {
       } else {
         setNotice('Cambios guardados. Este banner ya se muestra primero en la portada de la tienda.')
       }
-    } catch {
-      setNotice('No pudimos guardar los cambios. Probá con imágenes más livianas o intentá nuevamente.')
+    } catch (error) {
+      setNotice(error.message || 'No pudimos guardar los cambios. Probá con imágenes más livianas o intentá nuevamente.')
     } finally {
       setIsSaving(false)
     }
@@ -81,10 +147,24 @@ function AdminBannersPage() {
   const upload = (key, event) => {
     const file = event.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => update(key, reader.result)
-    reader.onerror = () => setNotice('No pudimos leer esa imagen. Probá con otro archivo.')
-    reader.readAsDataURL(file)
+    const accepted = ['image/jpeg', 'image/png', 'image/webp']
+    if (!accepted.includes(file.type) || file.size > 5 * 1024 * 1024) {
+      setNotice('Elegí una imagen JPG, PNG o WebP de hasta 5 MB.')
+      event.target.value = ''
+      return
+    }
+    const imageKey = key === 'desktop' ? 'desktop' : 'mobile'
+    const fileKey = `${imageKey}File`
+    const referenceKey = `${imageKey}Reference`
+    if (selected?.[`${imageKey}File`] && selected[imageKey]?.startsWith('blob:')) {
+      URL.revokeObjectURL(selected[imageKey])
+      previewUrls.current.delete(selected[imageKey])
+    }
+    const preview = URL.createObjectURL(file)
+    previewUrls.current.add(preview)
+    updateDraft(banners.map((banner) => banner.id === selectedId
+      ? { ...banner, [imageKey]: preview, [fileKey]: file, [referenceKey]: '' }
+      : banner))
     event.target.value = ''
   }
 
@@ -132,7 +212,7 @@ function AdminBannersPage() {
   }
 
   const finishImageDrag = () => { dragRef.current = null }
-  const noticeIsError = notice.startsWith('No pudimos')
+  const noticeIsError = /No pudimos|no disponible|no es válido|no son válidos|no se permiten|no existe|solo se admiten|otra administradora|almacenamiento|no se pudo|elegí una imagen|sesión|permiso|conectarnos|el máximo/i.test(notice)
 
   return (
     <div className="space-y-5">
@@ -143,16 +223,19 @@ function AdminBannersPage() {
           <p className="mt-1 font-poppins text-sm text-black/50">Previsualizá la portada y organizá el orden de publicación.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={addBanner} disabled={bannerLimitReached} className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#466729]/20 bg-white px-4 font-poppins text-xs font-medium text-[#466729] disabled:cursor-not-allowed disabled:opacity-45"><Plus size={15} />Crear banner</button>
-          <button type="button" onClick={saveChanges} disabled={!hasChanges || isSaving} className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#466729] px-4 font-poppins text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-45"><Save size={15} />{isSaving ? 'Guardando…' : lastSaveSucceeded ? 'Guardado' : 'Guardar cambios'}</button>
+          {loadFailed && <button type="button" onClick={loadBanners} disabled={isLoading} className="inline-flex h-10 items-center rounded-xl border border-black/10 bg-white px-4 font-poppins text-xs text-black/65 disabled:opacity-45">Reintentar carga</button>}
+          <button type="button" onClick={addBanner} disabled={bannerLimitReached || isLoading || loadFailed} className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#466729]/20 bg-white px-4 font-poppins text-xs font-medium text-[#466729] disabled:cursor-not-allowed disabled:opacity-45"><Plus size={15} />Crear banner</button>
+          <button type="button" onClick={saveChanges} disabled={!hasChanges || isSaving || loadFailed} className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#466729] px-4 font-poppins text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-45"><Save size={15} />{isSaving ? 'Guardando…' : lastSaveSucceeded ? 'Guardado' : 'Guardar cambios'}</button>
         </div>
       </div>
 
-      {notice && <p role="status" aria-live="polite" className={`rounded-xl border px-4 py-3 font-poppins text-xs ${noticeIsError ? 'border-[#B34234]/20 bg-[#FCE9E6] text-[#9E4034]' : 'border-[#466729]/15 bg-[#EEF3EA] text-[#466729]'}`}>{notice}</p>}
+      {notice && <p role={noticeIsError ? 'alert' : 'status'} aria-live="polite" className={`rounded-xl border px-4 py-3 font-poppins text-xs ${noticeIsError ? 'border-[#B34234]/20 bg-[#FCE9E6] text-[#9E4034]' : 'border-[#466729]/15 bg-[#EEF3EA] text-[#466729]'}`}>{notice}</p>}
 
-      {banners.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-black/15 bg-white p-12 text-center font-poppins text-sm text-black/50">Todavía no hay banners. Creá uno para ver la vista previa.</div>
-      ) : (
+      {isLoading ? <p role="status" className="rounded-xl bg-white p-8 text-center font-poppins text-sm text-black/50">Cargando banners guardados…</p> : null}
+
+      {!isLoading && banners.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-black/15 bg-white p-12 text-center font-poppins text-sm text-black/50">{loadFailed ? 'No pudimos consultar la configuración de banners.' : 'Todavía no hay banners administrados. Creá uno para ver la vista previa.'}</div>
+      ) : !isLoading && (
         <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(330px,.85fr)]">
           <section className="rounded-2xl border border-black/[.06] bg-white p-5">
             <h2 className="font-poppins text-sm font-semibold">Orden y publicaciones</h2>
@@ -177,8 +260,8 @@ function AdminBannersPage() {
                 <label className="font-poppins text-[10px] text-black/55 sm:col-span-2">Subtítulo opcional<textarea rows="2" value={selected.subtitle || ''} onChange={(event) => update('subtitle', event.target.value)} className="mt-1.5 w-full rounded-lg border border-black/10 p-3 text-xs" /></label>
                 <label className="font-poppins text-[10px] text-black/55">Texto del botón<input value={selected.buttonText || ''} onChange={(event) => update('buttonText', event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-black/10 px-3 text-xs" /></label>
                 <label className="font-poppins text-[10px] text-black/55">Enlace<input value={selected.href || ''} onChange={(event) => update('href', event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-black/10 px-3 text-xs" /></label>
-                <label className="font-poppins text-[10px] text-black/55">Imagen desktop<input type="file" accept="image/*" onChange={(event) => upload('desktop', event)} className="mt-1.5 block w-full text-[10px]" /></label>
-                <label className="font-poppins text-[10px] text-black/55">Imagen mobile<input type="file" accept="image/*" onChange={(event) => upload('mobile', event)} className="mt-1.5 block w-full text-[10px]" /></label>
+                <label className="font-poppins text-[10px] text-black/55">Imagen desktop<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => upload('desktop', event)} className="mt-1.5 block w-full text-[10px]" /></label>
+                <label className="font-poppins text-[10px] text-black/55">Imagen mobile<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => upload('mobile', event)} className="mt-1.5 block w-full text-[10px]" /></label>
                 <label className="font-poppins text-[10px] text-black/55">Posición del contenido<select value={selected.position || 'Centro'} onChange={(event) => update('position', event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-black/10 bg-white px-3 text-xs"><option>Centro</option><option>Izquierda</option><option>Derecha</option><option>Abajo</option></select></label>
                 <label className="font-poppins text-[10px] text-black/55">Inicio opcional<input type="date" value={selected.start || ''} onChange={(event) => update('start', event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-black/10 px-3 text-xs" /></label>
                 <label className="font-poppins text-[10px] text-black/55">Fin opcional<input type="date" value={selected.end || ''} onChange={(event) => update('end', event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-black/10 px-3 text-xs" /></label>
@@ -223,7 +306,7 @@ function AdminBannersPage() {
         </div>
       )}
 
-      <p className="font-poppins text-[10px] text-black/35">Las imágenes se guardan localmente en esta demo. Los cambios se reflejan en la tienda al pulsar “Guardar cambios”.</p>
+      <p className="font-poppins text-[10px] text-black/35">Los cambios se guardan en el servidor. La carga de imágenes requiere que el almacenamiento persistente esté configurado.</p>
     </div>
   )
 }
