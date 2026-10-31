@@ -135,7 +135,7 @@ function optionSnapshot(option) {
 
 function createOrderService(models, dependencies = {}) {
   const { Pedido, ItemPedido, HistorialEstadoPedido } = models;
-  const { cartValidationService, pickupService, stockReservationService, orderAccessTokens } = dependencies;
+  const { cartValidationService, pickupService, stockReservationService, orderAccessTokens, emailOutbox } = dependencies;
   const now = dependencies.ahora || (() => new Date());
   const randomSuffix = dependencies.randomSuffix || (() => crypto.randomInt(0, 1_000_000));
   const startSession = dependencies.startSession || (() => Pedido.db.startSession());
@@ -267,6 +267,7 @@ function createOrderService(models, dependencies = {}) {
             estadoNuevo: 'NUEVO',
             nota: 'Pedido creado'
           }], { session });
+          if (emailOutbox) await emailOutbox.enqueue({ pedidoId: pedido._id, tipo: 'PEDIDO_CREADO', session });
           created = { pedido, articulos: itemDocs, historial: history, tokenAccesoPedido: accessToken };
         });
         return { ...created, repetido: false };

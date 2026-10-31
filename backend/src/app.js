@@ -12,6 +12,7 @@ const Reintegro = require('./models/Reintegro');
 const HistorialEstadoPedido = require('./models/HistorialEstadoPedido');
 const IntentoPago = require('./models/IntentoPago');
 const EventoPago = require('./models/EventoPago');
+const EmailOutbox = require('./models/EmailOutbox');
 const ConfirmacionTransferencia = require('./models/ConfirmacionTransferencia');
 const ValorVariante = require('./models/ValorVariante');
 const ValorAtributo = require('./models/ValorAtributo');
@@ -61,8 +62,12 @@ const { createTransferPaymentService } = require('./services/transferPaymentServ
 const createAdminTransferController = require('./controllers/adminTransferController');
 const createAdminTransferRoutes = require('./routes/adminTransferRoutes');
 const { createStockReservationService } = require('./services/stockReservationService');
+const { createOrderService } = require('./services/orderService');
+const { createPickupService } = require('./services/pickupService');
 const { createOrderAccessTokenService } = require('./services/orderAccessToken');
 const { createTransferInstructionsService } = require('./services/transferInstructionsService');
+const { createEmailProvider } = require('./services/emailProvider');
+const { createEmailOutboxService } = require('./services/emailOutboxService');
 const createOrderAccessController = require('./controllers/orderAccessController');
 const createOrderAccessRoutes = require('./routes/orderAccessRoutes');
 const notFound = require('./middlewares/notFound');
@@ -72,9 +77,21 @@ const env = require('./config/env');
 const app = express();
 const paymentAuthorization = createPaymentAuthorization();
 const transferPaymentAuthorization = createTransferPaymentAuthorization();
+const orderAccessTokens = createOrderAccessTokenService(env.JWT_SECRET);
+const transferInstructionsService = createTransferInstructionsService(
+  { Configuracion, Pedido, ReservaStock },
+  { orderAccessTokens }
+);
+const emailOutboxService = createEmailOutboxService(
+  { EmailOutbox, Pedido, ItemPedido },
+  { provider: createEmailProvider(env), transferInstructionsService }
+);
 const stockReservationService = createStockReservationService(
   { Pedido, Variante, ReservaStock, MovimientoStock, HistorialEstadoPedido },
-  { verifyPaymentAuthorization: async (input) => (await paymentAuthorization.verify(input)) || transferPaymentAuthorization.verify(input) }
+  {
+    verifyPaymentAuthorization: async (input) => (await paymentAuthorization.verify(input)) || transferPaymentAuthorization.verify(input),
+    emailOutbox: emailOutboxService
+  }
 );
 const transferPaymentService = createTransferPaymentService(
   { Pedido, ReservaStock, ConfirmacionTransferencia },
@@ -84,15 +101,11 @@ const adminOrderService = createAdminOrderService(
   { Pedido, ItemPedido, HistorialEstadoPedido, IntentoPago, ConfirmacionTransferencia, Reintegro, ReservaStock },
   {
     operationalChangesEnabled: env.ADMIN_ORDER_STATUS_CHANGES_ENABLED,
-    transferConfirmationEnabled: env.ADMIN_TRANSFER_CONFIRMATION_ENABLED
+    transferConfirmationEnabled: env.ADMIN_TRANSFER_CONFIRMATION_ENABLED,
+    emailOutbox: emailOutboxService
   }
 );
 const adminOrderController = createAdminOrderController(adminOrderService);
-const orderAccessTokens = createOrderAccessTokenService(env.JWT_SECRET);
-const transferInstructionsService = createTransferInstructionsService(
-  { Configuracion, Pedido, ReservaStock },
-  { orderAccessTokens }
-);
 const orderAccessController = createOrderAccessController(transferInstructionsService);
 const mercadoPagoWebhookService = createMercadoPagoWebhookService(
   { Pedido, IntentoPago, EventoPago },
@@ -100,7 +113,8 @@ const mercadoPagoWebhookService = createMercadoPagoWebhookService(
     env,
     orderClient: createMercadoPagoOrderClient({ accessToken: env.MP_ACCESS_TOKEN }),
     stockReservationService,
-    paymentAuthorization
+    paymentAuthorization,
+    emailOutbox: emailOutboxService
   }
 );
 const mercadoPagoWebhookController = createMercadoPagoWebhookController(mercadoPagoWebhookService);
@@ -111,6 +125,18 @@ const catalogController = createCatalogController(catalogService);
 const cartValidationService = createCartValidationService({
   Producto, Variante, Categoria, ValorVariante, ValorAtributo, Atributo, ReservaStock
 });
+const orderService = createOrderService(
+  { Pedido, ItemPedido, HistorialEstadoPedido },
+  {
+    cartValidationService,
+    pickupService: createPickupService({ PuntoRetiro, RetiroEspecial }),
+    stockReservationService,
+    orderAccessTokens,
+    emailOutbox: emailOutboxService
+  }
+);
+// Preparado para la futura ruta de creación; POST /api/orders continúa sin montarse.
+app.locals.orderService = orderService;
 const cartController = require('./controllers/cartController')(cartValidationService);
 const Admin = require('./models/Admin');
 const authService = createAuthService({ Admin, env });

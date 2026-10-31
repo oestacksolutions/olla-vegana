@@ -64,6 +64,7 @@ function createAdminOrderService(models, {
   startSession = () => models.Pedido.db.startSession(),
   operationalChangesEnabled = false,
   transferConfirmationEnabled = false,
+  emailOutbox = null,
   now = () => new Date()
 } = {}) {
   const { Pedido, ItemPedido, HistorialEstadoPedido, IntentoPago, ConfirmacionTransferencia, Reintegro, ReservaStock } = models;
@@ -215,6 +216,9 @@ function createAdminOrderService(models, {
           nota: typeof input.nota === 'string' && input.nota.trim() ? input.nota.trim() : null,
           adminId, creadoEn: now()
         }], { session });
+        if (input.estado === 'LISTO_PARA_RETIRAR' && emailOutbox) {
+          await emailOutbox.enqueue({ pedidoId: order._id, tipo: 'LISTO_PARA_RETIRAR', session });
+        }
         result = String(updated._id);
       });
       return getOrder(result);

@@ -36,7 +36,8 @@ const optionalIntegrations = [
   'SMTP_PORT',
   'SMTP_USER',
   'SMTP_PASS',
-  'MAIL_FROM'
+  'MAIL_FROM',
+  'EMAIL_SENDING_ENABLED'
 ];
 for (const name of optionalIntegrations) {
   if (!process.env[name]) {
@@ -87,6 +88,7 @@ module.exports = {
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASS: process.env.SMTP_PASS,
   MAIL_FROM: process.env.MAIL_FROM,
+  EMAIL_SENDING_ENABLED: process.env.EMAIL_SENDING_ENABLED === 'true',
   ...cloudinaryConfig,
   IMAGE_MAX_SIZE_BYTES: Number.isSafeInteger(imageMaxSizeBytes) && imageMaxSizeBytes > 0 && imageMaxSizeBytes <= 20 * 1024 * 1024
     ? imageMaxSizeBytes
