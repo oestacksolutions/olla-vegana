@@ -73,6 +73,10 @@ export const validateStoreCart = (cartItems) => apiRequest('/cart/validate', {
   method: 'POST', body: JSON.stringify(buildCartValidationPayload(cartItems))
 })
 export const getAdminProducts = () => apiRequest('/admin/products?limit=100', { protected: true })
+export const getAdminDashboardSummary = (period, options = {}) => apiRequest(
+  `/admin/dashboard/summary?period=${encodeURIComponent(period)}`,
+  { ...options, protected: true }
+)
 export const createAdminProduct = (product) => apiRequest('/admin/products', { method: 'POST', body: JSON.stringify(product), protected: true })
 export const updateAdminProduct = (id, product) => apiRequest(`/admin/products/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(product), protected: true })
 export const setAdminProductVisibility = (id, activo) => apiRequest(`/admin/products/${encodeURIComponent(id)}/visibility`, { method: 'PATCH', body: JSON.stringify({ activo }), protected: true })
