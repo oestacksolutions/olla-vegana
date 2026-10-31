@@ -1,12 +1,13 @@
 const env = require('./src/config/env');
 const app = require('./src/app');
 const connectDB = require('./src/config/db');
+const logger = require('./src/utils/observability');
 
 async function start() {
   try {
     await connectDB();
     const server = app.listen(env.PORT, () => {
-      console.log(`Servidor de Olla Vegana corriendo en el puerto ${env.PORT}`);
+      logger.info('server.started', { port: Number(env.PORT) });
     });
 
     const shutdown = () => server.close(async () => {
@@ -16,8 +17,8 @@ async function start() {
     });
     process.once('SIGINT', shutdown);
     process.once('SIGTERM', shutdown);
-  } catch (_error) {
-    console.error('No se pudo conectar a MongoDB; el servidor no se inició.');
+  } catch (error) {
+    logger.error('server.startup_failed', { category: 'DATABASE', errorCode: String(error?.code || error?.name || 'DATABASE_STARTUP_ERROR') });
     process.exitCode = 1;
   }
 }

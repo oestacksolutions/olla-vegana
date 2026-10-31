@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 const mongoose = require('mongoose');
 const AppError = require('../utils/AppError');
 const { parseMoneyToCents, formatCents } = require('./cartValidationService');
+const logger = require('../utils/observability');
 const { TRANSFER_RESERVATION_MS, isTransientConflict } = require('./stockReservationService');
 
 const PAYMENT_METHODS = new Set(['MERCADO_PAGO', 'TRANSFERENCIA']);
@@ -169,7 +170,10 @@ function createOrderService(models, dependencies = {}) {
     }
     const fingerprint = requestFingerprint(input);
     const previous = await existingResult(input, fingerprint);
-    if (previous) return previous;
+    if (previous) {
+      logger.info('order.create.idempotent_replay', { orderId: String(previous.pedido._id), orderNumber: previous.pedido.numero });
+      return previous;
+    }
     await stockReservationService.assertReservationIndex();
 
     function buildSnapshot(cart) {
@@ -270,11 +274,18 @@ function createOrderService(models, dependencies = {}) {
           if (emailOutbox) await emailOutbox.enqueue({ pedidoId: pedido._id, tipo: 'PEDIDO_CREADO', session });
           created = { pedido, articulos: itemDocs, historial: history, tokenAccesoPedido: accessToken };
         });
+        logger.info('order.created', { orderId: String(created.pedido._id), orderNumber: created.pedido.numero, paymentMethod: created.pedido.metodoPago });
+        logger.info('stock.reservations.created', {
+          orderId: String(created.pedido._id), reservationLines: created.articulos.length, expiresAt: created.pedido.venceEn
+        });
         return { ...created, repetido: false };
       } catch (error) {
         if (hasDuplicateKey(error, 'idOperacion')) {
           const retryResult = await existingResult(input, fingerprint);
-          if (retryResult) return retryResult;
+          if (retryResult) {
+            logger.info('order.create.idempotent_replay', { orderId: String(retryResult.pedido._id), orderNumber: retryResult.pedido.numero });
+            return retryResult;
+          }
         }
         if (isTransientConflict(error)) continue;
         if (!hasDuplicateKey(error, 'numero')) throw error;

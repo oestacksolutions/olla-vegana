@@ -1,5 +1,6 @@
 const crypto = require('node:crypto');
 const { parseMoneyToCents, formatCents } = require('./cartValidationService');
+const logger = require('../utils/observability');
 
 const ORDERS_URL = 'https://api.mercadopago.com/v1/orders';
 const INDEX_NAME = 'uniq_intento_pago_idempotencia';
@@ -169,15 +170,24 @@ function createMercadoPagoPaymentService(models, { env, client, allowLocalhost =
     }
     // Mantiene el mismo cuerpo y clave tras timeout/reinicio: MP puede devolver la operación ya creada.
     try {
+      logger.info('payment.order_creation.started', { orderId: String(pedido._id), attemptId: String(attempt._id), provider: 'MERCADO_PAGO' });
       const external = await client.createOrder(attempt.solicitud, attempt.claveIdempotencia);
       await IntentoPago.updateOne({ _id: attempt._id, estadoCreacion: { $in: ['CREANDO', 'INDETERMINADO', 'FALLIDO'] } }, {
         $set: { estadoCreacion: 'CREADO', orderExternaId: external.id, checkoutUrl: external.checkoutUrl, respuestaRecibidaEn: new Date(), codigoError: null }
       });
+      logger.info('payment.order_creation.created', { orderId: String(pedido._id), attemptId: String(attempt._id), externalOrderId: external.id, provider: 'MERCADO_PAGO' });
       return { orderId: external.id, checkoutUrl: external.checkoutUrl, repetido: false };
     } catch (error) {
       const knownFailure = Number.isInteger(error?.providerStatus) && error.providerStatus >= 400 && error.providerStatus < 500;
       await IntentoPago.updateOne({ _id: attempt._id, estadoCreacion: { $ne: 'CREADO' } }, {
         $set: { estadoCreacion: knownFailure ? 'FALLIDO' : 'INDETERMINADO', codigoError: knownFailure ? `HTTP_${error.providerStatus}` : 'RESPUESTA_NO_CONFIRMADA' }
+      });
+      (knownFailure ? logger.warn : logger.error)('payment.order_creation.failed', {
+        orderId: String(pedido._id), attemptId: String(attempt._id), provider: 'MERCADO_PAGO',
+        state: knownFailure ? 'FALLIDO' : 'INDETERMINADO', providerStatus: Number.isInteger(error?.providerStatus) ? error.providerStatus : null
+      });
+      void logger.alerts?.dispatch('payment:order-creation:failure', knownFailure ? 'payment.order_creation.failed' : 'payment.order_creation.indeterminate', {
+        orderId: String(pedido._id), state: knownFailure ? 'FALLIDO' : 'INDETERMINADO'
       });
       throw error;
     }

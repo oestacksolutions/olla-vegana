@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
+const logger = require('../utils/observability');
 
 const connectDB = async (uri) => {
   const connectionUri = uri || require('./env').MONGODB_URI;
   await mongoose.connect(connectionUri, { autoCreate: false, autoIndex: false });
-  console.log('Conexión a MongoDB establecida.');
+  logger.info('database.connected');
   return mongoose.connection;
 };
 

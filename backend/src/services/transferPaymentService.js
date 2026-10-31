@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 const mongoose = require('mongoose');
 const AppError = require('../utils/AppError');
 const { parseMoneyToCents, formatCents } = require('./cartValidationService');
+const logger = require('../utils/observability');
 
 function execute(query) {
   return query && typeof query.exec === 'function' ? query.exec() : Promise.resolve(query);
@@ -157,6 +158,10 @@ function createTransferPaymentService(models, {
           }], { session });
           result = { confirmado: true, tardia: false, idempotente: false, pedidoId: String(order._id) };
         });
+        logger.info(result.tardia ? 'payment.transfer.requires_reconciliation' : 'payment.transfer.confirmed', {
+          orderId: String(input.pedidoId), outcome: result.tardia ? 'TARDIA' : 'ACREDITADA', adminId: String(input.adminId)
+        });
+        if (result.tardia) void logger.alerts?.dispatch('payment:transfer:late', 'payment.transfer.requires_reconciliation', { orderId: String(input.pedidoId) });
         return result;
       } catch (error) {
         if (isDuplicate(error)) {

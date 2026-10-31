@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const AppError = require('../utils/AppError');
 const { calculateStockAvailability, logStockInconsistency } = require('../utils/stockAvailability');
 const { ORDER_TRANSITIONS, isAllowedTransition } = require('../utils/orderStates');
+const eventLogger = require('../utils/observability');
 
 const TRANSFER_RESERVATION_MS = 24 * 60 * 60 * 1000;
 const MAX_RESERVED_PER_VARIANT = 100;
@@ -52,7 +53,7 @@ function groupByVariant(reservations) {
 function createStockReservationService(models, {
   startSession = () => mongoose.startSession(),
   ahora = () => new Date(),
-  logger = console.error,
+  logger = (entry) => eventLogger.warn('inventory.inconsistency', entry),
   verifyPaymentAuthorization = async () => false,
   emailOutbox = null
 } = {}) {
@@ -190,7 +191,11 @@ function createStockReservationService(models, {
       const liberadas = await releaseOrderReservations(order, session, cancelledAt, { motivo: motivo.trim(), adminId });
       return { cancelado: changed, reservasLiberadas: liberadas, idempotente: false };
     };
-    return suppliedSession ? cancelInSession(suppliedSession) : transaction(cancelInSession);
+    const result = suppliedSession ? await cancelInSession(suppliedSession) : await transaction(cancelInSession);
+    if (!suppliedSession && result.cancelado) {
+      eventLogger.info('stock.reservations.released', { orderId: String(pedidoId), releasedCount: result.reservasLiberadas, adminId: adminId ? String(adminId) : null });
+    }
+    return result;
   }
 
   async function confirmPayment(pedidoId, authorization, { session: suppliedSession, paymentAudit = null } = {}) {
@@ -300,6 +305,7 @@ function createStockReservationService(models, {
           const liberadas = await releaseOrderReservations(order, session, hasta);
           return { pedidoId: orderId, expirado: true, reservasLiberadas: liberadas };
         });
+        if (result.expirado) eventLogger.info('stock.reservations.expired', { orderId, releasedCount: result.reservasLiberadas || 0 });
         results.push(result);
       } catch (error) {
         if (!isTransientConflict(error)) throw error;

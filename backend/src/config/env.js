@@ -55,6 +55,21 @@ if (!Object.values(cloudinaryConfig).every(Boolean)) {
 }
 
 const imageMaxSizeBytes = Number(process.env.IMAGE_MAX_SIZE_BYTES);
+const logLevel = (process.env.LOG_LEVEL || 'INFO').toUpperCase();
+if (!['INFO', 'WARN', 'ERROR'].includes(logLevel)) {
+  console.error('LOG_LEVEL debe ser INFO, WARN o ERROR.');
+  process.exit(1);
+}
+const logRetentionDays = process.env.LOG_RETENTION_DAYS === undefined ? 30 : Number(process.env.LOG_RETENTION_DAYS);
+if (!Number.isSafeInteger(logRetentionDays) || logRetentionDays < 1 || logRetentionDays > 3650) {
+  console.error('LOG_RETENTION_DAYS debe ser un entero entre 1 y 3650.');
+  process.exit(1);
+}
+const alertCooldownSeconds = process.env.ALERT_COOLDOWN_SECONDS === undefined ? 300 : Number(process.env.ALERT_COOLDOWN_SECONDS);
+if (!Number.isSafeInteger(alertCooldownSeconds) || alertCooldownSeconds < 30 || alertCooldownSeconds > 86400) {
+  console.error('ALERT_COOLDOWN_SECONDS debe ser un entero entre 30 y 86400.');
+  process.exit(1);
+}
 const lowStockThreshold = process.env.ADMIN_LOW_STOCK_THRESHOLD === undefined
   ? 5
   : Number(process.env.ADMIN_LOW_STOCK_THRESHOLD);
@@ -89,6 +104,11 @@ module.exports = {
   SMTP_PASS: process.env.SMTP_PASS,
   MAIL_FROM: process.env.MAIL_FROM,
   EMAIL_SENDING_ENABLED: process.env.EMAIL_SENDING_ENABLED === 'true',
+  ALERT_WEBHOOK_URL: process.env.ALERT_WEBHOOK_URL,
+  ALERT_COOLDOWN_SECONDS: alertCooldownSeconds,
+  LOG_LEVEL: logLevel,
+  LOG_RETENTION_DAYS: logRetentionDays,
+  ALERTS_ENABLED: process.env.ALERTS_ENABLED === 'true',
   ...cloudinaryConfig,
   IMAGE_MAX_SIZE_BYTES: Number.isSafeInteger(imageMaxSizeBytes) && imageMaxSizeBytes > 0 && imageMaxSizeBytes <= 20 * 1024 * 1024
     ? imageMaxSizeBytes

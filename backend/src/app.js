@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
 const Producto = require('./models/Producto');
 const Categoria = require('./models/Categoria');
 const ImagenProducto = require('./models/ImagenProducto');
@@ -73,8 +74,18 @@ const createOrderAccessRoutes = require('./routes/orderAccessRoutes');
 const notFound = require('./middlewares/notFound');
 const errorHandler = require('./middlewares/errorHandler');
 const env = require('./config/env');
+const logger = require('./utils/observability');
+const requestLogging = require('./middlewares/requestLogging');
+const createHealthRoutes = require('./routes/healthRoutes');
 
 const app = express();
+const logInventoryInconsistency = (entry) => {
+  logger.warn('inventory.inconsistency', entry);
+  void logger.alerts?.dispatch('inventory:inconsistency', 'inventory.inconsistency', entry);
+};
+app.locals.monitoring = { logger, alerts: logger.alerts };
+app.use(requestLogging(logger));
+logger.info('logging.policy.configured', { level: env.LOG_LEVEL, retentionDays: env.LOG_RETENTION_DAYS, destination: 'stdout/stderr' });
 const paymentAuthorization = createPaymentAuthorization();
 const transferPaymentAuthorization = createTransferPaymentAuthorization();
 const orderAccessTokens = createOrderAccessTokenService(env.JWT_SECRET);
@@ -90,6 +101,7 @@ const stockReservationService = createStockReservationService(
   { Pedido, Variante, ReservaStock, MovimientoStock, HistorialEstadoPedido },
   {
     verifyPaymentAuthorization: async (input) => (await paymentAuthorization.verify(input)) || transferPaymentAuthorization.verify(input),
+    logger: logInventoryInconsistency,
     emailOutbox: emailOutboxService
   }
 );
@@ -124,7 +136,7 @@ const catalogService = createCatalogService({
 const catalogController = createCatalogController(catalogService);
 const cartValidationService = createCartValidationService({
   Producto, Variante, Categoria, ValorVariante, ValorAtributo, Atributo, ReservaStock
-});
+}, { logger: logInventoryInconsistency });
 const orderService = createOrderService(
   { Pedido, ItemPedido, HistorialEstadoPedido },
   {
@@ -146,6 +158,7 @@ const { authenticate, authorizeAdmin } = authMiddleware;
 
 app.use(helmetMiddleware);
 app.use(cors(createCorsOptions(env)));
+app.use(createHealthRoutes({ mongoose, logger }));
 app.use(express.json({ limit: '10kb' }));
 app.use('/api', createApiRateLimiter());
 app.use('/api/auth', createAuthRateLimiter(), validateAuthPayload);
@@ -205,7 +218,9 @@ app.use(
   authenticate,
   authorizeAdmin,
   createAdminStockRoutes({ Producto, Variante, MovimientoStock, ReservaStock, ValorVariante, ValorAtributo, Atributo }, {
-    lowStockThreshold: env.ADMIN_LOW_STOCK_THRESHOLD
+    lowStockThreshold: env.ADMIN_LOW_STOCK_THRESHOLD,
+    monitoring: logger,
+    logger: logInventoryInconsistency
   })
 );
 app.use(

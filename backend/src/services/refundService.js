@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 const mongoose = require('mongoose');
 const AppError = require('../utils/AppError');
 const { parseMoneyToCents, formatCents } = require('./cartValidationService');
+const logger = require('../utils/observability');
 
 const RESERVED_STATES = ['SOLICITADO', 'PREPARADO', 'EN_PROCESO', 'INDETERMINADO', 'PENDIENTE_MANUAL', 'EN_REVISION', 'COMPLETADO'];
 const REQUEST_INDEX = 'uniq_reintegro_id_operacion';
@@ -316,6 +317,8 @@ function createRefundService(models, {
         $set: { estado: 'EN_REVISION', estadoProveedor: response.status, estadoDetalleProveedor: response.status_detail || null, proveedorReintegroId: providerRefundId, incidencia: 'Respuesta del proveedor pendiente de conciliación oficial' },
         $push: { historial: { estado: 'EN_REVISION', nota: 'La respuesta del proveedor requiere conciliación; no se marcó como completado', creadoEn: ahora() } }
       });
+      logger.warn('refund.marketplace.pending_reconciliation', { refundId: String(refund._id), orderId: String(refund.pedidoId), provider: 'MERCADO_PAGO', state: 'EN_REVISION' });
+      void logger.alerts?.dispatch('refund:marketplace:reconciliation', 'refund.marketplace.pending_reconciliation', { refundId: String(refund._id), orderId: String(refund.pedidoId) });
       return { enviado: true, estado: 'EN_REVISION', requiereConciliacion: true };
     } catch (error) {
       const estado = error?.providerStatus >= 400 && error.providerStatus < 500 && error.providerStatus !== 409 ? 'FALLIDO' : 'INDETERMINADO';
@@ -323,6 +326,11 @@ function createRefundService(models, {
         $set: { estado, incidencia: estado === 'INDETERMINADO' ? 'Respuesta externa no confirmada; reintentar con la misma clave o conciliar' : 'El proveedor rechazó la solicitud' },
         $push: { historial: { estado, nota: estado === 'INDETERMINADO' ? 'Respuesta externa no confirmada' : 'Solicitud rechazada por el proveedor', creadoEn: ahora() } }
       });
+      (estado === 'INDETERMINADO' ? logger.error : logger.warn)('refund.marketplace.submission_failed', {
+        refundId: String(refund._id), orderId: String(refund.pedidoId), provider: 'MERCADO_PAGO', state: estado,
+        errorCode: String(error?.providerStatus || error?.code || error?.name || 'PROVIDER_ERROR')
+      });
+      if (estado === 'INDETERMINADO') void logger.alerts?.dispatch('refund:marketplace:indeterminate', 'refund.marketplace.indeterminate', { refundId: String(refund._id), orderId: String(refund.pedidoId) });
       if (estado === 'INDETERMINADO') throw new AppError('El resultado del proveedor es indeterminado; requiere conciliación antes de reintentar', 503);
       throw AppError.conflicto('Mercado Pago rechazó la solicitud de reintegro');
     }

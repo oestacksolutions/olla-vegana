@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const AppError = require('../utils/AppError');
 const { ORDER_TRANSITIONS, isAllowedTransition } = require('../utils/orderStates');
+const logger = require('../utils/observability');
 
 const MAX_PAGE_SIZE = 50;
 const OPERATIONAL_STATES = new Set(['NUEVO', 'EN_PREPARACION', 'LISTO_PARA_RETIRAR', 'RETIRADO']);
@@ -189,6 +190,7 @@ function createAdminOrderService(models, {
     const session = await startSession();
     try {
       let result;
+      let previousState;
       await session.withTransaction(async () => {
         const order = await execute(withSession(Pedido.findById(orderId).select('_id numero estado estadoPago estadoReintegro'), session));
         if (!order) throw AppError.noEncontrado('Pedido no encontrado');
@@ -205,6 +207,7 @@ function createAdminOrderService(models, {
             throw AppError.conflicto('El pedido tiene un reintegro solicitado o registrado y requiere revisión antes de confirmar la entrega');
           }
         }
+        previousState = order.estado;
         const updated = await execute(Pedido.findOneAndUpdate(
           { _id: order._id, estado: order.estado, estadoPago: order.estadoPago },
           { $set: { estado: input.estado, ...(input.estado === 'RETIRADO' ? { retiradoEn: now() } : {}) } },
@@ -220,6 +223,9 @@ function createAdminOrderService(models, {
           await emailOutbox.enqueue({ pedidoId: order._id, tipo: 'LISTO_PARA_RETIRAR', session });
         }
         result = String(updated._id);
+      });
+      logger.info('order.operational_state.changed', {
+        orderId: result, previousState, newState: input.estado, adminId: String(adminId)
       });
       return getOrder(result);
     } finally { await session.endSession(); }

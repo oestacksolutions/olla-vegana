@@ -1,5 +1,6 @@
 const crypto = require('node:crypto');
 const { createEmailContent } = require('./emailTemplates');
+const logger = require('../utils/observability');
 
 const EVENTS = Object.freeze(['PEDIDO_CREADO', 'PAGO_CONFIRMADO', 'PEDIDO_CANCELADO', 'LISTO_PARA_RETIRAR']);
 const MAX_ATTEMPTS = 5;
@@ -46,6 +47,7 @@ function createEmailOutboxService({ EmailOutbox, Pedido, ItemPedido }, { provide
     const event = await EmailOutbox.findOneAndUpdate(filter, { $set: {
       estado: 'EN_PROCESO', claimId, claimHasta: new Date(instant.getTime() + LOCK_MS), actualizadoEn: instant
     } }, { new: true, sort: { creadoEn: 1 } });
+    if (event) logger.info('email.outbox.claimed', { eventId: event._id, orderId: String(event.pedidoId), eventType: event.tipo, attempt: Number(event.intentos || 0) + 1 });
     return event;
   }
 
@@ -57,6 +59,8 @@ function createEmailOutboxService({ EmailOutbox, Pedido, ItemPedido }, { provide
       await EmailOutbox.updateOne({ _id: event._id, claimId: event.claimId }, { $set: {
         estado: 'INDETERMINADO', errorCodigo: 'PREVIOUS_SEND_OUTCOME_UNKNOWN', claimId: null, claimHasta: null, actualizadoEn: now()
       } });
+      logger.error('email.outbox.indeterminate', { eventId: event._id, orderId: String(event.pedidoId), eventType: event.tipo });
+      void logger.alerts?.dispatch(`email:indeterminate:${event.tipo}`, 'email.outbox.indeterminate', { eventId: event._id, orderId: String(event.pedidoId) });
       return { procesado: true, estado: 'INDETERMINADO' };
     }
     try {
@@ -73,8 +77,10 @@ function createEmailOutboxService({ EmailOutbox, Pedido, ItemPedido }, { provide
         claimId: null, claimHasta: null, errorCodigo: null, actualizadoEn: now()
       } });
       if ((saved?.modifiedCount ?? saved?.nModified ?? 0) !== 1) {
+        logger.error('email.outbox.delivery_state_indeterminate', { eventId: event._id, orderId: String(event.pedidoId), eventType: event.tipo });
         return { procesado: true, estado: 'INDETERMINADO' };
       }
+      logger.info('email.outbox.sent', { eventId: event._id, orderId: String(event.pedidoId), eventType: event.tipo });
       return { procesado: true, estado: 'ENVIADO' };
     } catch (error) {
       const attempts = Number(event.intentos || 0) + 1;
@@ -87,6 +93,11 @@ function createEmailOutboxService({ EmailOutbox, Pedido, ItemPedido }, { provide
         ...(status === 'PENDIENTE' ? { envioIniciadoEn: null } : {}),
         errorCodigo: safeErrorCode(error), claimId: null, claimHasta: null, actualizadoEn: now()
       } });
+      const fields = { eventId: event._id, orderId: String(event.pedidoId), eventType: event.tipo, state: status, errorCode: safeErrorCode(error) };
+      (status === 'INDETERMINADO' || status === 'FALLIDO' ? logger.error : logger.warn)('email.outbox.attempt_failed', fields);
+      if (status === 'INDETERMINADO' || status === 'FALLIDO') {
+        void logger.alerts?.dispatch(`email:${status}:${event.tipo}`, `email.outbox.${status.toLowerCase()}`, { eventId: event._id, orderId: String(event.pedidoId) });
+      }
       return { procesado: true, estado: status };
     }
   }
