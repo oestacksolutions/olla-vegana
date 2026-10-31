@@ -129,6 +129,19 @@ function MapSection() {
             )
           })}
           </div>
+
+          <BtnAction
+            href="https://docs.google.com/forms/d/e/1FAIpQLScSOuwNTBtq_qakK2Lk3cPgVi5_t-WPRd69UPzIVb5_CCDHKw/viewform"
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="inverted"
+            width="auto"
+            height="42px"
+            fontSize="13px"
+            className="mt-6 ml-[38px] max-w-[calc(100%-38px)] self-start justify-center text-center font-semibold uppercase duration-500 ease-in-out"
+          >
+            Quiero ser voluntarix
+          </BtnAction>
         </div>
 
         <div className="relative order-4 mx-auto mt-8 aspect-[360/254] w-full max-w-[360px] self-center overflow-hidden rounded-[10px] shadow-sm lg:mt-[50px] lg:mx-0 lg:self-start lg:h-[310px] lg:w-[450px]">
