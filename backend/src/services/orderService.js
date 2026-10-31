@@ -103,6 +103,8 @@ function optionSnapshot(option) {
       puntoRetiroSnapshot: {
         nombre: option.nombre,
         direccion: option.direccion || null,
+        indicaciones: option.indicaciones || '',
+        zonaHoraria: option.zonaHoraria || 'America/Argentina/Buenos_Aires',
         horarios: option.horarios || null,
         horariosHabituales: option.horariosHabituales || []
       },
@@ -116,11 +118,17 @@ function optionSnapshot(option) {
     retiroEspecialId: new mongoose.Types.ObjectId(option.id),
     retiroEspecialSnapshot: {
       evento: option.evento,
+      nombre: option.nombre || 'Veganpaluja',
       fecha: option.fecha,
+      fechaInicio: option.fechaInicio || option.fecha,
+      fechaFin: option.fechaFin || option.fecha,
       lugar: option.lugar,
       direccion: option.direccion || null,
+      indicaciones: option.indicaciones || '',
+      zonaHoraria: option.zonaHoraria || 'America/Argentina/Buenos_Aires',
       horaInicio: option.horaInicio,
-      horaFin: option.horaFin
+      horaFin: option.horaFin,
+      horariosRetiro: option.horariosRetiro || []
     }
   };
 }

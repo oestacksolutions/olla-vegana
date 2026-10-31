@@ -36,13 +36,19 @@ export function availablePickupOptions(response) {
 
 export function formatPickupSchedule(option) {
   if (option.tipo === 'ESPECIAL') {
-    const start = option.horaInicio
-    const end = option.horaFin
-    const date = option.fecha ? new Date(option.fecha) : null
-    const dateLabel = date && !Number.isNaN(date.getTime())
-      ? new Intl.DateTimeFormat('es-AR', { dateStyle: 'long' }).format(date)
-      : ''
-    return [dateLabel, start && end ? `${start} a ${end}` : ''].filter(Boolean).join(' · ')
+    const dateLabel = (value) => {
+      if (!value) return ''
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00-03:00`) : new Date(value)
+      return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat('es-AR', { dateStyle: 'long', timeZone: 'America/Argentina/Buenos_Aires' }).format(date)
+    }
+    const start = dateLabel(option.fechaInicio || option.fecha)
+    const end = dateLabel(option.fechaFin || option.fechaInicio || option.fecha)
+    const range = start && end && start !== end ? `${start} al ${end}` : start
+    const schedules = Array.isArray(option.horariosRetiro) ? option.horariosRetiro : []
+    const hours = schedules.length
+      ? schedules.map((schedule) => `${dateLabel(schedule.fecha)}: ${schedule.horaInicio} a ${schedule.horaFin}`).join(' · ')
+      : option.horaInicio && option.horaFin ? `${option.horaInicio} a ${option.horaFin}` : ''
+    return [range, hours].filter(Boolean).join(' · ')
   }
   const schedules = Array.isArray(option.horariosHabituales) ? option.horariosHabituales : []
   const formatted = schedules.map((schedule) => {

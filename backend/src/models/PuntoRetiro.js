@@ -19,15 +19,19 @@ const horarioSchema = new Schema({
   }
 }, { _id: false });
 
+const TZ = 'America/Argentina/Buenos_Aires';
+
 const schema = new Schema({
   nombre: { type: String, required: true, unique: true },
   direccion: { type: String, default: null },
+  indicaciones: { type: String, default: '', maxlength: 1000 },
+  zonaHoraria: { type: String, default: TZ, enum: [TZ] },
   // Compatibilidad de lectura/escritura para documentos preexistentes con horario en texto.
   horarios: { type: String, default: null },
   horariosHabituales: { type: [horarioSchema], default: [] },
   activo: { type: Boolean, default: true },
   habilitadoCheckout: { type: Boolean, default: false }
-}, { timestamps: true });
+}, { timestamps: true, optimisticConcurrency: true });
 
 schema.index({ activo: 1, habilitadoCheckout: 1, nombre: 1 });
 module.exports = model('PuntoRetiro', schema);

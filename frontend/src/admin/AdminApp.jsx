@@ -20,7 +20,7 @@ function AdminApp() {
   useEffect(() => {
     let active = true
     setError('')
-    if (activePage !== 'resumen' && activePage !== 'inventario' && activePage !== 'pedidos') getAdminSnapshot()
+    if (activePage !== 'resumen' && activePage !== 'inventario' && activePage !== 'pedidos' && activePage !== 'retiros') getAdminSnapshot()
       .then((data) => { if (active) setSnapshot(data) })
       .catch(() => { if (active) setError('No pudimos cargar los datos de demostración. Recargá la página para intentar otra vez.') })
     const handlePopState = () => {
@@ -50,12 +50,12 @@ function AdminApp() {
       {activePage === 'resumen' ? <AdminDashboard />
         : activePage === 'pedidos' ? <AdminOrdersPage />
         : activePage === 'inventario' ? <AdminInventoryPage />
+        : activePage === 'retiros' ? <AdminPickupPage />
         : error ? <section role="alert" className="rounded-2xl border border-red-200 bg-white p-8 font-poppins text-sm text-red-800">{error}</section>
         : !snapshot ? <div role="status" aria-live="polite" className="rounded-2xl border border-black/[.06] bg-white p-8 font-poppins text-sm text-black/55">Cargando datos de demostración…</div>
           : activePage === 'productos' ? <AdminProductsPage products={snapshot.products} onSaveProducts={updateProducts} />
                 : activePage === 'catalogo' ? <AdminCatalogPage />
                   : activePage === 'banners' ? <AdminBannersPage />
-                      : activePage === 'retiros' ? <AdminPickupPage orders={snapshot.orders} />
                         : activePage === 'configuracion' ? <AdminSettingsPage /> : null}
     </AdminLayout>
   )
