@@ -74,6 +74,13 @@ export const saveAdminBanners = (config, files) => {
   return apiRequest('/admin/banners', { method: 'PUT', body, protected: true })
 }
 export const getPickupOptions = () => apiRequest('/pickup-options')
+export const getAdminPickups = () => apiRequest('/admin/pickups', { protected: true })
+export const getAdminPickupPoint = (id) => apiRequest(`/admin/pickups/points/${encodeURIComponent(id)}`, { protected: true })
+export const createAdminPickupPoint = (pickup) => apiRequest('/admin/pickups/points', { method: 'POST', body: JSON.stringify(pickup), protected: true })
+export const updateAdminPickupPoint = (id, pickup) => apiRequest(`/admin/pickups/points/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(pickup), protected: true })
+export const getAdminPickupEvent = (id) => apiRequest(`/admin/pickups/events/${encodeURIComponent(id)}`, { protected: true })
+export const createAdminPickupEvent = (event) => apiRequest('/admin/pickups/events', { method: 'POST', body: JSON.stringify(event), protected: true })
+export const updateAdminPickupEvent = (id, event) => apiRequest(`/admin/pickups/events/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(event), protected: true })
 export const getTransferInstructions = (orderId, accessToken, options = {}) => apiRequest(
   `/orders/${encodeURIComponent(orderId)}/transfer-instructions`,
   { ...options, accessToken }

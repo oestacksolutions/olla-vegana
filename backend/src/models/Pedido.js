@@ -9,17 +9,25 @@ const horarioSnapshotSchema = new Schema({
 const puntoSnapshotSchema = new Schema({
   nombre: { type: String },
   direccion: { type: String, default: null },
+  indicaciones: { type: String, default: '' },
+  zonaHoraria: { type: String, default: 'America/Argentina/Buenos_Aires' },
   horarios: { type: String, default: null },
   horariosHabituales: { type: [horarioSnapshotSchema], default: [] }
 }, { _id: false });
 
 const especialSnapshotSchema = new Schema({
   evento: { type: String },
+  nombre: { type: String },
   fecha: { type: Date },
+  fechaInicio: { type: Date },
+  fechaFin: { type: Date },
   lugar: { type: String },
   direccion: { type: String, default: null },
+  indicaciones: { type: String, default: '' },
+  zonaHoraria: { type: String, default: 'America/Argentina/Buenos_Aires' },
   horaInicio: { type: String },
-  horaFin: { type: String }
+  horaFin: { type: String },
+  horariosRetiro: { type: [new Schema({ fecha: Date, horaInicio: String, horaFin: String }, { _id: false })], default: [] }
 }, { _id: false });
 
 const schema = new Schema({

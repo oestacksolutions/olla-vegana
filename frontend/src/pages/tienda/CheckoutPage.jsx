@@ -268,14 +268,14 @@ function CheckoutPage() {
                     {step === 1 && <>
                     <fieldset className="mt-8 border-t border-[#466729]/15 pt-6">
                       <legend className="font-poppins text-lg font-semibold text-[#466729]">Opción de retiro</legend>
-                      <p className="mt-1 font-poppins text-sm text-black/60">Elegí una sola opción habilitada por la tienda.</p>
+                      <p className="mt-1 font-poppins text-sm text-black/60">Elegí una sola opción habilitada por la tienda. Los horarios están expresados en hora de Buenos Aires.</p>
                       {pickupNotice && <p role="status" aria-live="polite" className="mt-4 rounded-[10px] border border-[#AF71DD]/30 bg-[#AF71DD]/5 p-4 font-poppins text-sm text-[#69428A]">{pickupNotice}</p>}
                       {pickupState === 'loading' && <p role="status" className="mt-4 font-poppins text-sm text-black/55">Cargando opciones de retiro…</p>}
                       {pickupState === 'error' && <div className="mt-4 rounded-[10px] bg-[#F2380F]/5 p-4" role="alert"><p className="font-poppins text-sm text-[#8A2817]">No pudimos cargar las opciones de retiro.</p><button type="button" onClick={() => setPickupRetry((value) => value + 1)} className="mt-2 inline-flex min-h-9 items-center gap-2 font-poppins text-sm font-medium text-[#466729] underline"><RotateCw aria-hidden="true" size={15} /> Reintentar</button></div>}
                       {pickupState === 'loaded' && pickupOptions.length === 0 && <p role="status" className="mt-4 rounded-[10px] bg-[#AF71DD]/10 p-4 font-poppins text-sm text-[#69428A]">No hay opciones de retiro habilitadas en este momento.</p>}
                       {pickupOptions.length > 0 && <div className="mt-4 flex flex-col gap-3">
                         {pickupOptions.map((option) => {
-                          const title = option.tipo === 'ESPECIAL' ? `Retiro especial · ${option.evento || 'Evento'}` : option.nombre
+                          const title = option.tipo === 'ESPECIAL' ? (option.nombre || `Retiro especial · ${option.evento || 'Evento'}`) : option.nombre
                           const schedule = formatPickupSchedule(option)
                           return (
                             <label key={option.seleccionId} className={`flex cursor-pointer gap-3 rounded-[11px] border p-4 transition-colors focus-within:ring-2 focus-within:ring-[#466729]/30 ${pickupId === option.seleccionId ? 'border-[#AF71DD] bg-[#AF71DD]/5' : 'border-[#466729]/20 hover:border-[#466729]/45'}`}>
@@ -285,6 +285,7 @@ function CheckoutPage() {
                                 {option.direccion && <span className="mt-1 block">{option.direccion}</span>}
                                 {option.tipo === 'ESPECIAL' && option.lugar && <span className="mt-1 block">Lugar: {option.lugar}</span>}
                                 {schedule && <span className="mt-1 block">{schedule}</span>}
+                                {option.indicaciones && <span className="mt-1 block">{option.indicaciones}</span>}
                               </span>
                             </label>
                           )

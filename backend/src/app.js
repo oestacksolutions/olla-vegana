@@ -38,6 +38,7 @@ const createAdminDashboardRoutes = require('./routes/adminDashboardRoutes');
 const createAdminOrderRoutes = require('./routes/adminOrderRoutes');
 const createAdminBannerRoutes = require('./routes/adminBannerRoutes');
 const createBannerRoutes = require('./routes/bannerRoutes');
+const createAdminPickupRoutes = require('./routes/adminPickupRoutes');
 const { createAdminOrderService } = require('./services/adminOrderService');
 const { createAdminOrderController } = require('./controllers/adminOrderController');
 const { createAuthMiddleware } = require('./middlewares/auth');
@@ -164,6 +165,8 @@ app.use('/api/admin/banners', authenticate, authorizeAdmin, createAdminBannerRou
   { Banner, Configuracion },
   { storage: createCloudinaryStorage(env) }
 ));
+app.use('/api/admin/pickups', authenticate, authorizeAdmin, validateJsonBody,
+  createAdminPickupRoutes({ PuntoRetiro, RetiroEspecial, Pedido }));
 app.use(
   '/api/admin/products/:productId/variants',
   authenticate,
