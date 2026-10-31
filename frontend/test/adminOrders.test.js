@@ -23,3 +23,11 @@ test('la pantalla presenta estados de carga, error, vacío, bloqueo y datos hist
   assert.match(page, /cambiosOperativosHabilitados/)
   assert.match(page, /precios históricos/)
 });
+
+test('la confirmación de retiro pide consentimiento y muestra fecha y cuenta en hora argentina', () => {
+  const page = readFileSync(resolve(root, 'admin/pages/AdminOrdersPage.jsx'), 'utf8')
+  assert.match(page, /¿Confirmás que este pedido fue entregado al comprador\?/)
+  assert.match(page, /Confirmar pedido retirado/)
+  assert.match(page, /America\/Argentina\/Buenos_Aires/)
+  assert.match(page, /detail\.retiradoPor\?\.correo/)
+});
