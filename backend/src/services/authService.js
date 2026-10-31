@@ -1,12 +1,13 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
-const nodemailer = require('nodemailer');
 const AppError = require('../utils/AppError');
+const { createSmtpTransport } = require('./emailTransport');
+const logger = require('../utils/observability');
 
 const PASSWORD_HASH_PREFIX = 'scrypt';
 const BCRYPT_ROUNDS = 12;
-const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
 const SESSION_TTL_SECONDS = 8 * 60 * 60;
+const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
 
 function base64Url(value) {
   return Buffer.from(value).toString('base64url');
@@ -50,18 +51,6 @@ function signToken(payload, secret) {
   return `${header}.${body}.${signature}`;
 }
 
-function createTransport(env) {
-  if (!env.SMTP_HOST || !env.SMTP_PORT || !env.SMTP_USER || !env.SMTP_PASS || !env.MAIL_FROM) {
-    throw new AppError('El servicio de correo no está configurado.', 503);
-  }
-  return nodemailer.createTransport({
-    host: env.SMTP_HOST,
-    port: Number(env.SMTP_PORT),
-    secure: Number(env.SMTP_PORT) === 465,
-    auth: { user: env.SMTP_USER, pass: env.SMTP_PASS }
-  });
-}
-
 function normalizeEmail(correo) {
   return typeof correo === 'string' ? correo.trim().toLowerCase() : '';
 }
@@ -76,7 +65,8 @@ function isBcryptHash(value) {
   return typeof value === 'string' && /^\$2[aby]\$\d{2}\$/.test(value);
 }
 
-function createAuthService({ Admin, env }) {
+function createAuthService({ Admin, env, now = () => Date.now() }) {
+  if (!Admin || !env?.JWT_SECRET) throw new TypeError('La autenticación requiere Admin y una clave JWT');
   return {
     async login(correo, contrasena) {
       const normalizedEmail = normalizeEmail(correo);
@@ -87,22 +77,17 @@ function createAuthService({ Admin, env }) {
       const validPassword = admin
         && (isBcryptHash(admin.contrasena)
           ? await bcrypt.compare(contrasena, admin.contrasena)
-          : await verifyPassword(contrasena, admin.contrasena)
-          || (admin.contrasena === contrasena && typeof contrasena === 'string'));
+          : await verifyPassword(contrasena, admin.contrasena));
 
       if (!validPassword) throw AppError.noAutorizado('El correo o la contraseña no son correctos.');
 
-      if (!isBcryptHash(admin.contrasena)) {
-        admin.contrasena = await bcrypt.hash(contrasena, BCRYPT_ROUNDS);
-        await admin.save();
-      }
-
-      const now = Math.floor(Date.now() / 1000);
+      const nowMs = now();
       const token = signToken({
         sub: String(admin._id),
-        correo: admin.correo,
-        iat: now,
-        exp: now + SESSION_TTL_SECONDS
+        adminUpdatedAt: admin.updatedAt instanceof Date ? admin.updatedAt.getTime() : 0,
+        jti: crypto.randomBytes(16).toString('hex'),
+        iat: Math.floor(nowMs / 1000),
+        exp: Math.floor(nowMs / 1000) + SESSION_TTL_SECONDS
       }, env.JWT_SECRET);
 
       return { token, admin: { id: String(admin._id), correo: admin.correo } };
@@ -123,7 +108,7 @@ function createAuthService({ Admin, env }) {
         const resetUrl = `${env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${encodeURIComponent(rawToken)}`;
         if (env.SMTP_HOST && env.SMTP_PORT && env.SMTP_USER && env.SMTP_PASS && env.MAIL_FROM) {
           try {
-            const transport = createTransport(env);
+            const transport = createSmtpTransport(env);
             await transport.sendMail({
               from: env.MAIL_FROM,
               to: admin.correo,
@@ -131,10 +116,10 @@ function createAuthService({ Admin, env }) {
               text: `Solicitaste restablecer tu contraseña. Abrí este enlace dentro de los próximos 15 minutos: ${resetUrl}\n\nSi no realizaste esta solicitud, ignorá este correo.`
             });
           } catch (error) {
-            console.error('[auth] No se pudo enviar el correo de recuperación.', error);
+            logger.warn('auth.password_reset_email_failed', { errorCode: String(error?.code || error?.name || 'SMTP_ERROR') });
           }
         } else if (env.NODE_ENV === 'development') {
-          console.info(`[auth] Enlace de recuperación generado para desarrollo: ${resetUrl}`);
+          logger.info('auth.password_reset_email_unavailable');
         }
       }
 
@@ -165,4 +150,4 @@ function createAuthService({ Admin, env }) {
   };
 }
 
-module.exports = { createAuthService };
+module.exports = { createAuthService, hashPassword, verifyPassword, signToken, SESSION_TTL_SECONDS };

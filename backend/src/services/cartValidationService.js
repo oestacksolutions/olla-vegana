@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { calculateStockAvailability, logStockInconsistency } = require('../utils/stockAvailability');
+const observability = require('../utils/observability');
 const AppError = require('../utils/AppError');
 
 const MAX_CART_LINES = 50;
@@ -101,7 +102,7 @@ function validateRequest(body) {
   return [...consolidated.values()];
 }
 
-function createCartValidationService(models, { ahora = () => new Date(), logger = console.error } = {}) {
+function createCartValidationService(models, { ahora = () => new Date(), logger = (entry) => observability.warn('inventory.inconsistency', entry) } = {}) {
   const { Producto, Variante, Categoria, ValorVariante, ValorAtributo, Atributo, ReservaStock } = models;
 
   async function validateCart(body, { session } = {}) {

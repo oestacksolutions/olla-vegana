@@ -27,7 +27,7 @@ function fixture({ stock = 5, reservations = [], orderState = 'NUEVO', paymentSt
   const rows = {
     variants: [{ _id: variantId, stock, revisionReservas: 0 }, { _id: 'variant-2', stock: 4, revisionReservas: 0 }],
     reservations: reservations.map((row) => ({ ...row })),
-    orders: [{ _id: orderId, numero: 123, estado: orderState, estadoPago: paymentState }],
+    orders: [{ _id: orderId, numero: 123, metodoPago: 'MERCADO_PAGO', estado: orderState, estadoPago: paymentState }],
     history: [], movements: []
   };
   function query(getValue) {
@@ -218,4 +218,20 @@ test('la creación falla cerrada si falta un índice requerido', async () => {
   const context = fixture();
   context.models.ReservaStock.collection.indexes = async () => [];
   await assert.rejects(context.service.assertReservationIndex(), { statusCode: 503 });
+});
+
+test('rechazo Mercado Pago libera reservas de forma idempotente sin modificar stock físico', async () => {
+  const context = fixture({ reservations: [
+    { _id: 'r1', pedidoId: orderId, varianteId, estado: 'ACTIVA', cantidad: 2, venceEn: new Date(start.getTime() + 5000) }
+  ] });
+  const first = await context.service.rejectVerifiedMarketplacePayment(orderId, { provider: 'MERCADO_PAGO', verified: true });
+  assert.equal(first.rechazado, true);
+  assert.equal(context.rows.orders[0].estadoPago, 'RECHAZADO');
+  assert.equal(context.rows.orders[0].estado, 'CANCELADO');
+  assert.equal(context.rows.reservations[0].estado, 'LIBERADA');
+  assert.equal(context.rows.variants[0].stock, 5);
+  const retry = await context.service.rejectVerifiedMarketplacePayment(orderId, { provider: 'MERCADO_PAGO', verified: true });
+  assert.equal(retry.idempotente, true);
+  assert.equal(context.rows.history.length, 1);
+  assert.equal(context.rows.movements.length, 0);
 });

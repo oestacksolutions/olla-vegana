@@ -19,6 +19,7 @@ function queryResult(data) {
 function makeModels(overrides = {}) {
   return {
     Atributo: {
+      collection: { indexes: async () => [{ unique: true, key: { nombre: 1 } }] },
       find: () => queryResult([attribute]),
       findById: async () => attribute,
       findOne: async () => null,
@@ -27,6 +28,7 @@ function makeModels(overrides = {}) {
       ...overrides.Atributo
     },
     ValorAtributo: {
+      collection: { indexes: async () => [{ unique: true, key: { atributoId: 1, valor: 1 } }] },
       find: () => queryResult([value]),
       findById: async () => value,
       findOne: async () => null,
@@ -62,6 +64,16 @@ test('crea atributo y rechaza nombre vacío, propiedades extra y duplicados', as
   await assert.rejects(service.createAttribute({ nombre: 'Talle', activo: true }), (error) => error.statusCode === 400);
   const duplicate = createAdminAttributeService(makeModels({ Atributo: { findOne: async () => attribute } }));
   await assert.rejects(duplicate.createAttribute({ nombre: 'Color' }), (error) => error.statusCode === 409);
+});
+
+test('bloquea la creación si los índices únicos de atributos no están provisionados', async () => {
+  let writes = 0;
+  const models = makeModels({ Atributo: {
+    collection: { indexes: async () => [] },
+    create: async (data) => { writes += 1; return { _id: ATTR_ID, ...data }; }
+  } });
+  await assert.rejects(createAdminAttributeService(models).createAttribute({ nombre: 'Material' }), (error) => error.statusCode === 503);
+  assert.equal(writes, 0);
 });
 
 test('edita el nombre del atributo si no altera pedidos ni reservas y preserva sus valores', async () => {
@@ -122,9 +134,9 @@ test('edita el valor manteniendo su atributo y bloquea cambios con historial aso
   await assert.rejects(withMovement.updateValue(VALUE_ID, { valor: 'Otro' }), (error) => error.statusCode === 409);
 });
 
-test('las rutas de atributos no están montadas en app.js y no incluyen borrado', () => {
+test('las rutas de atributos están montadas con autenticación y no incluyen borrado', () => {
   const appSource = fs.readFileSync(path.join(__dirname, '../src/app.js'), 'utf8');
-  assert.doesNotMatch(appSource, /adminAttributeRoutes|\/api\/admin\/attributes/);
+  assert.match(appSource, /app\.use\(\s*'\/api\/admin',\s*authenticate,\s*authorizeAdmin,\s*validateJsonBody,\s*createAdminAttributeRoutes/s);
   const routes = createAdminAttributeRoutes(makeModels());
   const definitions = routes.stack.filter((layer) => layer.route).map((layer) => ({
     path: layer.route.path, method: Object.keys(layer.route.methods)[0]

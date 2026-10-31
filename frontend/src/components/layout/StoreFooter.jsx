@@ -46,7 +46,7 @@ function StoreFooter() {
           <h2 className="font-scripter text-[24px]">Olla Vegana</h2>
           <div className="mt-3 flex flex-col items-start gap-4">
             <a href="/nosotros" className="font-poppins text-[14px] font-light text-white transition-opacity hover:opacity-75">
-              Nosotros
+              Nosotrxs
             </a>
             <a
               href="https://www.instagram.com/olla.vegana/"

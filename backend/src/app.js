@@ -1,16 +1,27 @@
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
 const Producto = require('./models/Producto');
 const Categoria = require('./models/Categoria');
 const ImagenProducto = require('./models/ImagenProducto');
 const Variante = require('./models/Variante');
 const MovimientoStock = require('./models/MovimientoStock');
 const ReservaStock = require('./models/ReservaStock');
+const Pedido = require('./models/Pedido');
+const ItemPedido = require('./models/ItemPedido');
+const Reintegro = require('./models/Reintegro');
+const HistorialEstadoPedido = require('./models/HistorialEstadoPedido');
+const IntentoPago = require('./models/IntentoPago');
+const EventoPago = require('./models/EventoPago');
+const EmailOutbox = require('./models/EmailOutbox');
+const ConfirmacionTransferencia = require('./models/ConfirmacionTransferencia');
 const ValorVariante = require('./models/ValorVariante');
 const ValorAtributo = require('./models/ValorAtributo');
 const Atributo = require('./models/Atributo');
 const PuntoRetiro = require('./models/PuntoRetiro');
 const RetiroEspecial = require('./models/RetiroEspecial');
+const Configuracion = require('./models/Configuracion');
+const Banner = require('./models/Banner');
 const { createCatalogService } = require('./services/catalogService');
 const { createCartValidationService } = require('./services/cartValidationService');
 const { createAuthService } = require('./services/authService');
@@ -23,6 +34,15 @@ const createAdminProductRoutes = require('./routes/adminProductRoutes');
 const createAdminImageRoutes = require('./routes/adminImageRoutes');
 const { createCloudinaryStorage } = require('./services/cloudinaryStorage');
 const createAdminStockRoutes = require('./routes/adminStockRoutes');
+const createAdminAttributeRoutes = require('./routes/adminAttributeRoutes');
+const createAdminVariantRoutes = require('./routes/adminVariantRoutes');
+const createAdminDashboardRoutes = require('./routes/adminDashboardRoutes');
+const createAdminOrderRoutes = require('./routes/adminOrderRoutes');
+const createAdminBannerRoutes = require('./routes/adminBannerRoutes');
+const createBannerRoutes = require('./routes/bannerRoutes');
+const createAdminPickupRoutes = require('./routes/adminPickupRoutes');
+const { createAdminOrderService } = require('./services/adminOrderService');
+const { createAdminOrderController } = require('./controllers/adminOrderController');
 const { createAuthMiddleware } = require('./middlewares/auth');
 const {
   createCorsOptions,
@@ -33,29 +53,112 @@ const {
   helmetMiddleware
 } = require('./middlewares/security');
 const createPickupRoutes = require('./routes/pickupRoutes');
+const createWebhookRoutes = require('./routes/webhookRoutes');
+const createMercadoPagoWebhookController = require('./controllers/mercadoPagoWebhookController');
+const { createMercadoPagoOrderClient } = require('./services/mercadoPagoOrderClient');
+const { createMercadoPagoWebhookService } = require('./services/mercadoPagoWebhookService');
+const { createPaymentAuthorization } = require('./services/paymentAuthorization');
+const { createTransferPaymentAuthorization } = require('./services/transferPaymentAuthorization');
+const { createTransferPaymentService } = require('./services/transferPaymentService');
+const createAdminTransferController = require('./controllers/adminTransferController');
+const createAdminTransferRoutes = require('./routes/adminTransferRoutes');
+const { createStockReservationService } = require('./services/stockReservationService');
+const { createOrderService } = require('./services/orderService');
+const { createPickupService } = require('./services/pickupService');
+const { createOrderAccessTokenService } = require('./services/orderAccessToken');
+const { createTransferInstructionsService } = require('./services/transferInstructionsService');
+const { createEmailProvider } = require('./services/emailProvider');
+const { createEmailOutboxService } = require('./services/emailOutboxService');
+const createOrderAccessController = require('./controllers/orderAccessController');
+const createOrderAccessRoutes = require('./routes/orderAccessRoutes');
 const notFound = require('./middlewares/notFound');
 const errorHandler = require('./middlewares/errorHandler');
 const env = require('./config/env');
+const logger = require('./utils/observability');
+const requestLogging = require('./middlewares/requestLogging');
+const createHealthRoutes = require('./routes/healthRoutes');
 
 const app = express();
+const logInventoryInconsistency = (entry) => {
+  logger.warn('inventory.inconsistency', entry);
+  void logger.alerts?.dispatch('inventory:inconsistency', 'inventory.inconsistency', entry);
+};
+app.locals.monitoring = { logger, alerts: logger.alerts };
+app.use(requestLogging(logger));
+logger.info('logging.policy.configured', { level: env.LOG_LEVEL, retentionDays: env.LOG_RETENTION_DAYS, destination: 'stdout/stderr' });
+const paymentAuthorization = createPaymentAuthorization();
+const transferPaymentAuthorization = createTransferPaymentAuthorization();
+const orderAccessTokens = createOrderAccessTokenService(env.JWT_SECRET);
+const transferInstructionsService = createTransferInstructionsService(
+  { Configuracion, Pedido, ReservaStock },
+  { orderAccessTokens }
+);
+const emailOutboxService = createEmailOutboxService(
+  { EmailOutbox, Pedido, ItemPedido },
+  { provider: createEmailProvider(env), transferInstructionsService }
+);
+const stockReservationService = createStockReservationService(
+  { Pedido, Variante, ReservaStock, MovimientoStock, HistorialEstadoPedido },
+  {
+    verifyPaymentAuthorization: async (input) => (await paymentAuthorization.verify(input)) || transferPaymentAuthorization.verify(input),
+    logger: logInventoryInconsistency,
+    emailOutbox: emailOutboxService
+  }
+);
+const transferPaymentService = createTransferPaymentService(
+  { Pedido, ReservaStock, ConfirmacionTransferencia },
+  { stockReservationService, transferPaymentAuthorization }
+);
+const adminOrderService = createAdminOrderService(
+  { Pedido, ItemPedido, HistorialEstadoPedido, IntentoPago, ConfirmacionTransferencia, Reintegro, ReservaStock },
+  {
+    operationalChangesEnabled: env.ADMIN_ORDER_STATUS_CHANGES_ENABLED,
+    transferConfirmationEnabled: env.ADMIN_TRANSFER_CONFIRMATION_ENABLED,
+    emailOutbox: emailOutboxService
+  }
+);
+const adminOrderController = createAdminOrderController(adminOrderService);
+const orderAccessController = createOrderAccessController(transferInstructionsService);
+const mercadoPagoWebhookService = createMercadoPagoWebhookService(
+  { Pedido, IntentoPago, EventoPago },
+  {
+    env,
+    orderClient: createMercadoPagoOrderClient({ accessToken: env.MP_ACCESS_TOKEN }),
+    stockReservationService,
+    paymentAuthorization,
+    emailOutbox: emailOutboxService
+  }
+);
+const mercadoPagoWebhookController = createMercadoPagoWebhookController(mercadoPagoWebhookService);
 const catalogService = createCatalogService({
   Producto, Categoria, ImagenProducto, Variante, ValorVariante, ValorAtributo, Atributo, ReservaStock
 });
 const catalogController = createCatalogController(catalogService);
 const cartValidationService = createCartValidationService({
   Producto, Variante, Categoria, ValorVariante, ValorAtributo, Atributo, ReservaStock
-});
+}, { logger: logInventoryInconsistency });
+const orderService = createOrderService(
+  { Pedido, ItemPedido, HistorialEstadoPedido },
+  {
+    cartValidationService,
+    pickupService: createPickupService({ PuntoRetiro, RetiroEspecial }),
+    stockReservationService,
+    orderAccessTokens,
+    emailOutbox: emailOutboxService
+  }
+);
+// Preparado para la futura ruta de creación; POST /api/orders continúa sin montarse.
+app.locals.orderService = orderService;
 const cartController = require('./controllers/cartController')(cartValidationService);
-const authService = createAuthService({ Admin: require('./models/Admin'), env: require('./config/env') });
-const authController = createAuthController(authService);
 const Admin = require('./models/Admin');
-const { authenticate, authorizeAdmin } = createAuthMiddleware({
-  secret: require('./config/env').JWT_SECRET,
-  Admin
-});
+const authService = createAuthService({ Admin, env });
+const authController = createAuthController(authService);
+const authMiddleware = createAuthMiddleware({ secret: env.JWT_SECRET, Admin });
+const { authenticate, authorizeAdmin } = authMiddleware;
 
 app.use(helmetMiddleware);
 app.use(cors(createCorsOptions(env)));
+app.use(createHealthRoutes({ mongoose, logger }));
 app.use(express.json({ limit: '10kb' }));
 
 // Rate limiters opcionales para rutas API
@@ -63,25 +166,10 @@ app.use('/api', createApiRateLimiter());
 app.use('/auth', createAuthRateLimiter(), validateAuthPayload);
 app.use('/api/auth', createAuthRateLimiter(), validateAuthPayload);
 
-// --- RUTAS PÚBLICAS Y DE CLIENTE (Soportan con y sin /api para compatibilidad total) ---
-const catalogRoutes = createCatalogRoutes(catalogController);
-const cartRoutes = createCartRoutes(cartController);
-const authRoutes = createAuthRoutes(authController);
-const pickupRoutes = createPickupRoutes({ PuntoRetiro, RetiroEspecial });
-
-// Montar en raíz (ej: /products, /categories, /auth/login)
-app.use('/', catalogRoutes);
-app.use('/', cartRoutes);
-app.use('/auth', authRoutes);
-app.use('/pickup-options', pickupRoutes);
-
-// Montar en /api (ej: /api/products, /api/categories, /api/auth/login)
-app.use('/api', catalogRoutes);
-app.use('/api', cartRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/pickup-options', pickupRoutes);
-
-// --- RUTAS DE ADMINISTRACIÓN ---
+// Rutas publicas de consulta del catalogo
+app.use('/api', createCatalogRoutes(catalogController));
+app.use('/api', createCartRoutes(cartController));
+app.use('/api/auth', createAuthRoutes(authController));
 app.use(
   '/api/admin/products',
   authenticate,
@@ -101,11 +189,44 @@ app.use(
   )
 );
 app.use(
+  '/api/admin',
+  authenticate,
+  authorizeAdmin,
+  validateJsonBody,
+  createAdminAttributeRoutes({ Atributo, ValorAtributo, ValorVariante, ItemPedido, ReservaStock, MovimientoStock })
+);
+app.use('/api/admin/banners', authenticate, authorizeAdmin, createAdminBannerRoutes(
+  { Banner, Configuracion },
+  { storage: createCloudinaryStorage(env) }
+));
+app.use('/api/admin/pickups', authenticate, authorizeAdmin, validateJsonBody,
+  createAdminPickupRoutes({ PuntoRetiro, RetiroEspecial, Pedido }));
+app.use(
+  '/api/admin/products/:productId/variants',
+  authenticate,
+  authorizeAdmin,
+  validateJsonBody,
+  createAdminVariantRoutes({ Producto, Variante, Atributo, ValorAtributo, ValorVariante, ItemPedido, ReservaStock, MovimientoStock })
+);
+app.use(
   '/api/admin/stock',
   authenticate,
   authorizeAdmin,
-  createAdminStockRoutes({ Producto, Variante, MovimientoStock, ReservaStock, ValorVariante, ValorAtributo, Atributo })
+  createAdminStockRoutes({ Producto, Variante, MovimientoStock, ReservaStock, ValorVariante, ValorAtributo, Atributo }, {
+    lowStockThreshold: env.ADMIN_LOW_STOCK_THRESHOLD,
+    monitoring: logger,
+    logger: logInventoryInconsistency
+  })
 );
+app.use(
+  '/api/admin/dashboard',
+  authenticate,
+  authorizeAdmin,
+  createAdminDashboardRoutes({ Pedido, Reintegro, Producto, Variante, ReservaStock }, {
+    lowStockThreshold: env.ADMIN_LOW_STOCK_THRESHOLD
+  })
+);
+app.use('/api/pickup-options', createPickupRoutes({ PuntoRetiro, RetiroEspecial }));
 
 app.get('/', (req, res) => {
   res.send('¡El backend de Olla Vegana está funcionando perfectamente!');

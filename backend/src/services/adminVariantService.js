@@ -3,6 +3,8 @@ const AppError = require('../utils/AppError');
 const { canonicalCombinationKey } = require('../utils/variantCombination');
 const { parsePrice, validateObjectId } = require('./adminProductService');
 
+const COMBINATION_INDEX_NAME = 'uniq_variante_producto_combinacion_activa';
+
 function invalid(message) { throw AppError.solicitudInvalida(message); }
 function ensureObject(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) invalid('El cuerpo debe ser un objeto JSON');
@@ -53,7 +55,7 @@ function createAdminVariantService(models, { startSession = () => mongoose.start
   }
 
   function parseAttributePairs(values) {
-    if (!Array.isArray(values) || values.length === 0) invalid('La variante debe tener al menos un valor de atributo');
+    if (!Array.isArray(values)) invalid('valores debe ser una lista de atributos y valores');
     const pairs = values.map((pair) => {
       ensureObject(pair);
       rejectUnexpectedFields(pair, ['atributoId', 'valorAtributoId']);
@@ -132,6 +134,20 @@ function createAdminVariantService(models, { startSession = () => mongoose.start
     }
   }
 
+  async function assertCombinationIndex() {
+    try {
+      const indexes = await Variante.collection.indexes();
+      const index = indexes.find((candidate) => candidate.name === COMBINATION_INDEX_NAME);
+      if (!index?.unique || index.key?.productoId !== 1 || index.key?.combinacionClave !== 1
+        || index.partialFilterExpression?.activa !== true
+        || index.partialFilterExpression?.combinacionClave?.$type !== 'string') {
+        throw new Error('required active combination index missing or invalid');
+      }
+    } catch {
+      throw new AppError('La gestión de variantes está deshabilitada hasta provisionar y verificar el índice de combinaciones', 503);
+    }
+  }
+
   async function hasHistoricalReferences(variantId, session) {
     const id = new mongoose.Types.ObjectId(String(variantId));
     const queryOptions = session ? { session } : undefined;
@@ -193,6 +209,7 @@ function createAdminVariantService(models, { startSession = () => mongoose.start
     const price = input.precio === undefined || input.precio === null ? null : parsePrice(input.precio);
     const active = input.activa === undefined ? true : input.activa;
     if (typeof active !== 'boolean') invalid('El campo activa debe ser booleano');
+    if (active) await assertCombinationIndex();
 
     return withTransactionAndUniqueConflict(async (session) => {
       await requireProduct(productId, session);
@@ -223,6 +240,7 @@ function createAdminVariantService(models, { startSession = () => mongoose.start
     const pairs = Object.hasOwn(input, 'valores') ? parseAttributePairs(input.valores) : null;
     const price = Object.hasOwn(input, 'precio') ? (input.precio === null ? null : parsePrice(input.precio)) : undefined;
     if (Object.hasOwn(input, 'activa') && typeof input.activa !== 'boolean') invalid('El campo activa debe ser booleano');
+    if (input.activa === true || input.activa === undefined) await assertCombinationIndex();
 
     return withTransactionAndUniqueConflict(async (session) => {
       await requireProduct(productId, session);
@@ -276,4 +294,4 @@ function createAdminVariantService(models, { startSession = () => mongoose.start
   return { listVariants, createVariant, updateVariant };
 }
 
-module.exports = { createAdminVariantService, sameCombination };
+module.exports = { createAdminVariantService, sameCombination, COMBINATION_INDEX_NAME };

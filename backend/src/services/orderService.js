@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 const mongoose = require('mongoose');
 const AppError = require('../utils/AppError');
 const { parseMoneyToCents, formatCents } = require('./cartValidationService');
+const logger = require('../utils/observability');
 const { TRANSFER_RESERVATION_MS, isTransientConflict } = require('./stockReservationService');
 
 const PAYMENT_METHODS = new Set(['MERCADO_PAGO', 'TRANSFERENCIA']);
@@ -103,6 +104,8 @@ function optionSnapshot(option) {
       puntoRetiroSnapshot: {
         nombre: option.nombre,
         direccion: option.direccion || null,
+        indicaciones: option.indicaciones || '',
+        zonaHoraria: option.zonaHoraria || 'America/Argentina/Buenos_Aires',
         horarios: option.horarios || null,
         horariosHabituales: option.horariosHabituales || []
       },
@@ -116,25 +119,31 @@ function optionSnapshot(option) {
     retiroEspecialId: new mongoose.Types.ObjectId(option.id),
     retiroEspecialSnapshot: {
       evento: option.evento,
+      nombre: option.nombre || 'Veganpaluja',
       fecha: option.fecha,
+      fechaInicio: option.fechaInicio || option.fecha,
+      fechaFin: option.fechaFin || option.fecha,
       lugar: option.lugar,
       direccion: option.direccion || null,
+      indicaciones: option.indicaciones || '',
+      zonaHoraria: option.zonaHoraria || 'America/Argentina/Buenos_Aires',
       horaInicio: option.horaInicio,
-      horaFin: option.horaFin
+      horaFin: option.horaFin,
+      horariosRetiro: option.horariosRetiro || []
     }
   };
 }
 
 function createOrderService(models, dependencies = {}) {
   const { Pedido, ItemPedido, HistorialEstadoPedido } = models;
-  const { cartValidationService, pickupService, stockReservationService } = dependencies;
+  const { cartValidationService, pickupService, stockReservationService, orderAccessTokens, emailOutbox } = dependencies;
   const now = dependencies.ahora || (() => new Date());
   const randomSuffix = dependencies.randomSuffix || (() => crypto.randomInt(0, 1_000_000));
   const startSession = dependencies.startSession || (() => Pedido.db.startSession());
 
   async function findByOperation(idOperacion) {
     let query = Pedido.findOne({ idOperacion });
-    if (query && typeof query.select === 'function') query = query.select('+huellaOperacion');
+    if (query && typeof query.select === 'function') query = query.select('+huellaOperacion +accesoPublicoHash');
     return query;
   }
 
@@ -145,18 +154,26 @@ function createOrderService(models, dependencies = {}) {
       throw AppError.conflicto('La clave de operación ya se utilizó con otros datos');
     }
     const items = await ItemPedido.find({ pedidoId: existing._id });
-    return { pedido: existing, articulos: items, repetido: true };
+    const accessToken = orderAccessTokens.issue({ pedidoId: existing._id, idOperacion: input.idOperacion });
+    if (!orderAccessTokens.matches(accessToken, existing.accesoPublicoHash)) {
+      throw new AppError('El acceso seguro a este pedido requiere revisión', 503);
+    }
+    return { pedido: existing, articulos: items, tokenAccesoPedido: accessToken, repetido: true };
   }
 
   async function createOrder(body, idempotencyKey) {
     if (!cartValidationService || !pickupService || !stockReservationService) throw new Error('Falta el coordinador transaccional de reservas');
+    if (!orderAccessTokens) throw new AppError('La creación permanece deshabilitada hasta configurar el acceso seguro al pedido', 503);
     const input = normalizeRequest(body, idempotencyKey);
     if (input.metodoPago === 'MERCADO_PAGO') {
       throw new AppError('Mercado Pago seguirá deshabilitado hasta definir y verificar su política de vencimiento de reservas', 503);
     }
     const fingerprint = requestFingerprint(input);
     const previous = await existingResult(input, fingerprint);
-    if (previous) return previous;
+    if (previous) {
+      logger.info('order.create.idempotent_replay', { orderId: String(previous.pedido._id), orderNumber: previous.pedido.numero });
+      return previous;
+    }
     await stockReservationService.assertReservationIndex();
 
     function buildSnapshot(cart) {
@@ -218,7 +235,10 @@ function createOrderService(models, dependencies = {}) {
           if (!selectedPickup) throw AppError.conflicto('La opción de retiro ya no está disponible');
           const { items, totalCents } = buildSnapshot(cart);
           const pickupReference = optionSnapshot(selectedPickup);
+          const pedidoId = new mongoose.Types.ObjectId();
+          const accessToken = orderAccessTokens.issue({ pedidoId, idOperacion: input.idOperacion });
           const [pedido] = await Pedido.create([{
+            _id: pedidoId,
             numero: createOrderNumber(creadoEn, randomSuffix),
             nombre: input.nombre,
             apellido: input.apellido,
@@ -231,6 +251,8 @@ function createOrderService(models, dependencies = {}) {
             total: mongoose.Types.Decimal128.fromString(formatCents(totalCents)),
             creadoEn,
             venceEn,
+            accesoPublicoHash: orderAccessTokens.hash(accessToken),
+            accesoPublicoHasta: new Date(creadoEn.getTime() + orderAccessTokens.TOKEN_VALIDITY_MS),
             ...pickupReference,
             idOperacion: input.idOperacion,
             huellaOperacion: fingerprint
@@ -249,13 +271,21 @@ function createOrderService(models, dependencies = {}) {
             estadoNuevo: 'NUEVO',
             nota: 'Pedido creado'
           }], { session });
-          created = { pedido, articulos: itemDocs, historial: history };
+          if (emailOutbox) await emailOutbox.enqueue({ pedidoId: pedido._id, tipo: 'PEDIDO_CREADO', session });
+          created = { pedido, articulos: itemDocs, historial: history, tokenAccesoPedido: accessToken };
+        });
+        logger.info('order.created', { orderId: String(created.pedido._id), orderNumber: created.pedido.numero, paymentMethod: created.pedido.metodoPago });
+        logger.info('stock.reservations.created', {
+          orderId: String(created.pedido._id), reservationLines: created.articulos.length, expiresAt: created.pedido.venceEn
         });
         return { ...created, repetido: false };
       } catch (error) {
         if (hasDuplicateKey(error, 'idOperacion')) {
           const retryResult = await existingResult(input, fingerprint);
-          if (retryResult) return retryResult;
+          if (retryResult) {
+            logger.info('order.create.idempotent_replay', { orderId: String(retryResult.pedido._id), orderNumber: retryResult.pedido.numero });
+            return retryResult;
+          }
         }
         if (isTransientConflict(error)) continue;
         if (!hasDuplicateKey(error, 'numero')) throw error;

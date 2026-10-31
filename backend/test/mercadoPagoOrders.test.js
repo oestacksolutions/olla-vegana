@@ -168,9 +168,10 @@ test('servicio se detiene si falta el índice único real antes de escribir', as
   await assert.rejects(missingIndexService.createCheckoutForPersistedOrder(order._id), /índice único/);
 });
 
-test('endpoint público de pedidos sigue fuera de app y el router de órdenes mantiene 503', () => {
+test('POST público de pedidos sigue fuera de app y solo se monta GET de instrucciones con token', () => {
   const appSource = fs.readFileSync(path.join(__dirname, '../src/app.js'), 'utf8');
   const routeSource = fs.readFileSync(path.join(__dirname, '../src/routes/orderRoutes.js'), 'utf8');
-  assert.doesNotMatch(appSource, /app\.use\(['"]\/api\/orders/);
+  assert.doesNotMatch(appSource, /createOrderRoutes/);
+  assert.match(appSource, /app\.use\(['"]\/api\/orders['"], createOrderAccessRoutes/);
   assert.match(routeSource, /router\.post\('\/',\s*\(_req, res\) => res\.status\(503\)/);
 });

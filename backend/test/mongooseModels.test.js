@@ -9,6 +9,7 @@ const EventoPago = require('../src/models/EventoPago');
 const Admin = require('../src/models/Admin');
 const PuntoRetiro = require('../src/models/PuntoRetiro');
 const RetiroEspecial = require('../src/models/RetiroEspecial');
+const Reintegro = require('../src/models/Reintegro');
 
 test('modelos de pedido requieren datos históricos y enums válidos', async () => {
   const pedido = new Pedido({});
@@ -43,8 +44,11 @@ test('movimientos nuevos conservan snapshots, administrador e idempotencia sin e
   await legacy.validate();
 });
 
-test('evento externo no impone unicidad no confirmada y la contraseña no se selecciona por defecto', () => {
-  assert.equal(EventoPago.schema.indexes().some(([, options]) => options.unique), false);
+test('EventoPago no hace único idExterno y deduplica con clave parcial', () => {
+  const eventIndexes = EventoPago.schema.indexes();
+  assert.equal(eventIndexes.some(([keys, options]) => options.unique && keys.idExterno), false);
+  assert.equal(eventIndexes.some(([keys, options]) => options.unique && keys.idempotencia === 1
+    && options.partialFilterExpression?.idempotencia?.$type === 'string'), true);
   assert.equal(Admin.schema.path('contrasena').options.select, false);
 });
 
@@ -131,4 +135,22 @@ test('ítem pedido admite snapshot de atributos y subtotal Decimal128 sin exigir
   const legacy = new ItemPedido({ pedidoId: new mongoose.Types.ObjectId(), productoId: new mongoose.Types.ObjectId(), cantidad: 1, precio: '10.00', nombreProducto: 'Producto antiguo' });
   await legacy.validate();
   assert.equal(legacy.subtotal, null);
+});
+
+test('Reintegro conserva estados y actores auditables, Decimal128 e índices declarados sin autoIndex', async () => {
+  const refund = new Reintegro({
+    pedidoId: new mongoose.Types.ObjectId(), metodoPago: 'TRANSFERENCIA', proveedor: 'TRANSFERENCIA',
+    tipo: 'PARCIAL', importeSolicitado: '20.50', estado: 'PENDIENTE_MANUAL', motivo: 'Motivo revisado',
+    adminSolicitanteId: new mongoose.Types.ObjectId(), idOperacion: 'refund-test-0001',
+    huellaSolicitud: 'a'.repeat(64), solicitadoEn: new Date(), historial: [{ estado: 'PENDIENTE_MANUAL' }]
+  });
+  await refund.validate();
+  assert.equal(Reintegro.schema.path('importeSolicitado').instance, 'Decimal128');
+  assert.equal(Reintegro.schema.options.autoIndex, false);
+  assert.equal(Reintegro.schema.options.autoCreate, false);
+  assert.ok(Reintegro.schema.indexes().some(([keys, options]) => keys.idOperacion && options.unique));
+  assert.ok(Reintegro.schema.indexes().some(([keys, options]) => keys.idConfirmacion && options.unique && options.partialFilterExpression));
+  assert.ok(Reintegro.schema.indexes().some(([keys, options]) => keys.pedidoId && keys.referenciaDevolucion && options.unique && options.partialFilterExpression));
+  assert.equal(Pedido.schema.path('estadoReintegro').defaultValue, 'SIN_REINTEGRO');
+  assert.equal(ReservaStock.schema.path('liberadaPorAdminId').instance, 'ObjectId');
 });
